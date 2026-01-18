@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION DRAG & DROP CORRIGÉE */
+/* Fichier : js/v2/app.js - VERSION FINALE AVEC SORTABLEJS */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -19,7 +19,25 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     chargerHistorique();
     
-    // NAVIGATION
+    // --- DRAG & DROP PROFESSIONNEL (SortableJS) ---
+    const container = document.getElementById('lines-container');
+    if (window.Sortable) {
+        new Sortable(container, {
+            handle: '.drag-handle', // On attrape uniquement par l'icône
+            animation: 150, // Animation fluide
+            ghostClass: 'sortable-ghost', // Classe visuelle pendant le déplacement
+            onEnd: function (evt) {
+                // Mise à jour des données (Le tableau JavaScript)
+                const item = App.currentDoc.lignes.splice(evt.oldIndex, 1)[0];
+                App.currentDoc.lignes.splice(evt.newIndex, 0, item);
+                
+                // IMPORTANT : On redessine pour que les index des inputs restent corrects
+                renderLignes(); 
+            }
+        });
+    }
+
+    // --- NAVIGATION ---
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
     document.getElementById('nav-dashboard').addEventListener('click', () => {
         document.getElementById('view-editor').classList.add('hidden');
@@ -32,7 +50,7 @@ function initApp() {
         chargerHistorique();
     });
 
-    // ACTIONS EDITEUR
+    // --- ACTIONS EDITEUR ---
     document.getElementById('btn-add-line').addEventListener('click', () => {
         App.currentDoc.lignes.push(createLigne({ type: 'line', description: '' }));
         renderLignes();
@@ -109,73 +127,24 @@ function ouvrirEditeur(docData = null) {
     document.getElementById('view-editor').classList.remove('hidden');
 }
 
-// --- RENDU AVEC DRAG & DROP ROBUSTE ---
+// --- RENDU (SIMPLIFIÉ GRÂCE A SORTABLEJS) ---
 function renderLignes() {
     const container = document.getElementById('lines-container');
     container.innerHTML = '';
     let total = 0;
 
-    // Fonction DragStart (Commence le glissement)
-    const handleDragStart = (e, index) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', index);
-        e.target.classList.add('dragging');
-    };
-
-    // Fonction DragOver (Survol)
-    const handleDragOver = (e) => {
-        e.preventDefault(); // OBLIGATOIRE pour autoriser le drop
-        e.dataTransfer.dropEffect = 'move';
-        e.currentTarget.classList.add('drag-over');
-    };
-
-    // Fonction DragLeave (Quitte la zone)
-    const handleDragLeave = (e) => {
-        e.currentTarget.classList.remove('drag-over');
-    };
-
-    // Fonction Drop (Lâcher)
-    const handleDrop = (e, toIndex) => {
-        e.preventDefault();
-        e.currentTarget.classList.remove('drag-over');
-        e.currentTarget.classList.remove('dragging');
-        
-        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-        
-        if (fromIndex !== toIndex) {
-            console.log(`Déplacement de ${fromIndex} vers ${toIndex}`);
-            // Échange des données
-            const item = App.currentDoc.lignes.splice(fromIndex, 1)[0];
-            App.currentDoc.lignes.splice(toIndex, 0, item);
-            // On redessine tout
-            renderLignes();
-        }
-    };
-
     App.currentDoc.lignes.forEach((ligne, index) => {
         const tr = document.createElement('tr');
-        tr.className = 'draggable-row'; // Classe pour le CSS
-        tr.setAttribute('draggable', 'true'); // Rend la ligne déplaçable
-
-        // --- ATTACHEMENT DES ÉVÉNEMENTS ---
-        tr.addEventListener('dragstart', (e) => handleDragStart(e, index));
-        tr.addEventListener('dragover', handleDragOver);
-        tr.addEventListener('dragleave', handleDragLeave);
-        tr.addEventListener('drop', (e) => handleDrop(e, index));
-        tr.addEventListener('dragend', (e) => {
-             e.currentTarget.classList.remove('dragging');
-             e.currentTarget.classList.remove('drag-over');
-        });
-
-        // --- CONTENU VISUEL ---
-        // Notez la classe "drag-handle" sur l'icône
-        const dragIcon = `<i class="fas fa-grip-vertical drag-handle"></i>`;
+        // Plus besoin d'attributs draggable compliqués ici
+        
+        // La poignée (handle) qui sert à attraper la ligne
+        const dragHandle = `<i class="fas fa-grip-vertical drag-handle" style="cursor:grab; margin-right:10px; color:#cbd5e1;"></i>`;
 
         if (ligne.type === 'section') {
             tr.style.background = '#f1f5f9';
             tr.innerHTML = `
                 <td colspan="4" style="display:flex; align-items:center;">
-                    ${dragIcon}
+                    ${dragHandle}
                     <input type="text" value="${ligne.description}" 
                            style="width:100%; font-weight:bold; background:transparent; border:none; margin-left:10px;"
                            onchange="updateLigne(${index}, 'description', this.value)">
@@ -188,7 +157,7 @@ function renderLignes() {
             total += parseFloat(ligne.prix || 0);
             tr.innerHTML = `
                 <td style="display:flex; align-items:center;">
-                    ${dragIcon}
+                    ${dragHandle}
                     <input type="text" value="${ligne.description}" style="width:100%; margin-left:10px;"
                            onchange="updateLigne(${index}, 'description', this.value)">
                 </td>
@@ -227,7 +196,7 @@ function renderLignes() {
     window.deleteLigne = (idx) => { App.currentDoc.lignes.splice(idx, 1); renderLignes(); };
 }
 
-// --- SAUVEGARDE & MODELES (Inchangés) ---
+// --- SAUVEGARDE & MODELES ---
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
     btn.innerHTML = '...'; btn.disabled = true;
