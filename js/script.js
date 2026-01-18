@@ -1,6 +1,7 @@
-/* Fichier : js/script.js (RACINE - MOTEUR ACCUEIL) */
+/* Fichier : js/script.js (CORRIGÉ - SANS IMPORT PDF) */
 import { auth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
-import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+// NOTE : On ne met PAS d'import jsPDF ici car il est déjà chargé par le fichier HTML.
 
 // 1. GESTION DU CHARGEMENT & CONNEXION
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,17 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.querySelector('.sidebar');
 
     onAuthStateChanged(auth, (user) => {
-        loader.style.display = 'none'; // On cache le chargement
+        if(loader) loader.style.display = 'none'; // On cache le chargement
         
         if (user) {
             // UTILISATEUR CONNECTÉ
-            loginScreen.classList.add('hidden');
+            if(loginScreen) loginScreen.classList.add('hidden');
             if(mainContent) mainContent.classList.remove('hidden');
             if(sidebar) sidebar.classList.remove('hidden');
             console.log("Connecté :", user.email);
         } else {
             // UTILISATEUR DÉCONNECTÉ
-            loginScreen.classList.remove('hidden');
+            if(loginScreen) loginScreen.classList.remove('hidden');
             if(mainContent) mainContent.classList.add('hidden');
             if(sidebar) sidebar.classList.add('hidden');
         }
@@ -44,18 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
-                // La redirection est gérée par onAuthStateChanged
             } catch (error) {
                 console.error(error);
-                errorMsg.textContent = "Erreur : Email ou mot de passe incorrect.";
+                if(errorMsg) errorMsg.textContent = "Erreur : Email ou mot de passe incorrect.";
             }
         });
     }
 });
 
 // 2. GENERATEUR PDF (ADMINISTRATIF)
-// On attache la fonction à "window" pour que les boutons HTML puissent l'utiliser
+// Cette fonction est appelée par les boutons HTML
 window.genererPDF = function(type) {
+    // C'EST ICI LA CORRECTION : On récupère l'outil directement depuis la page
+    if (!window.jspdf) { alert("Erreur: Librairie PDF non chargée"); return; }
+    const { jsPDF } = window.jspdf;
+
     const defunt = document.getElementById('defunt_nom').value || "..................";
     const dateDeces = document.getElementById('date_deces').value;
     const lieuDeces = document.getElementById('lieu_deces').value || "..................";
