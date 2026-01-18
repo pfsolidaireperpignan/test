@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+    <img id="logo-source" src="Logo.png" style="display:none;" crossorigin="anonymous">
+
     <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column;">
         <div style="font-size:2rem; color:#22c55e; margin-bottom:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>
         <div style="font-family:sans-serif; color:#64748b;">Chargement v2.0...</div>
@@ -43,8 +45,7 @@
                             <th style="text-align:center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                        </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -99,7 +100,8 @@
                 </div>
             </div>
 
-            <div style="text-align:right; margin-top:20px;">
+            <div style="text-align:right; margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button id="btn-print" class="btn" style="background:#475569; color:white;"><i class="fas fa-print"></i> PDF</button>
                 <button id="btn-save" class="btn btn-green"><i class="fas fa-save"></i> ENREGISTRER (v2)</button>
             </div>
         </div>
