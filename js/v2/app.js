@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION FINALE (AVEC EXPORT COMPTA) */
+/* Fichier : js/v2/app.js - VERSION "GOLD" (COMPLETE) */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where, limit, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    chargerHistorique();
+    chargerHistorique(); // Cela charge aussi la mémoire des clients
 
     // DRAG & DROP
     const container = document.getElementById('lines-container');
@@ -33,6 +33,13 @@ function initApp() {
             }
         });
     }
+
+    // BOUTON DECONNEXION
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        if(confirm("Se déconnecter ?")) {
+            auth.signOut().then(() => window.location.href = 'index.html');
+        }
+    });
 
     // NAVIGATION
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
@@ -64,7 +71,7 @@ function initApp() {
         if(e.target.value) appliquerModele(e.target.value);
     });
 
-    // ACTIONS PAIEMENTS
+    // PAIEMENTS
     document.getElementById('btn-add-pay').addEventListener('click', () => {
         const mt = parseFloat(document.getElementById('pay-montant').value);
         if(!mt) return alert("Montant invalide");
@@ -77,11 +84,11 @@ function initApp() {
         renderPaiements();
     });
 
-    // NOUVEAU : EXPORT COMPTABLE
+    // EXPORT
     document.getElementById('btn-export').addEventListener('click', exporterComptabilite);
 }
 
-// --- HISTORIQUE ---
+// --- HISTORIQUE & INTELLIGENCE ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
@@ -91,12 +98,17 @@ async function chargerHistorique() {
         const snapshot = await getDocs(q);
         
         let ca = 0, encaisse = 0, resteGlobal = 0;
+        const clientsUniques = new Set(); // Pour mémoriser les clients
 
         if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Vide.</td></tr>'; return; }
 
         tbody.innerHTML = '';
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
+            
+            // On mémorise le client pour l'autocomplétion
+            if(data.client && data.client.nom) clientsUniques.add(data.client.nom);
+
             const total = parseFloat(data.total_ttc || 0);
             const paye = parseFloat(data.solde_paye || 0);
             const reste = total - paye;
@@ -137,6 +149,16 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
+        // Mise à jour de la mémoire des clients
+        const datalist = document.getElementById('list-clients');
+        datalist.innerHTML = '';
+        clientsUniques.forEach(nom => {
+            const opt = document.createElement('option');
+            opt.value = nom;
+            datalist.appendChild(opt);
+        });
+
+        // Totaux
         const fmt = (n) => n.toLocaleString('fr-FR', {style:'currency', currency:'EUR'});
         if(document.getElementById('stat-ca')) document.getElementById('stat-ca').textContent = fmt(ca);
         if(document.getElementById('stat-paye')) document.getElementById('stat-paye').textContent = fmt(encaisse);
@@ -148,7 +170,6 @@ async function chargerHistorique() {
             const snap = await getDoc(docRef);
             if(snap.exists()) PdfService.generer(snap.data());
         }));
-        
         document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -158,7 +179,6 @@ async function chargerHistorique() {
                 ouvrirEditeur(data);
             }
         }));
-
         document.querySelectorAll('.convert-btn').forEach(btn => btn.addEventListener('click', async () => {
             if(!confirm("Voulez-vous transformer ce Devis en Facture officielle ?")) return;
             try {
@@ -259,6 +279,32 @@ async function genererNumero(type) {
     return `${base}${seq.toString().padStart(3, '0')}`;
 }
 
+async function exporterComptabilite() {
+    try {
+        const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
+        const snap = await getDocs(q);
+        if(snap.empty) return alert("Aucune donnée à exporter.");
+        let csv = "Date;Numero;Type;Client;Defunt;Total HT;TVA;Total TTC;Statut\n";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const date = new Date(d.date_creation).toLocaleDateString('fr-FR');
+            const totalTTC = parseFloat(d.total_ttc || 0);
+            const totalHT = (totalTTC / 1.2).toFixed(2);
+            const tva = (totalTTC - parseFloat(totalHT)).toFixed(2);
+            csv += `${date};${d.numero};${d.type};"${d.client.nom}";"${d.defunt.nom}";${totalHT};${tva};${totalTTC.toFixed(2).replace('.',',')};${d.solde_paye >= totalTTC ? 'PAYE' : 'EN ATTENTE'}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Export_Compta_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch(e) { console.error(e); alert("Erreur lors de l'export"); }
+}
+
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
     const oldText = btn.innerHTML;
@@ -303,45 +349,4 @@ function appliquerModele(type) {
     else if (type === 'RAPATRIEMENT') { addS("ADMINISTRATIF"); addL("Consulat", 350); addS("VOL"); addL("Fret Aérien", 1500); }
     App.currentDoc.lignes = lignes;
     renderLignes();
-}
-
-// --- FONCTION EXPORT COMPTABLE (CSV) ---
-async function exporterComptabilite() {
-    try {
-        const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
-        const snap = await getDocs(q);
-        
-        if(snap.empty) return alert("Aucune donnée à exporter.");
-
-        // En-tête du fichier CSV
-        let csv = "Date;Numero;Type;Client;Defunt;Total HT;TVA;Total TTC;Statut\n";
-
-        snap.forEach(doc => {
-            const d = doc.data();
-            // On n'exporte que les FACTURES (ou tout, selon votre choix)
-            // Ici j'exporte tout pour vérification
-            
-            const date = new Date(d.date_creation).toLocaleDateString('fr-FR');
-            const totalTTC = parseFloat(d.total_ttc || 0);
-            
-            // Calcul simplifié HT (Si TVA 20% globalement, sinon il faudrait sommer les lignes)
-            // Pour l'instant on fait une estimation HT = TTC / 1.2
-            const totalHT = (totalTTC / 1.2).toFixed(2);
-            const tva = (totalTTC - parseFloat(totalHT)).toFixed(2);
-
-            csv += `${date};${d.numero};${d.type};"${d.client.nom}";"${d.defunt.nom}";${totalHT};${tva};${totalTTC.toFixed(2).replace('.',',')};${d.solde_paye >= totalTTC ? 'PAYE' : 'EN ATTENTE'}\n`;
-        });
-
-        // Téléchargement
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Export_Compta_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-    } catch(e) { console.error(e); alert("Erreur lors de l'export"); }
 }
