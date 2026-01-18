@@ -1,23 +1,38 @@
-/* Fichier : js/domain/LigneFacture.js - VERSION ROBUSTE */
+/* Fichier : js/domain/LigneFacture.js - VERSION DETECTIVE AUTO */
 export class LigneFacture {
     constructor(data = {}) {
-        // Sécurité maximale : on s'assure que data n'est pas null
         if (!data) data = {};
 
-        this.type = data.type || 'line'; 
-        
-        // On cherche le texte partout. 
-        // Si 'description' est explicitement "undefined" (le texte), on le remplace par vide.
-        let desc = data.description || data.designation || data.libelle || data.nom || data.titre || '';
-        if (desc === 'undefined') desc = '';
-        this.description = desc;
-        
-        // On nettoye le prix
-        let prix = data.prix_unitaire || data.prix || data.montant || 0;
+        // 1. RECHERCHE INTELLIGENTE DE LA DESCRIPTION
+        // On regarde si une des clés connues contient le texte
+        this.description = data.description || 
+                           data.designation || 
+                           data.libelle || 
+                           data.nom || 
+                           data.titre || 
+                           data.prestation || 
+                           data.label || 
+                           '';
+
+        // Si on a rien trouvé, on cherche la première valeur "Texte" qui traîne dans l'objet
+        if (!this.description) {
+            for (const key in data) {
+                // Si c'est du texte et que c'est pas un ID ou un Type
+                if (typeof data[key] === 'string' && data[key].length > 2 && key !== 'id' && key !== 'type') {
+                    this.description = data[key];
+                    break; 
+                }
+            }
+        }
+
+        // 2. RECHERCHE INTELLIGENTE DU PRIX
+        let prix = data.prix_unitaire || data.prix || data.montant || data.total || data.pu || data.value || 0;
         this.prix_unitaire = parseFloat(prix);
         if (isNaN(this.prix_unitaire)) this.prix_unitaire = 0;
-        
-        this.tva = data.tva || 'NA'; 
-        this.type_prestation = data.type_prestation || 'courant'; 
+
+        // 3. LE RESTE
+        this.type = data.type || 'line';
+        this.tva = data.tva || 'NA';
+        this.type_prestation = data.type_prestation || 'courant';
     }
 }
