@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - COMPLET */
+/* Fichier : js/v2/app.js - VERSION AVEC DRAG & DROP */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     chargerHistorique();
     
-    // Navigation
+    // --- NAVIGATION ---
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
     document.getElementById('nav-dashboard').addEventListener('click', () => {
         document.getElementById('view-editor').classList.add('hidden');
@@ -32,7 +32,7 @@ function initApp() {
         chargerHistorique();
     });
 
-    // Editeur Actions
+    // --- ACTIONS EDITEUR ---
     document.getElementById('btn-add-line').addEventListener('click', () => {
         App.currentDoc.lignes.push(createLigne({ type: 'line', description: '' }));
         renderLignes();
@@ -50,6 +50,7 @@ function initApp() {
     });
 }
 
+// --- HISTORIQUE ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Chargement...</td></tr>';
@@ -77,7 +78,6 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
-        // Clics liste
         document.querySelectorAll('.print-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -89,7 +89,7 @@ async function chargerHistorique() {
             const snap = await getDoc(docRef);
             if(snap.exists()) {
                 const data = snap.data();
-                data.id = snap.id; // Important pour update
+                data.id = snap.id; 
                 ouvrirEditeur(data);
             }
         }));
@@ -109,24 +109,114 @@ function ouvrirEditeur(docData = null) {
     document.getElementById('view-editor').classList.remove('hidden');
 }
 
+// --- RENDU DES LIGNES (AVEC DRAG & DROP) ---
 function renderLignes() {
     const container = document.getElementById('lines-container');
     container.innerHTML = '';
     let total = 0;
+
     App.currentDoc.lignes.forEach((ligne, index) => {
         const tr = document.createElement('tr');
+        
+        // ACTIVATION DU DRAG & DROP
+        tr.setAttribute('draggable', 'true');
+        tr.style.cursor = 'grab'; // Change le curseur pour indiquer qu'on peut attraper
+
+        // 1. Quand on commence à glisser
+        tr.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', index); // On mémorise l'ID de la ligne
+            tr.style.opacity = '0.5'; // On la rend un peu transparente
+        });
+
+        // 2. Quand on passe au-dessus d'une autre ligne
+        tr.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Nécessaire pour autoriser le "drop"
+            tr.style.borderTop = '2px solid #22c55e'; // Ligne verte pour visualiser l'emplacement
+        });
+
+        // 3. Quand on quitte la zone
+        tr.addEventListener('dragleave', () => {
+            tr.style.borderTop = '';
+        });
+
+        // 4. Quand on lâche (DROP)
+        tr.addEventListener('drop', (e) => {
+            e.preventDefault();
+            tr.style.borderTop = '';
+            tr.style.opacity = '1';
+            
+            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const toIndex = index;
+
+            // Si on a bougé, on fait l'échange dans les données
+            if (fromIndex !== toIndex) {
+                const elementDeplace = App.currentDoc.lignes.splice(fromIndex, 1)[0];
+                App.currentDoc.lignes.splice(toIndex, 0, elementDeplace);
+                renderLignes(); // On redessine tout
+            }
+        });
+
+        // 5. Fin du mouvement (si on lâche ailleurs)
+        tr.addEventListener('dragend', () => {
+            tr.style.opacity = '1';
+            tr.style.borderTop = '';
+        });
+
+
+        // --- CONTENU VISUEL ---
+        
+        // Icône poignée pour attraper facilement
+        const dragHandle = `<i class="fas fa-grip-vertical" style="color:#cbd5e1; margin-right:10px; cursor:grab;"></i>`;
+
         if (ligne.type === 'section') {
             tr.style.background = '#f1f5f9';
-            tr.innerHTML = `<td colspan="4"><input type="text" value="${ligne.description}" style="width:100%; font-weight:bold; border:none; background:transparent;" onchange="updateLigne(${index}, 'description', this.value)"></td><td style="text-align:center"><button onclick="deleteLigne(${index})" style="color:red; border:none; background:none;"><i class="fas fa-trash"></i></button></td>`;
+            tr.innerHTML = `
+                <td colspan="4" style="display:flex; align-items:center;">
+                    ${dragHandle}
+                    <input type="text" value="${ligne.description}" 
+                           style="width:100%; font-weight:bold; background:transparent; border:none;"
+                           onchange="updateLigne(${index}, 'description', this.value)">
+                </td>
+                <td style="text-align:center">
+                    <button onclick="deleteLigne(${index})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
         } else {
             total += parseFloat(ligne.prix || 0);
-            tr.innerHTML = `<td><input type="text" value="${ligne.description}" style="width:100%" onchange="updateLigne(${index}, 'description', this.value)"></td><td><select onchange="updateLigne(${index}, 'category', this.value)"><option value="courant" ${ligne.category==='courant'?'selected':''}>Courant</option><option value="option" ${ligne.category==='option'?'selected':''}>Option</option></select></td><td><select><option>NA</option></select></td><td><input type="number" step="0.01" value="${ligne.prix}" style="width:100px; text-align:right" onchange="updateLigne(${index}, 'prix', this.value)"></td><td style="text-align:center"><button onclick="deleteLigne(${index})" style="color:#ccc; border:none; background:none;"><i class="fas fa-trash"></i></button></td>`;
+            tr.innerHTML = `
+                <td style="display:flex; align-items:center;">
+                    ${dragHandle}
+                    <input type="text" value="${ligne.description}" style="width:100%"
+                           onchange="updateLigne(${index}, 'description', this.value)">
+                </td>
+                <td>
+                    <select onchange="updateLigne(${index}, 'category', this.value)">
+                        <option value="courant" ${ligne.category==='courant'?'selected':''}>Courant</option>
+                        <option value="option" ${ligne.category==='option'?'selected':''}>Option</option>
+                    </select>
+                </td>
+                <td>
+                    <select onchange="updateLigne(${index}, 'tva', this.value)" style="width:60px">
+                        <option value="NA" ${ligne.tva==='NA'?'selected':''}>NA</option>
+                        <option value="20%" ${ligne.tva==='20%'?'selected':''}>20%</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.01" value="${ligne.prix}" style="width:100px; text-align:right"
+                           onchange="updateLigne(${index}, 'prix', this.value)">
+                </td>
+                <td style="text-align:center">
+                    <button onclick="deleteLigne(${index})" style="color:#ccc; border:none; background:none; cursor:pointer;" onmouseover="this.style.color='red'" onmouseout="this.style.color='#ccc'"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
         }
         container.appendChild(tr);
     });
+    
     App.currentDoc.total_ttc = total;
     document.getElementById('display-total').textContent = total.toFixed(2) + ' €';
 
+    // Fonctions attachées au window pour le HTML
     window.updateLigne = (idx, f, v) => { 
         if(f==='prix') v = parseFloat(v)||0; 
         App.currentDoc.lignes[idx][f] = v; 
@@ -135,6 +225,7 @@ function renderLignes() {
     window.deleteLigne = (idx) => { App.currentDoc.lignes.splice(idx, 1); renderLignes(); };
 }
 
+// --- SAUVEGARDE ---
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
     btn.innerHTML = '...'; btn.disabled = true;
@@ -152,7 +243,7 @@ async function sauvegarderDocument() {
         else { const ref = await addDoc(collection(db, COLLECTION_NAME), App.currentDoc); App.currentDoc.id = ref.id; }
 
         btn.innerHTML = 'OK !';
-        setTimeout(() => { btn.innerHTML = 'ENREGISTRER (v2)'; btn.disabled = false; }, 1500);
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER (v2)'; btn.disabled = false; }, 1500);
     } catch (e) { console.error(e); btn.innerHTML = 'Erreur'; btn.disabled = false; alert("Erreur: " + e.message); }
 }
 
