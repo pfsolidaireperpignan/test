@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION PRO (NUMEROTATION + STATS) */
+/* Fichier : js/v2/app.js - VERSION FINALE (AVEC BOUTON CONVERTIR) */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where, limit, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -78,7 +78,7 @@ function initApp() {
     });
 }
 
-// --- HISTORIQUE ET STATS ---
+// --- HISTORIQUE ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
@@ -98,19 +98,26 @@ async function chargerHistorique() {
             const paye = parseFloat(data.solde_paye || 0);
             const reste = total - paye;
             
-            // Calculs Stats (Uniquement sur les Factures validées pour le CA)
+            // --- C'EST ICI QUE CA CALCULE ---
+            // Seules les FACTURES comptent pour le Chiffre d'Affaires
             if(data.type === 'FACTURE') {
                 ca += total;
                 encaisse += paye;
                 resteGlobal += reste;
             }
 
-            // Badge Statut
+            // Statut
             let badge = `<span class="tag" style="background:#e2e8f0; color:#475569;">BROUILLON</span>`;
+            let convertBtn = '';
+
             if (data.type === 'FACTURE') {
                 if (reste <= 0.05 && total > 0) badge = `<span class="tag" style="background:#dcfce7; color:#166534;">PAYÉ</span>`;
                 else if (paye > 0) badge = `<span class="tag" style="background:#ffedd5; color:#9a3412;">PARTIEL</span>`;
                 else badge = `<span class="tag" style="background:#fee2e2; color:#991b1b;">À PAYER</span>`;
+            } else {
+                // Si c'est un DEVIS, on affiche le bouton CONVERTIR
+                badge = `<span class="tag" style="background:#f1f5f9; color:#64748b;">DEVIS</span>`;
+                convertBtn = `<button class="btn-icon convert-btn" data-id="${docSnap.id}" title="Convertir en Facture" style="color:#3b82f6"><i class="fas fa-exchange-alt"></i></button>`;
             }
 
             const tr = document.createElement('tr');
@@ -123,6 +130,7 @@ async function chargerHistorique() {
                 <td style="text-align:right; color:${reste > 0 ? '#ef4444' : '#166534'}">${reste.toFixed(2)} €</td>
                 <td style="text-align:center">${badge}</td>
                 <td style="text-align:center">
+                    ${convertBtn}
                     <button class="btn-icon print-btn" data-id="${docSnap.id}"><i class="fas fa-print"></i></button>
                     <button class="btn-icon edit-btn" data-id="${docSnap.id}"><i class="fas fa-pen"></i></button>
                 </td>
@@ -130,13 +138,13 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
-        // Mise à jour des Cartes Stats
+        // Affichage des totaux
         const fmt = (n) => n.toLocaleString('fr-FR', {style:'currency', currency:'EUR'});
         if(document.getElementById('stat-ca')) document.getElementById('stat-ca').textContent = fmt(ca);
         if(document.getElementById('stat-paye')) document.getElementById('stat-paye').textContent = fmt(encaisse);
         if(document.getElementById('stat-reste')) document.getElementById('stat-reste').textContent = fmt(resteGlobal);
 
-        // Events
+        // CLICS ACTIONS
         document.querySelectorAll('.print-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -151,6 +159,30 @@ async function chargerHistorique() {
                 data.id = snap.id; 
                 ouvrirEditeur(data);
             }
+        }));
+
+        // NOUVEAU : Action Convertir
+        document.querySelectorAll('.convert-btn').forEach(btn => btn.addEventListener('click', async () => {
+            if(!confirm("Voulez-vous transformer ce Devis en Facture officielle ?")) return;
+            try {
+                const id = btn.dataset.id;
+                const docRef = doc(db, COLLECTION_NAME, id);
+                const snap = await getDoc(docRef);
+                if(snap.exists()) {
+                    const data = snap.data();
+                    
+                    // Transformation
+                    data.type = 'FACTURE';
+                    // On génère le numéro de facture
+                    data.numero = await genererNumero('FACTURE');
+                    
+                    // Mise à jour base de données
+                    await updateDoc(docRef, data);
+                    
+                    alert(`✅ Devis transformé en Facture N° ${data.numero}`);
+                    chargerHistorique(); // On rafraîchit pour voir le calcul changer !
+                }
+            } catch(e) { console.error(e); alert("Erreur conversion"); }
         }));
 
     } catch (e) { console.error(e); }
@@ -221,34 +253,27 @@ function calculerSolde() {
     else { divReste.style.color = '#ef4444'; }
 }
 
-// --- LOGIQUE DE NUMEROTATION CHRONO ---
 async function genererNumero(type) {
     const prefix = type === 'FACTURE' ? 'F' : 'D';
     const year = new Date().getFullYear();
     const base = `${prefix}-${year}-`;
-    
-    // On cherche le dernier doc de ce type pour cette année
     const q = query(collection(db, COLLECTION_NAME), where("numero", ">=", base), where("numero", "<=", base + "\uf8ff"), orderBy("numero", "desc"), limit(1));
     const snap = await getDocs(q);
-    
     let seq = 1;
     if (!snap.empty) {
-        const lastNum = snap.docs[0].data().numero; // ex: F-2026-003
+        const lastNum = snap.docs[0].data().numero;
         const parts = lastNum.split('-');
         if(parts.length === 3) seq = parseInt(parts[2]) + 1;
     }
-    
-    return `${base}${seq.toString().padStart(3, '0')}`; // F-2026-004
+    return `${base}${seq.toString().padStart(3, '0')}`;
 }
 
-// --- SAUVEGARDE INTELLIGENTE ---
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...'; btn.disabled = true;
 
     try {
-        // Récupération UI
         App.currentDoc.client.nom = document.getElementById('input-client-nom').value;
         App.currentDoc.client.adresse = document.getElementById('input-client-adresse').value;
         App.currentDoc.defunt.nom = document.getElementById('input-defunt-nom').value;
@@ -257,8 +282,6 @@ async function sauvegarderDocument() {
 
         if (!App.currentDoc.client.nom) throw new Error("Nom du client manquant");
 
-        // NUMEROTATION AUTOMATIQUE
-        // Si c'est un brouillon, on attribue un vrai numéro
         if (!App.currentDoc.numero || App.currentDoc.numero === 'BROUILLON' || App.currentDoc.numero.startsWith('PRO-')) {
             App.currentDoc.numero = await genererNumero(App.currentDoc.type);
         }
@@ -270,19 +293,13 @@ async function sauvegarderDocument() {
         btn.style.background = '#22c55e';
         
         setTimeout(() => { 
-            btn.innerHTML = oldText; 
-            btn.style.background = '';
-            btn.disabled = false; 
-            // On retourne à la liste pour voir le nouveau numéro
+            btn.innerHTML = oldText; btn.style.background = ''; btn.disabled = false; 
             document.getElementById('view-editor').classList.add('hidden');
             document.getElementById('view-dashboard').classList.remove('hidden');
             chargerHistorique();
         }, 1500);
 
-    } catch (e) { 
-        console.error(e); 
-        btn.innerHTML = 'Erreur'; btn.disabled = false; alert("Erreur: " + e.message); 
-    }
+    } catch (e) { console.error(e); btn.innerHTML = 'Erreur'; btn.disabled = false; alert("Erreur: " + e.message); }
 }
 
 function appliquerModele(type) {
