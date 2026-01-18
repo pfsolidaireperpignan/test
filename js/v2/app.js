@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION FINALE (AVEC BOUTON CONVERTIR) */
+/* Fichier : js/v2/app.js - VERSION FINALE (AVEC EXPORT COMPTA) */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where, limit, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -76,6 +76,9 @@ function initApp() {
         document.getElementById('pay-montant').value = '';
         renderPaiements();
     });
+
+    // NOUVEAU : EXPORT COMPTABLE
+    document.getElementById('btn-export').addEventListener('click', exporterComptabilite);
 }
 
 // --- HISTORIQUE ---
@@ -98,15 +101,12 @@ async function chargerHistorique() {
             const paye = parseFloat(data.solde_paye || 0);
             const reste = total - paye;
             
-            // --- C'EST ICI QUE CA CALCULE ---
-            // Seules les FACTURES comptent pour le Chiffre d'Affaires
             if(data.type === 'FACTURE') {
                 ca += total;
                 encaisse += paye;
                 resteGlobal += reste;
             }
 
-            // Statut
             let badge = `<span class="tag" style="background:#e2e8f0; color:#475569;">BROUILLON</span>`;
             let convertBtn = '';
 
@@ -115,7 +115,6 @@ async function chargerHistorique() {
                 else if (paye > 0) badge = `<span class="tag" style="background:#ffedd5; color:#9a3412;">PARTIEL</span>`;
                 else badge = `<span class="tag" style="background:#fee2e2; color:#991b1b;">À PAYER</span>`;
             } else {
-                // Si c'est un DEVIS, on affiche le bouton CONVERTIR
                 badge = `<span class="tag" style="background:#f1f5f9; color:#64748b;">DEVIS</span>`;
                 convertBtn = `<button class="btn-icon convert-btn" data-id="${docSnap.id}" title="Convertir en Facture" style="color:#3b82f6"><i class="fas fa-exchange-alt"></i></button>`;
             }
@@ -138,13 +137,12 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
-        // Affichage des totaux
         const fmt = (n) => n.toLocaleString('fr-FR', {style:'currency', currency:'EUR'});
         if(document.getElementById('stat-ca')) document.getElementById('stat-ca').textContent = fmt(ca);
         if(document.getElementById('stat-paye')) document.getElementById('stat-paye').textContent = fmt(encaisse);
         if(document.getElementById('stat-reste')) document.getElementById('stat-reste').textContent = fmt(resteGlobal);
 
-        // CLICS ACTIONS
+        // Events
         document.querySelectorAll('.print-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -161,7 +159,6 @@ async function chargerHistorique() {
             }
         }));
 
-        // NOUVEAU : Action Convertir
         document.querySelectorAll('.convert-btn').forEach(btn => btn.addEventListener('click', async () => {
             if(!confirm("Voulez-vous transformer ce Devis en Facture officielle ?")) return;
             try {
@@ -170,17 +167,11 @@ async function chargerHistorique() {
                 const snap = await getDoc(docRef);
                 if(snap.exists()) {
                     const data = snap.data();
-                    
-                    // Transformation
                     data.type = 'FACTURE';
-                    // On génère le numéro de facture
                     data.numero = await genererNumero('FACTURE');
-                    
-                    // Mise à jour base de données
                     await updateDoc(docRef, data);
-                    
                     alert(`✅ Devis transformé en Facture N° ${data.numero}`);
-                    chargerHistorique(); // On rafraîchit pour voir le calcul changer !
+                    chargerHistorique();
                 }
             } catch(e) { console.error(e); alert("Erreur conversion"); }
         }));
@@ -312,4 +303,45 @@ function appliquerModele(type) {
     else if (type === 'RAPATRIEMENT') { addS("ADMINISTRATIF"); addL("Consulat", 350); addS("VOL"); addL("Fret Aérien", 1500); }
     App.currentDoc.lignes = lignes;
     renderLignes();
+}
+
+// --- FONCTION EXPORT COMPTABLE (CSV) ---
+async function exporterComptabilite() {
+    try {
+        const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
+        const snap = await getDocs(q);
+        
+        if(snap.empty) return alert("Aucune donnée à exporter.");
+
+        // En-tête du fichier CSV
+        let csv = "Date;Numero;Type;Client;Defunt;Total HT;TVA;Total TTC;Statut\n";
+
+        snap.forEach(doc => {
+            const d = doc.data();
+            // On n'exporte que les FACTURES (ou tout, selon votre choix)
+            // Ici j'exporte tout pour vérification
+            
+            const date = new Date(d.date_creation).toLocaleDateString('fr-FR');
+            const totalTTC = parseFloat(d.total_ttc || 0);
+            
+            // Calcul simplifié HT (Si TVA 20% globalement, sinon il faudrait sommer les lignes)
+            // Pour l'instant on fait une estimation HT = TTC / 1.2
+            const totalHT = (totalTTC / 1.2).toFixed(2);
+            const tva = (totalTTC - parseFloat(totalHT)).toFixed(2);
+
+            csv += `${date};${d.numero};${d.type};"${d.client.nom}";"${d.defunt.nom}";${totalHT};${tva};${totalTTC.toFixed(2).replace('.',',')};${d.solde_paye >= totalTTC ? 'PAYE' : 'EN ATTENTE'}\n`;
+        });
+
+        // Téléchargement
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Export_Compta_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch(e) { console.error(e); alert("Erreur lors de l'export"); }
 }
