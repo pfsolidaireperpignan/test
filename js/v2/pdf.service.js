@@ -1,107 +1,110 @@
-/* Fichier : js/v2/pdf.service.js */
+/* Fichier : js/v2/pdf.service.js - STYLE LEGAL FRANCAIS */
 export const PdfService = {
     generer(doc) {
-        if (!window.jspdf) { alert("Erreur PDF: Librairie manquante"); return; }
+        if (!window.jspdf) { alert("Erreur PDF"); return; }
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF();
         
-        // Logo
+        // 1. LOGO & EN-TÊTE
         const imgElement = document.getElementById('logo-source');
         if (imgElement && imgElement.naturalWidth > 0) {
-            try { pdf.addImage(imgElement, 'PNG', 15, 15, 35, 35); } catch(e) {}
+            try { pdf.addImage(imgElement, 'PNG', 15, 10, 40, 40); } catch(e) {}
         }
 
-        // En-tête
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(22, 101, 52);
-        pdf.text("POMPES FUNEBRES", 15, 55);
-        pdf.text("SOLIDAIRE PERPIGNAN", 15, 60);
+        // Infos Entreprise (Gauche)
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(22, 101, 52);
+        pdf.text("POMPES FUNEBRES SOLIDAIRE", 15, 55);
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(50);
+        pdf.text("32 boulevard Léon Jean Grégory", 15, 60);
+        pdf.text("66300 THUIR", 15, 64);
+        pdf.text("Tél: 07 55 18 27 77", 15, 68);
+        pdf.text("Mail: pfsolidaireperpignan@gmail.com", 15, 72);
         
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(80);
-        pdf.text("32 boulevard Léon Jean Grégory", 15, 66);
-        pdf.text("66300 THUIR - FRANCE", 15, 70);
-        pdf.text("Tél : +33 7 55 18 27 77", 15, 74);
+        // Cadre Client (Droite)
+        pdf.setDrawColor(0); pdf.setFillColor(255, 255, 255);
+        pdf.rect(110, 20, 85, 35);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(10); pdf.setTextColor(0);
+        pdf.text("CLIENT", 112, 26);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(doc.client.nom || '', 112, 32);
+        const splitAdresse = pdf.splitTextToSize(doc.client.adresse || '', 80);
+        pdf.text(splitAdresse, 112, 37);
 
-        // Client
-        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(220);
-        pdf.rect(110, 20, 85, 40, 'FD');
-        pdf.setFont("helvetica", "bold"); pdf.setTextColor(0); pdf.setFontSize(10);
-        pdf.text("CLIENT", 115, 28);
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(11);
-        pdf.text(doc.client.nom || '', 115, 36);
-        pdf.setFontSize(10); pdf.setTextColor(100);
-        pdf.text(pdf.splitTextToSize(doc.client.adresse || '', 75), 115, 44);
-
-        // Titre
-        let y = 90;
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.setTextColor(22, 101, 52);
-        pdf.text(`${doc.type} N° ${doc.numero}`, 15, y);
-        pdf.setFontSize(10); pdf.setTextColor(100);
-        pdf.text(`Date : ${new Date(doc.date_creation).toLocaleDateString('fr-FR')}`, 15, y + 6);
+        // Titre Document + Défunt
+        let y = 85;
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(0);
+        pdf.text(`${doc.type} N° ${doc.numero}`, 105, y, {align:'center'});
+        
+        y += 7;
+        pdf.setFontSize(10); pdf.setFont("helvetica", "normal");
+        pdf.text(`Date du document : ${new Date(doc.date_creation).toLocaleDateString()}`, 105, y, {align:'center'});
 
         if (doc.defunt.nom) {
-            pdf.setDrawColor(22, 101, 52); pdf.line(15, y+10, 195, y+10);
-            pdf.setFont("helvetica", "bold"); pdf.setTextColor(0);
-            pdf.text(`Obsèques de : ${doc.defunt.nom}`, 15, y + 16);
+            y += 10;
+            pdf.setDrawColor(200); pdf.line(15, y, 195, y);
+            y += 5;
+            pdf.setFont("helvetica", "bold");
+            pdf.text(`Obsèques de : ${doc.defunt.nom}`, 15, y);
         }
-        y += 25;
+        y += 10;
 
-        // Tableau Prestations
-        const rows = doc.lignes.map(l => {
+        // 2. LE TABLEAU COMPLEXE (Type Modèle Français)
+        // Colonnes : Description | Prix TTC Courant | Prix TTC Option
+        const tableBody = [];
+        
+        doc.lignes.forEach(l => {
             if (l.type === 'section') {
-                return [{ content: l.description.toUpperCase(), colSpan: 4, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }];
+                // Ligne de titre grise
+                tableBody.push([{ content: l.description.toUpperCase(), colSpan: 3, styles: { fillColor: [240, 240, 240], fontStyle: 'bold', textColor:0 } }]);
+            } else {
+                // Ligne normale : on place le prix dans la bonne colonne
+                const prix = parseFloat(l.prix || 0);
+                const prixFmt = prix > 0 ? prix.toFixed(2) + ' €' : '';
+                
+                if (l.category === 'courant') {
+                    tableBody.push([l.description, prixFmt, '']);
+                } else {
+                    // C'est une option ou un tiers
+                    tableBody.push([l.description, '', prixFmt]);
+                }
             }
-            return [l.description, l.category === 'courant' ? 'Courant' : 'Option', (parseFloat(l.prix)||0).toFixed(2) + ' €', l.tva || 'NA'];
         });
 
         pdf.autoTable({
-            startY: y, head: [['Désignation', 'Type', 'Prix TTC', 'TVA']], body: rows,
-            theme: 'plain', headStyles: { fillColor: [22, 101, 52], textColor: 255, fontStyle: 'bold' },
-            styles: { cellPadding: 3, fontSize: 9 }, columnStyles: { 0: { cellWidth: 100 }, 2: { halign: 'right' } }
+            startY: y,
+            head: [[
+                'DÉSIGNATION DES PRESTATIONS', 
+                'PRESTATIONS\nCOURANTES TTC', 
+                'PRESTATIONS\nOPTIONNELLES TTC'
+            ]],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { fillColor: [22, 101, 52], textColor: 255, halign: 'center', valign:'middle', fontSize:9 },
+            styles: { fontSize: 9, cellPadding: 2 },
+            columnStyles: {
+                0: { cellWidth: 110 },
+                1: { cellWidth: 40, halign: 'right' },
+                2: { cellWidth: 40, halign: 'right' }
+            }
         });
 
-        // Totaux & Paiements
+        // 3. TOTAUX
         let finalY = pdf.lastAutoTable.finalY + 10;
         const total = parseFloat(doc.total_ttc || 0);
-        const paye = parseFloat(doc.solde_paye || 0);
-        const reste = total - paye;
-
-        // Total
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(0);
-        pdf.text("TOTAL GÉNÉRAL TTC", 130, finalY);
-        pdf.text(total.toFixed(2) + " €", 195, finalY, { align: 'right' });
-        finalY += 8;
-
-        // Liste des paiements sur le PDF
-        if (doc.paiements && doc.paiements.length > 0) {
-            pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(50);
-            doc.paiements.forEach(p => {
-                const d = new Date(p.date).toLocaleDateString('fr-FR');
-                pdf.text(`Règlement le ${d} (${p.mode})`, 130, finalY);
-                pdf.text("- " + p.montant.toFixed(2) + " €", 195, finalY, { align: 'right' });
-                finalY += 5;
-            });
-            finalY += 2;
-        }
-
-        pdf.setDrawColor(0); pdf.line(130, finalY, 195, finalY);
-        finalY += 8;
-
-        // Reste à payer
-        pdf.setFontSize(12);
-        if (reste <= 0.05) {
-            pdf.setTextColor(22, 163, 74); // Vert
-            pdf.text("SOLDE RÉGLÉ", 195, finalY, { align: 'right' });
-        } else {
-            pdf.setTextColor(220, 38, 38); // Rouge
-            pdf.text("NET À PAYER", 130, finalY);
-            pdf.text(reste.toFixed(2) + " €", 195, finalY, { align: 'right' });
-        }
-
-        // Footer
-        const pageHeight = pdf.internal.pageSize.height;
-        pdf.setFontSize(8); pdf.setTextColor(150); pdf.setFont("helvetica", "italic");
-        pdf.text("Généré par PF Solidaire - Logiciel V2", 15, pageHeight - 10);
         
-        pdf.save(`Document_${doc.numero}.pdf`);
+        // On dessine le bloc total à droite
+        pdf.setDrawColor(0);
+        pdf.rect(130, finalY, 65, 15);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(12);
+        pdf.text("TOTAL TTC", 135, finalY + 10);
+        pdf.text(total.toFixed(2) + " €", 190, finalY + 10, {align:'right'});
+
+        // Mentions légales bas de page (Exemple RIVET)
+        const pageHeight = pdf.internal.pageSize.height;
+        pdf.setFontSize(7); pdf.setTextColor(100);
+        const mentions = "Devis valable 3 mois. TVA non applicable, art. 293 B du CGI (Auto-entrepreneur) ou TVA selon régime.\nPF SOLIDAIRE PERPIGNAN - SIRET en cours - Agrément préfectoral en cours.";
+        pdf.text(mentions, 105, pageHeight - 15, {align:'center'});
+
+        pdf.save(`${doc.type}_${doc.numero}.pdf`);
     }
 };
