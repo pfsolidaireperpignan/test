@@ -1,6 +1,6 @@
-/* Fichier : js/v2/app.js - VERSION FINALE AVEC SORTABLEJS */
+/* Fichier : js/v2/app.js - COMPLET ET FONCTIONNEL */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, COLLECTION_NAME } from './config.js';
-import { createFacture, createLigne } from './models.js';
+import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
 
 const App = { user: null, currentDoc: null };
@@ -18,26 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initApp() {
     chargerHistorique();
-    
-    // --- DRAG & DROP PROFESSIONNEL (SortableJS) ---
+
+    // 1. INITIALISATION DU DRAG & DROP (SORTABLE JS)
     const container = document.getElementById('lines-container');
     if (window.Sortable) {
         new Sortable(container, {
-            handle: '.drag-handle', // On attrape uniquement par l'icône
-            animation: 150, // Animation fluide
-            ghostClass: 'sortable-ghost', // Classe visuelle pendant le déplacement
+            handle: '.drag-handle', // Poignée obligatoire
+            animation: 150,
+            ghostClass: 'sortable-ghost',
             onEnd: function (evt) {
-                // Mise à jour des données (Le tableau JavaScript)
+                // Mise à jour de l'ordre dans les données
                 const item = App.currentDoc.lignes.splice(evt.oldIndex, 1)[0];
                 App.currentDoc.lignes.splice(evt.newIndex, 0, item);
-                
-                // IMPORTANT : On redessine pour que les index des inputs restent corrects
-                renderLignes(); 
+                renderLignes(); // On redessine proprement
             }
         });
     }
 
-    // --- NAVIGATION ---
+    // 2. BOUTONS DE NAVIGATION
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
     document.getElementById('nav-dashboard').addEventListener('click', () => {
         document.getElementById('view-editor').classList.add('hidden');
@@ -50,7 +48,7 @@ function initApp() {
         chargerHistorique();
     });
 
-    // --- ACTIONS EDITEUR ---
+    // 3. BOUTONS EDITEUR
     document.getElementById('btn-add-line').addEventListener('click', () => {
         App.currentDoc.lignes.push(createLigne({ type: 'line', description: '' }));
         renderLignes();
@@ -66,28 +64,56 @@ function initApp() {
     document.getElementById('select-modeles').addEventListener('change', (e) => {
         if(e.target.value) appliquerModele(e.target.value);
     });
+
+    // 4. BOUTON AJOUT PAIEMENT
+    document.getElementById('btn-add-pay').addEventListener('click', () => {
+        const mt = parseFloat(document.getElementById('pay-montant').value);
+        if (!mt) return alert("Montant incorrect");
+        
+        App.currentDoc.paiements.push(createPaiement({
+            date: document.getElementById('pay-date').value,
+            mode: document.getElementById('pay-mode').value,
+            montant: mt
+        }));
+        
+        document.getElementById('pay-montant').value = '';
+        renderPaiements();
+    });
 }
 
 // --- HISTORIQUE ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Chargement...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
     try {
         const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Vide.</td></tr>'; return; }
+        if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
 
         tbody.innerHTML = '';
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
+            const total = parseFloat(data.total_ttc || 0);
+            const paye = parseFloat(data.solde_paye || 0);
+            const reste = total - paye;
+            
+            // Calcul Statut
+            let badge = `<span class="tag" style="background:#e2e8f0; color:#475569;">BROUILLON</span>`;
+            if (data.type === 'FACTURE') {
+                if (reste <= 0.05 && total > 0) badge = `<span class="tag" style="background:#dcfce7; color:#166534;">PAYÉ</span>`;
+                else if (paye > 0) badge = `<span class="tag" style="background:#ffedd5; color:#9a3412;">PARTIEL</span>`;
+                else badge = `<span class="tag" style="background:#fee2e2; color:#991b1b;">À PAYER</span>`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${new Date(data.date_creation).toLocaleDateString()}</td>
                 <td><strong>${data.numero}</strong></td>
                 <td><span class="badge">${data.type}</span></td>
                 <td><div>${data.client.nom}</div><div style="font-size:0.8em; color:#666;">${data.defunt.nom}</div></td>
-                <td style="text-align:right"><strong>${(data.total_ttc||0).toFixed(2)} €</strong></td>
-                <td style="text-align:center">${data.type === 'FACTURE' ? 'À PAYER' : 'BROUILLON'}</td>
+                <td style="text-align:right"><strong>${total.toFixed(2)} €</strong></td>
+                <td style="text-align:right; color:${reste > 0 ? '#ef4444' : '#166534'}">${reste.toFixed(2)} €</td>
+                <td style="text-align:center">${badge}</td>
                 <td style="text-align:center">
                     <button class="btn-icon print-btn" data-id="${docSnap.id}"><i class="fas fa-print"></i></button>
                     <button class="btn-icon edit-btn" data-id="${docSnap.id}"><i class="fas fa-pen"></i></button>
@@ -96,6 +122,7 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
+        // Gestion Clics
         document.querySelectorAll('.print-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -111,7 +138,6 @@ async function chargerHistorique() {
                 ouvrirEditeur(data);
             }
         }));
-
     } catch (e) { console.error(e); }
 }
 
@@ -122,12 +148,17 @@ function ouvrirEditeur(docData = null) {
     document.getElementById('input-defunt-nom').value = App.currentDoc.defunt.nom;
     document.getElementById('input-type-doc').value = App.currentDoc.type;
     document.getElementById('input-date').value = App.currentDoc.date_creation;
+    
+    document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
+    
     renderLignes();
+    renderPaiements();
+    
     document.getElementById('view-dashboard').classList.add('hidden');
     document.getElementById('view-editor').classList.remove('hidden');
 }
 
-// --- RENDU (SIMPLIFIÉ GRÂCE A SORTABLEJS) ---
+// --- AFFICHAGE LIGNES ---
 function renderLignes() {
     const container = document.getElementById('lines-container');
     container.innerHTML = '';
@@ -135,9 +166,7 @@ function renderLignes() {
 
     App.currentDoc.lignes.forEach((ligne, index) => {
         const tr = document.createElement('tr');
-        // Plus besoin d'attributs draggable compliqués ici
-        
-        // La poignée (handle) qui sert à attraper la ligne
+        // Icône poignée pour SortableJS
         const dragHandle = `<i class="fas fa-grip-vertical drag-handle" style="cursor:grab; margin-right:10px; color:#cbd5e1;"></i>`;
 
         if (ligne.type === 'section') {
@@ -187,6 +216,7 @@ function renderLignes() {
     
     App.currentDoc.total_ttc = total;
     document.getElementById('display-total').textContent = total.toFixed(2) + ' €';
+    calculerSolde();
 
     window.updateLigne = (idx, f, v) => { 
         if(f==='prix') v = parseFloat(v)||0; 
@@ -194,6 +224,49 @@ function renderLignes() {
         if(f==='prix') renderLignes(); 
     };
     window.deleteLigne = (idx) => { App.currentDoc.lignes.splice(idx, 1); renderLignes(); };
+}
+
+// --- AFFICHAGE PAIEMENTS ---
+function renderPaiements() {
+    const container = document.getElementById('payments-container');
+    container.innerHTML = '';
+    let totalPaye = 0;
+    
+    App.currentDoc.paiements.forEach((p, idx) => {
+        totalPaye += p.montant;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${new Date(p.date).toLocaleDateString()}</td>
+            <td><span class="badge">${p.mode}</span></td>
+            <td style="text-align:right;">${p.montant.toFixed(2)} €</td>
+            <td style="text-align:center"><button onclick="deletePayment(${idx})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
+        `;
+        container.appendChild(tr);
+    });
+    
+    App.currentDoc.solde_paye = totalPaye;
+    calculerSolde();
+    
+    window.deletePayment = (idx) => {
+        App.currentDoc.paiements.splice(idx, 1);
+        renderPaiements();
+    };
+}
+
+function calculerSolde() {
+    const total = App.currentDoc.total_ttc || 0;
+    const paye = App.currentDoc.solde_paye || 0;
+    const reste = Math.max(0, total - paye);
+    
+    const divReste = document.getElementById('display-reste');
+    divReste.textContent = reste.toFixed(2) + ' €';
+    
+    if (reste <= 0.05 && total > 0) {
+        divReste.style.color = '#166534';
+        divReste.textContent = "SOLDE RÉGLÉ";
+    } else {
+        divReste.style.color = '#ef4444';
+    }
 }
 
 // --- SAUVEGARDE & MODELES ---

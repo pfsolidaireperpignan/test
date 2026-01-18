@@ -45,7 +45,8 @@
                             <th>Numéro</th>
                             <th>Type</th>
                             <th>Client / Défunt</th>
-                            <th style="text-align:right">Montant</th>
+                            <th style="text-align:right">Total TTC</th>
+                            <th style="text-align:right">Reste Dû</th>
                             <th style="text-align:center">Statut</th>
                             <th style="text-align:center">Actions</th>
                         </tr>
@@ -103,6 +104,33 @@
                 <div style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:10px;">
                     Total : <span id="display-total">0.00 €</span>
                 </div>
+            </div>
+
+            <div class="card" style="border-left: 4px solid #3b82f6;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3><i class="fas fa-euro-sign"></i> Règlements / Acomptes</h3>
+                    <div style="text-align:right;">
+                        <span style="color:#64748b; font-size:0.9em;">Reste à payer :</span>
+                        <div id="display-reste" style="font-size:1.4em; font-weight:bold; color:#ef4444;">0.00 €</div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin:15px 0; background:#f8fafc; padding:10px; border-radius:6px; flex-wrap:wrap;">
+                    <input type="date" id="pay-date" style="border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
+                    <select id="pay-mode" style="border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
+                        <option value="VIREMENT">Virement</option>
+                        <option value="CHÈQUE">Chèque</option>
+                        <option value="ESPÈCES">Espèces</option>
+                        <option value="CB">Carte Bancaire</option>
+                    </select>
+                    <input type="number" id="pay-montant" placeholder="Montant €" style="width:120px; border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
+                    <button id="btn-add-pay" class="btn" style="background:#3b82f6; color:white;"><i class="fas fa-plus"></i> Ajouter</button>
+                </div>
+
+                <table class="invoice-table">
+                    <thead><tr><th>Date</th><th>Mode</th><th style="text-align:right;">Montant</th><th width="50"></th></tr></thead>
+                    <tbody id="payments-container"></tbody>
+                </table>
             </div>
 
             <div style="text-align:right; margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">

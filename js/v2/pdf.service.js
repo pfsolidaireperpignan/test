@@ -45,7 +45,7 @@ export const PdfService = {
         }
         y += 25;
 
-        // Tableau
+        // Tableau Prestations
         const rows = doc.lignes.map(l => {
             if (l.type === 'section') {
                 return [{ content: l.description.toUpperCase(), colSpan: 4, styles: { fillColor: [240, 240, 240], fontStyle: 'bold' } }];
@@ -59,11 +59,43 @@ export const PdfService = {
             styles: { cellPadding: 3, fontSize: 9 }, columnStyles: { 0: { cellWidth: 100 }, 2: { halign: 'right' } }
         });
 
-        // Total
+        // Totaux & Paiements
         let finalY = pdf.lastAutoTable.finalY + 10;
-        pdf.setFont("helvetica", "bold"); pdf.setFontSize(12); pdf.setTextColor(0);
-        pdf.text("TOTAL TTC", 140, finalY);
-        pdf.text((parseFloat(doc.total_ttc)||0).toFixed(2) + " €", 195, finalY, { align: 'right' });
+        const total = parseFloat(doc.total_ttc || 0);
+        const paye = parseFloat(doc.solde_paye || 0);
+        const reste = total - paye;
+
+        // Total
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(0);
+        pdf.text("TOTAL GÉNÉRAL TTC", 130, finalY);
+        pdf.text(total.toFixed(2) + " €", 195, finalY, { align: 'right' });
+        finalY += 8;
+
+        // Liste des paiements sur le PDF
+        if (doc.paiements && doc.paiements.length > 0) {
+            pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(50);
+            doc.paiements.forEach(p => {
+                const d = new Date(p.date).toLocaleDateString('fr-FR');
+                pdf.text(`Règlement le ${d} (${p.mode})`, 130, finalY);
+                pdf.text("- " + p.montant.toFixed(2) + " €", 195, finalY, { align: 'right' });
+                finalY += 5;
+            });
+            finalY += 2;
+        }
+
+        pdf.setDrawColor(0); pdf.line(130, finalY, 195, finalY);
+        finalY += 8;
+
+        // Reste à payer
+        pdf.setFontSize(12);
+        if (reste <= 0.05) {
+            pdf.setTextColor(22, 163, 74); // Vert
+            pdf.text("SOLDE RÉGLÉ", 195, finalY, { align: 'right' });
+        } else {
+            pdf.setTextColor(220, 38, 38); // Rouge
+            pdf.text("NET À PAYER", 130, finalY);
+            pdf.text(reste.toFixed(2) + " €", 195, finalY, { align: 'right' });
+        }
 
         // Footer
         const pageHeight = pdf.internal.pageSize.height;
