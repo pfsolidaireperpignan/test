@@ -1,5 +1,5 @@
-/* Fichier : js/v2/app.js - COMPLET ET FONCTIONNEL */
-import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, COLLECTION_NAME } from './config.js';
+/* Fichier : js/v2/app.js - VERSION PRO (NUMEROTATION + STATS) */
+import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where, limit, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
 
@@ -19,23 +19,22 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     chargerHistorique();
 
-    // 1. INITIALISATION DU DRAG & DROP (SORTABLE JS)
+    // DRAG & DROP
     const container = document.getElementById('lines-container');
     if (window.Sortable) {
         new Sortable(container, {
-            handle: '.drag-handle', // Poignée obligatoire
+            handle: '.drag-handle',
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: function (evt) {
-                // Mise à jour de l'ordre dans les données
                 const item = App.currentDoc.lignes.splice(evt.oldIndex, 1)[0];
                 App.currentDoc.lignes.splice(evt.newIndex, 0, item);
-                renderLignes(); // On redessine proprement
+                renderLignes(); 
             }
         });
     }
 
-    // 2. BOUTONS DE NAVIGATION
+    // NAVIGATION
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
     document.getElementById('nav-dashboard').addEventListener('click', () => {
         document.getElementById('view-editor').classList.add('hidden');
@@ -48,7 +47,7 @@ function initApp() {
         chargerHistorique();
     });
 
-    // 3. BOUTONS EDITEUR
+    // ACTIONS EDITEUR
     document.getElementById('btn-add-line').addEventListener('click', () => {
         App.currentDoc.lignes.push(createLigne({ type: 'line', description: '' }));
         renderLignes();
@@ -65,30 +64,32 @@ function initApp() {
         if(e.target.value) appliquerModele(e.target.value);
     });
 
-    // 4. BOUTON AJOUT PAIEMENT
+    // ACTIONS PAIEMENTS
     document.getElementById('btn-add-pay').addEventListener('click', () => {
         const mt = parseFloat(document.getElementById('pay-montant').value);
-        if (!mt) return alert("Montant incorrect");
-        
+        if(!mt) return alert("Montant invalide");
         App.currentDoc.paiements.push(createPaiement({
             date: document.getElementById('pay-date').value,
             mode: document.getElementById('pay-mode').value,
             montant: mt
         }));
-        
         document.getElementById('pay-montant').value = '';
         renderPaiements();
     });
 }
 
-// --- HISTORIQUE ---
+// --- HISTORIQUE ET STATS ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+    
     try {
         const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
+        
+        let ca = 0, encaisse = 0, resteGlobal = 0;
+
+        if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Vide.</td></tr>'; return; }
 
         tbody.innerHTML = '';
         snapshot.forEach(docSnap => {
@@ -97,7 +98,14 @@ async function chargerHistorique() {
             const paye = parseFloat(data.solde_paye || 0);
             const reste = total - paye;
             
-            // Calcul Statut
+            // Calculs Stats (Uniquement sur les Factures validées pour le CA)
+            if(data.type === 'FACTURE') {
+                ca += total;
+                encaisse += paye;
+                resteGlobal += reste;
+            }
+
+            // Badge Statut
             let badge = `<span class="tag" style="background:#e2e8f0; color:#475569;">BROUILLON</span>`;
             if (data.type === 'FACTURE') {
                 if (reste <= 0.05 && total > 0) badge = `<span class="tag" style="background:#dcfce7; color:#166534;">PAYÉ</span>`;
@@ -122,7 +130,13 @@ async function chargerHistorique() {
             tbody.appendChild(tr);
         });
 
-        // Gestion Clics
+        // Mise à jour des Cartes Stats
+        const fmt = (n) => n.toLocaleString('fr-FR', {style:'currency', currency:'EUR'});
+        if(document.getElementById('stat-ca')) document.getElementById('stat-ca').textContent = fmt(ca);
+        if(document.getElementById('stat-paye')) document.getElementById('stat-paye').textContent = fmt(encaisse);
+        if(document.getElementById('stat-reste')) document.getElementById('stat-reste').textContent = fmt(resteGlobal);
+
+        // Events
         document.querySelectorAll('.print-btn').forEach(btn => btn.addEventListener('click', async () => {
             const docRef = doc(db, COLLECTION_NAME, btn.dataset.id);
             const snap = await getDoc(docRef);
@@ -138,6 +152,7 @@ async function chargerHistorique() {
                 ouvrirEditeur(data);
             }
         }));
+
     } catch (e) { console.error(e); }
 }
 
@@ -148,17 +163,14 @@ function ouvrirEditeur(docData = null) {
     document.getElementById('input-defunt-nom').value = App.currentDoc.defunt.nom;
     document.getElementById('input-type-doc').value = App.currentDoc.type;
     document.getElementById('input-date').value = App.currentDoc.date_creation;
-    
     document.getElementById('pay-date').value = new Date().toISOString().split('T')[0];
     
     renderLignes();
     renderPaiements();
-    
     document.getElementById('view-dashboard').classList.add('hidden');
     document.getElementById('view-editor').classList.remove('hidden');
 }
 
-// --- AFFICHAGE LIGNES ---
 function renderLignes() {
     const container = document.getElementById('lines-container');
     container.innerHTML = '';
@@ -166,129 +178,111 @@ function renderLignes() {
 
     App.currentDoc.lignes.forEach((ligne, index) => {
         const tr = document.createElement('tr');
-        // Icône poignée pour SortableJS
         const dragHandle = `<i class="fas fa-grip-vertical drag-handle" style="cursor:grab; margin-right:10px; color:#cbd5e1;"></i>`;
 
         if (ligne.type === 'section') {
             tr.style.background = '#f1f5f9';
-            tr.innerHTML = `
-                <td colspan="4" style="display:flex; align-items:center;">
-                    ${dragHandle}
-                    <input type="text" value="${ligne.description}" 
-                           style="width:100%; font-weight:bold; background:transparent; border:none; margin-left:10px;"
-                           onchange="updateLigne(${index}, 'description', this.value)">
-                </td>
-                <td style="text-align:center">
-                    <button onclick="deleteLigne(${index})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
+            tr.innerHTML = `<td colspan="4" style="display:flex; align-items:center;">${dragHandle}<input type="text" value="${ligne.description}" style="width:100%; font-weight:bold; background:transparent; border:none; margin-left:10px;" onchange="updateLigne(${index}, 'description', this.value)"></td><td style="text-align:center"><button onclick="deleteLigne(${index})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>`;
         } else {
             total += parseFloat(ligne.prix || 0);
-            tr.innerHTML = `
-                <td style="display:flex; align-items:center;">
-                    ${dragHandle}
-                    <input type="text" value="${ligne.description}" style="width:100%; margin-left:10px;"
-                           onchange="updateLigne(${index}, 'description', this.value)">
-                </td>
-                <td>
-                    <select onchange="updateLigne(${index}, 'category', this.value)">
-                        <option value="courant" ${ligne.category==='courant'?'selected':''}>Courant</option>
-                        <option value="option" ${ligne.category==='option'?'selected':''}>Option</option>
-                    </select>
-                </td>
-                <td>
-                    <select onchange="updateLigne(${index}, 'tva', this.value)" style="width:60px">
-                        <option value="NA" ${ligne.tva==='NA'?'selected':''}>NA</option>
-                        <option value="20%" ${ligne.tva==='20%'?'selected':''}>20%</option>
-                    </select>
-                </td>
-                <td>
-                    <input type="number" step="0.01" value="${ligne.prix}" style="width:100px; text-align:right"
-                           onchange="updateLigne(${index}, 'prix', this.value)">
-                </td>
-                <td style="text-align:center">
-                    <button onclick="deleteLigne(${index})" style="color:#ccc; border:none; background:none; cursor:pointer;" onmouseover="this.style.color='red'" onmouseout="this.style.color='#ccc'"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
+            tr.innerHTML = `<td style="display:flex; align-items:center;">${dragHandle}<input type="text" value="${ligne.description}" style="width:100%; margin-left:10px;" onchange="updateLigne(${index}, 'description', this.value)"></td><td><select onchange="updateLigne(${index}, 'category', this.value)"><option value="courant" ${ligne.category==='courant'?'selected':''}>Courant</option><option value="option" ${ligne.category==='option'?'selected':''}>Option</option></select></td><td><select><option>NA</option></select></td><td><input type="number" step="0.01" value="${ligne.prix}" style="width:100px; text-align:right" onchange="updateLigne(${index}, 'prix', this.value)"></td><td style="text-align:center"><button onclick="deleteLigne(${index})" style="color:#ccc; border:none; background:none;"><i class="fas fa-trash"></i></button></td>`;
         }
         container.appendChild(tr);
     });
-    
     App.currentDoc.total_ttc = total;
     document.getElementById('display-total').textContent = total.toFixed(2) + ' €';
     calculerSolde();
-
-    window.updateLigne = (idx, f, v) => { 
-        if(f==='prix') v = parseFloat(v)||0; 
-        App.currentDoc.lignes[idx][f] = v; 
-        if(f==='prix') renderLignes(); 
-    };
+    window.updateLigne = (idx, f, v) => { if(f==='prix') v = parseFloat(v)||0; App.currentDoc.lignes[idx][f] = v; if(f==='prix') renderLignes(); };
     window.deleteLigne = (idx) => { App.currentDoc.lignes.splice(idx, 1); renderLignes(); };
 }
 
-// --- AFFICHAGE PAIEMENTS ---
 function renderPaiements() {
     const container = document.getElementById('payments-container');
     container.innerHTML = '';
     let totalPaye = 0;
-    
     App.currentDoc.paiements.forEach((p, idx) => {
         totalPaye += p.montant;
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${new Date(p.date).toLocaleDateString()}</td>
-            <td><span class="badge">${p.mode}</span></td>
-            <td style="text-align:right;">${p.montant.toFixed(2)} €</td>
-            <td style="text-align:center"><button onclick="deletePayment(${idx})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
-        `;
+        tr.innerHTML = `<td>${new Date(p.date).toLocaleDateString()}</td><td><span class="badge">${p.mode}</span></td><td style="text-align:right;">${p.montant.toFixed(2)} €</td><td style="text-align:center"><button onclick="deletePayment(${idx})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>`;
         container.appendChild(tr);
     });
-    
     App.currentDoc.solde_paye = totalPaye;
     calculerSolde();
-    
-    window.deletePayment = (idx) => {
-        App.currentDoc.paiements.splice(idx, 1);
-        renderPaiements();
-    };
+    window.deletePayment = (idx) => { App.currentDoc.paiements.splice(idx, 1); renderPaiements(); };
 }
 
 function calculerSolde() {
     const total = App.currentDoc.total_ttc || 0;
     const paye = App.currentDoc.solde_paye || 0;
     const reste = Math.max(0, total - paye);
-    
     const divReste = document.getElementById('display-reste');
     divReste.textContent = reste.toFixed(2) + ' €';
-    
-    if (reste <= 0.05 && total > 0) {
-        divReste.style.color = '#166534';
-        divReste.textContent = "SOLDE RÉGLÉ";
-    } else {
-        divReste.style.color = '#ef4444';
-    }
+    if (reste <= 0.05 && total > 0) { divReste.style.color = '#166534'; divReste.textContent = "SOLDE RÉGLÉ"; } 
+    else { divReste.style.color = '#ef4444'; }
 }
 
-// --- SAUVEGARDE & MODELES ---
+// --- LOGIQUE DE NUMEROTATION CHRONO ---
+async function genererNumero(type) {
+    const prefix = type === 'FACTURE' ? 'F' : 'D';
+    const year = new Date().getFullYear();
+    const base = `${prefix}-${year}-`;
+    
+    // On cherche le dernier doc de ce type pour cette année
+    const q = query(collection(db, COLLECTION_NAME), where("numero", ">=", base), where("numero", "<=", base + "\uf8ff"), orderBy("numero", "desc"), limit(1));
+    const snap = await getDocs(q);
+    
+    let seq = 1;
+    if (!snap.empty) {
+        const lastNum = snap.docs[0].data().numero; // ex: F-2026-003
+        const parts = lastNum.split('-');
+        if(parts.length === 3) seq = parseInt(parts[2]) + 1;
+    }
+    
+    return `${base}${seq.toString().padStart(3, '0')}`; // F-2026-004
+}
+
+// --- SAUVEGARDE INTELLIGENTE ---
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
-    btn.innerHTML = '...'; btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...'; btn.disabled = true;
+
     try {
+        // Récupération UI
         App.currentDoc.client.nom = document.getElementById('input-client-nom').value;
         App.currentDoc.client.adresse = document.getElementById('input-client-adresse').value;
         App.currentDoc.defunt.nom = document.getElementById('input-defunt-nom').value;
         App.currentDoc.type = document.getElementById('input-type-doc').value;
         App.currentDoc.date_creation = document.getElementById('input-date').value;
 
-        if (!App.currentDoc.client.nom) throw new Error("Nom manquant");
-        if (App.currentDoc.numero === 'BROUILLON') App.currentDoc.numero = "PRO-" + Date.now().toString().slice(-4);
+        if (!App.currentDoc.client.nom) throw new Error("Nom du client manquant");
+
+        // NUMEROTATION AUTOMATIQUE
+        // Si c'est un brouillon, on attribue un vrai numéro
+        if (!App.currentDoc.numero || App.currentDoc.numero === 'BROUILLON' || App.currentDoc.numero.startsWith('PRO-')) {
+            App.currentDoc.numero = await genererNumero(App.currentDoc.type);
+        }
 
         if (App.currentDoc.id) await updateDoc(doc(db, COLLECTION_NAME, App.currentDoc.id), App.currentDoc);
         else { const ref = await addDoc(collection(db, COLLECTION_NAME), App.currentDoc); App.currentDoc.id = ref.id; }
 
-        btn.innerHTML = 'OK !';
-        setTimeout(() => { btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER (v2)'; btn.disabled = false; }, 1500);
-    } catch (e) { console.error(e); btn.innerHTML = 'Erreur'; btn.disabled = false; alert("Erreur: " + e.message); }
+        btn.innerHTML = '✅ SAUVEGARDÉ !';
+        btn.style.background = '#22c55e';
+        
+        setTimeout(() => { 
+            btn.innerHTML = oldText; 
+            btn.style.background = '';
+            btn.disabled = false; 
+            // On retourne à la liste pour voir le nouveau numéro
+            document.getElementById('view-editor').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            chargerHistorique();
+        }, 1500);
+
+    } catch (e) { 
+        console.error(e); 
+        btn.innerHTML = 'Erreur'; btn.disabled = false; alert("Erreur: " + e.message); 
+    }
 }
 
 function appliquerModele(type) {

@@ -1,9 +1,10 @@
 /* Fichier : js/v2/config.js */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// AJOUT DE 'where' et 'limit' ICI :
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// --- REMPLACEZ PAR VOS VRAIES CLÉS API ---
+// --- REMETTEZ VOS CLÉS ICI (Copiez depuis l'ancien fichier) ---
 const firebaseConfig = {
     apiKey: "AIzaSyDmsIkTjW2IFkIks5BUAnxLLnc7pnj2e0w",
     authDomain: "pf-solidaire.firebaseapp.com",
@@ -19,7 +20,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Nom de la nouvelle base de données propre (V2)
 const COLLECTION_NAME = "factures_v2"; 
 
-export { db, auth, onAuthStateChanged, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, query, orderBy, COLLECTION_NAME };
+// On exporte les nouveaux outils
+export { db, auth, onAuthStateChanged, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, query, orderBy, where, limit, COLLECTION_NAME };
