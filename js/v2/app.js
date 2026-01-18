@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION "GOLD" (COMPLETE) */
+/* Fichier : js/v2/app.js - VERSION EXPERTE (CA ANNUEL + GESTION EXPIRATION) */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, where, limit, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne, createPaiement } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    chargerHistorique(); // Cela charge aussi la mémoire des clients
+    chargerHistorique(); // Charge la liste et calcule le CA Annuel
 
     // DRAG & DROP
     const container = document.getElementById('lines-container');
@@ -88,7 +88,7 @@ function initApp() {
     document.getElementById('btn-export').addEventListener('click', exporterComptabilite);
 }
 
-// --- HISTORIQUE & INTELLIGENCE ---
+// --- HISTORIQUE INTELLIGENT ---
 async function chargerHistorique() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
@@ -97,29 +97,41 @@ async function chargerHistorique() {
         const q = query(collection(db, COLLECTION_NAME), orderBy('date_creation', 'desc'));
         const snapshot = await getDocs(q);
         
-        let ca = 0, encaisse = 0, resteGlobal = 0;
-        const clientsUniques = new Set(); // Pour mémoriser les clients
+        let caAnnuel = 0; // CA uniquement pour l'année en cours
+        let encaisse = 0;
+        let resteGlobal = 0;
+        const clientsUniques = new Set(); 
+        
+        const anneeEnCours = new Date().getFullYear(); // ex: 2026
+        const dateLimiteDevis = new Date();
+        dateLimiteDevis.setDate(dateLimiteDevis.getDate() - 90); // Date d'il y a 90 jours
 
         if (snapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Vide.</td></tr>'; return; }
 
         tbody.innerHTML = '';
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
+            const dateDoc = new Date(data.date_creation);
             
-            // On mémorise le client pour l'autocomplétion
+            // Autocomplétion Clients
             if(data.client && data.client.nom) clientsUniques.add(data.client.nom);
 
             const total = parseFloat(data.total_ttc || 0);
             const paye = parseFloat(data.solde_paye || 0);
             const reste = total - paye;
             
+            // --- LOGIQUE FINANCIERE ---
             if(data.type === 'FACTURE') {
-                ca += total;
+                // On ajoute au CA seulement si c'est l'année en cours
+                if (dateDoc.getFullYear() === anneeEnCours) {
+                    caAnnuel += total;
+                }
                 encaisse += paye;
                 resteGlobal += reste;
             }
 
-            let badge = `<span class="tag" style="background:#e2e8f0; color:#475569;">BROUILLON</span>`;
+            // --- LOGIQUE STATUT ---
+            let badge = '';
             let convertBtn = '';
 
             if (data.type === 'FACTURE') {
@@ -127,13 +139,21 @@ async function chargerHistorique() {
                 else if (paye > 0) badge = `<span class="tag" style="background:#ffedd5; color:#9a3412;">PARTIEL</span>`;
                 else badge = `<span class="tag" style="background:#fee2e2; color:#991b1b;">À PAYER</span>`;
             } else {
-                badge = `<span class="tag" style="background:#f1f5f9; color:#64748b;">DEVIS</span>`;
-                convertBtn = `<button class="btn-icon convert-btn" data-id="${docSnap.id}" title="Convertir en Facture" style="color:#3b82f6"><i class="fas fa-exchange-alt"></i></button>`;
+                // C'est un DEVIS ou BROUILLON
+                // Vérification de l'expiration (plus de 90 jours)
+                if (dateDoc < dateLimiteDevis) {
+                    badge = `<span class="tag" style="background:#94a3b8; color:white;" title="Date dépassée (+3 mois)">EXPIRÉ</span>`;
+                    // On garde le bouton convertir, mais attention les prix pourraient avoir changé
+                    convertBtn = `<button class="btn-icon convert-btn" data-id="${docSnap.id}" title="Réactiver / Convertir" style="color:#64748b"><i class="fas fa-redo"></i></button>`;
+                } else {
+                    badge = `<span class="tag" style="background:#f1f5f9; color:#64748b;">DEVIS</span>`;
+                    convertBtn = `<button class="btn-icon convert-btn" data-id="${docSnap.id}" title="Convertir en Facture" style="color:#3b82f6"><i class="fas fa-exchange-alt"></i></button>`;
+                }
             }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${new Date(data.date_creation).toLocaleDateString()}</td>
+                <td>${dateDoc.toLocaleDateString()}</td>
                 <td><strong>${data.numero}</strong></td>
                 <td><span class="badge">${data.type}</span></td>
                 <td><div>${data.client.nom}</div><div style="font-size:0.8em; color:#666;">${data.defunt.nom}</div></td>
@@ -160,7 +180,15 @@ async function chargerHistorique() {
 
         // Totaux
         const fmt = (n) => n.toLocaleString('fr-FR', {style:'currency', currency:'EUR'});
-        if(document.getElementById('stat-ca')) document.getElementById('stat-ca').textContent = fmt(ca);
+        
+        // On change le titre pour préciser "ANNUEL"
+        const cardCA = document.getElementById('stat-ca');
+        if(cardCA) {
+            cardCA.textContent = fmt(caAnnuel);
+            // Petit hack visuel pour indiquer l'année
+            cardCA.parentElement.querySelector('div:first-child').textContent = `CHIFFRE D'AFFAIRES (${anneeEnCours})`;
+        }
+        
         if(document.getElementById('stat-paye')) document.getElementById('stat-paye').textContent = fmt(encaisse);
         if(document.getElementById('stat-reste')) document.getElementById('stat-reste').textContent = fmt(resteGlobal);
 
@@ -180,7 +208,13 @@ async function chargerHistorique() {
             }
         }));
         document.querySelectorAll('.convert-btn').forEach(btn => btn.addEventListener('click', async () => {
-            if(!confirm("Voulez-vous transformer ce Devis en Facture officielle ?")) return;
+            // Message différent selon si c'est expiré ou non
+            const isExpired = btn.querySelector('.fa-redo');
+            const msg = isExpired 
+                ? "Ce devis a plus de 3 mois (EXPIRÉ). Voulez-vous vraiment le valider en Facture aux tarifs indiqués ?" 
+                : "Voulez-vous transformer ce Devis en Facture officielle ?";
+                
+            if(!confirm(msg)) return;
             try {
                 const id = btn.dataset.id;
                 const docRef = doc(db, COLLECTION_NAME, id);
@@ -189,8 +223,11 @@ async function chargerHistorique() {
                     const data = snap.data();
                     data.type = 'FACTURE';
                     data.numero = await genererNumero('FACTURE');
+                    // On met à jour la date de création à aujourd'hui car c'est une nouvelle facture
+                    data.date_creation = new Date().toISOString().split('T')[0];
+                    
                     await updateDoc(docRef, data);
-                    alert(`✅ Devis transformé en Facture N° ${data.numero}`);
+                    alert(`✅ Validé ! Nouvelle Facture N° ${data.numero}`);
                     chargerHistorique();
                 }
             } catch(e) { console.error(e); alert("Erreur conversion"); }
