@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturation - PF Solidaire</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
+
+    <nav class="sidebar">
+        <div class="brand"><i class="fas fa-dove"></i> PF SOLIDAIRE</div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Accueil</a>
+            </li>
+            <li class="nav-item">
+                <a href="facturation.html" class="nav-link active"><i class="fas fa-file-invoice-dollar"></i> Facturation</a>
+            </li>
+        </ul>
+        <div class="user-profile">
+            <div style="font-size:0.8em; color:#94a3b8;"><i class="fas fa-user-circle"></i> Module Compta</div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        
+        <div id="view-list">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Facturation</h1>
+                    <p class="page-subtitle">Suivi financier et devis en cours</p>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="window.afficherListe()" class="btn-nav"><i class="fas fa-sync-alt"></i> Actualiser</button>
+                    <button onclick="window.nouvelleFacture()" class="btn btn-purple"><i class="fas fa-plus"></i> Créer Document</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card card-blue">
+                    <div class="text-box"><h3>CA Annuel</h3><span id="stat-ca">0,00 €</span></div>
+                </div>
+                <div class="stat-card card-green">
+                    <div class="text-box"><h3>Encaissé</h3><span id="stat-encaisse">0,00 €</span></div>
+                </div>
+                <div class="stat-card card-red">
+                    <div class="text-box"><h3>Reste Dû (Alerte)</h3><span id="stat-impaye">0,00 €</span></div>
+                </div>
+                <div class="stat-card card-purple">
+                    <div class="text-box"><h3>Devis (3 mois)</h3><span id="stat-devis">0</span></div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px;">Date</th>
+                            <th>Type</th>
+                            <th>N°</th>
+                            <th>Client / Défunt</th>
+                            <th>Objet</th>
+                            <th style="text-align:right;">Montant TTC</th>
+                            <th style="text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-form" class="hidden">
+            <div class="page-header">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <button onclick="window.afficherListe()" class="btn-nav">
+                        <i class="fas fa-arrow-left"></i> Retour Liste
+                    </button>
+                    <div class="page-title">
+                        <h1 style="font-size:1.5rem;">Édition Document</h1>
+                    </div>
+                </div>
+                <div>
+                     <span id="facture_numero_txt" style="font-weight:bold; color:var(--accent); font-size:1.2rem; background:white; padding:5px 15px; border-radius:8px; border:1px solid #cbd5e1;">#NOUVEAU</span>
+                     <input type="hidden" id="facture_numero">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="header-grid">
+                    <div>
+                        <label>Client (Soussigné)</label>
+                        <input id="facture_nom" list="clients-datalist" onchange="window.checkClientAuto && window.checkClientAuto()" placeholder="Rechercher ou saisir...">
+                        <datalist id="clients-datalist"></datalist>
+                        <input id="facture_adresse" placeholder="Adresse complète...">
+                    </div>
+                    <div>
+                        <label>Défunt & Type</label>
+                        <input id="facture_defunt" placeholder="Nom Prénom du défunt...">
+                        <div style="display:flex; gap:10px;">
+                            <select id="doc_type"><option>DEVIS</option><option>FACTURE</option></select>
+                            <input type="date" id="facture_date">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                    <select id="facture_sujet_select" onchange="window.changerModele(this.value)" style="width:auto; border-color:var(--accent);">
+                        <option value="" disabled selected>-- ⚡ Appliquer un Modèle --</option>
+                        <option value="INHUMATION">Inhumation Complète</option>
+                        <option value="CREMATION">Crémation Complète</option>
+                        <option value="RAPATRIEMENT">Rapatriement (International)</option>
+                        <option value="EXHUMATION">Exhumation / Réduction</option>
+                        <option value="TRANSPORT">Transport de Corps (Simple)</option>
+                    </select>
+                    <div>
+                        <button onclick="window.ajouterTitreSection()" class="btn-nav"><i class="fas fa-heading"></i> Section</button>
+                        <button onclick="window.ajouterLigne()" class="btn-nav"><i class="fas fa-list"></i> Ligne</button>
+                    </div>
+                </div>
+
+                <table class="invoice-table">
+                    <thead>
+                        <tr><th width="5%"></th><th>Désignation</th><th>Type</th><th width="10%">TVA</th><th width="15%" style="text-align:right;">Prix TTC</th><th width="5%"></th></tr>
+                    </thead>
+                    <tbody id="lines-body"></tbody>
+                </table>
+                
+                <div style="text-align:right; font-size:1.2rem; font-weight:bold; margin-top:20px; padding-top:10px; border-top:1px solid #e2e8f0;">
+                    TOTAL FACTURÉ : <span id="total-ttc" style="color:var(--primary);">0.00 €</span>
+                </div>
+            </div>
+
+            <div class="card" style="border-left: 5px solid var(--success);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#0f172a;"><i class="fas fa-cash-register"></i> Encaissements</h3>
+                    <span id="payment-status" class="status-tag">EN COURS</span>
+                </div>
+                
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                    <input type="date" id="pay_date" style="flex:1;">
+                    <select id="pay_mode" style="flex:1;"><option>VIREMENT</option><option>CHÈQUE</option><option>ESPÈCES</option><option>CB</option></select>
+                    <input id="pay_ref" placeholder="Réf (N° Chèque...)" style="flex:2;">
+                    <input type="number" id="pay_montant" placeholder="Montant (€)" style="flex:1;">
+                    <button onclick="window.ajouterPaiement()" class="btn btn-green"><i class="fas fa-plus"></i> Ajouter</button>
+                </div>
+
+                <table style="width:100%; font-size:0.9rem;">
+                    <thead style="color:#64748b; font-size:0.8rem; text-align:left;">
+                        <tr><th>Date</th><th>Mode</th><th>Référence</th><th style="text-align:right;">Montant</th><th></th></tr>
+                    </thead>
+                    <tbody id="payments-body"></tbody>
+                </table>
+                
+                <div style="text-align:right; margin-top:15px;">
+                    <div style="color:#64748b;">Total Encaissé : <span id="display-total-paye" style="font-weight:bold; color:var(--success);">0.00 €</span></div>
+                    <div style="font-size:1.3rem; font-weight:bold; margin-top:5px;">
+                        Reste à Payer : <span id="display-reste" style="color:var(--danger);">0.00 €</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:20px; margin-top:20px; padding-bottom:50px;">
+                <button onclick="window.genererPDFFacture()" class="btn btn-blue" style="padding:12px 25px;"><i class="fas fa-print"></i> PDF CLIENT</button>
+                <button onclick="window.sauvegarderFactureBase()" class="btn btn-green" style="padding:12px 25px;"><i class="fas fa-save"></i> ENREGISTRER</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/app_facturation.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PF Solidaire - Tableau de Bord</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app-loader">
+        <div class="spinner"></div>
+        <div style="font-weight:600; color:#64748b;">Chargement sécurisé...</div>
+    </div>
+
+    <div id="login-screen" class="hidden">
+        <div class="login-box">
+            <h2 style="color:#0f172a; margin-bottom:5px;">PF SOLIDAIRE</h2>
+            <p style="color:#64748b; margin-bottom:20px;">Accès Réservé</p>
+            <input type="email" id="email-input" class="login-input" placeholder="Email">
+            <input type="password" id="password-input" class="login-input" placeholder="Mot de passe">
+            <button onclick="window.loginFirebase()" class="btn btn-blue" style="width:100%; justify-content:center;">Connexion</button>
+            <p id="login-error" style="color:red; font-size:0.9em; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <nav class="sidebar">
+        <div class="brand"><i class="fas fa-dove"></i> PF SOLIDAIRE</div>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link active"><i class="fas fa-home"></i> Accueil</a>
+            </li>
+            <li class="nav-item">
+                <a href="facturation.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Facturation</a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link"><i class="fas fa-users"></i> Clients (Admin)</a>
+            </li>
+        </ul>
+        <div class="user-profile">
+            <div onclick="window.logoutFirebase()" style="cursor:pointer; display:flex; align-items:center; gap:10px; color:#cbd5e1;">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content hidden" id="main-content">
+        <div class="page-header">
+            <div class="page-title">
+                <h1>Bienvenue</h1>
+                <p class="page-subtitle">Sélectionnez un module pour commencer.</p>
+            </div>
+        </div>
+
+        <div class="nav-cards">
+            <div class="nav-card" onclick="alert('Module Administratif : Utilisez le menu ou restez ici pour les documents.')">
+                <div class="nc-icon"><i class="fas fa-folder-open"></i></div>
+                <div class="nc-text">
+                    <h3>Gestion Administrative</h3>
+                    <p>Déclarations, Pouvoirs, Police...</p>
+                </div>
+                <i class="fas fa-chevron-right" style="margin-left:auto; color:#cbd5e1;"></i>
+            </div>
+
+            <div class="nav-card" onclick="window.location.href='facturation.html'">
+                <div class="nc-icon"><i class="fas fa-calculator"></i></div>
+                <div class="nc-text">
+                    <h3>Facturation & Comptabilité</h3>
+                    <p>Devis, Factures, Encaissements.</p>
+                </div>
+                <i class="fas fa-chevron-right" style="margin-left:auto; color:#cbd5e1;"></i>
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1; text-align: center; color: #64748b;">
+             <h3><i class="fas fa-file-signature"></i> Espace Documents Rapides</h3>
+             <p>Vos outils administratifs habituels s'affichent ici.</p>
+             </div>
+    </main>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
