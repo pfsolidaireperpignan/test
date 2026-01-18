@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturation PRO v2 - PF Solidaire</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column;">
+        <div style="font-size:2rem; color:#22c55e; margin-bottom:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>
+        <div style="font-family:sans-serif; color:#64748b;">Chargement v2.0...</div>
+    </div>
+
+    <nav class="sidebar">
+        <div class="brand"><i class="fas fa-dove"></i> PF SOLIDAIRE v2</div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Retour Accueil</a></li>
+            <li class="nav-item"><a href="#" id="nav-dashboard" class="nav-link active"><i class="fas fa-list"></i> Liste Documents</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div id="view-dashboard">
+            <div class="page-header">
+                <h1>Tableau de Bord</h1>
+                <button id="btn-new-facture" class="btn btn-purple"><i class="fas fa-plus"></i> Nouveau Document</button>
+            </div>
+            
+            <div class="card">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Numéro</th>
+                            <th>Type</th>
+                            <th>Client / Défunt</th>
+                            <th style="text-align:right">Montant</th>
+                            <th style="text-align:center">Statut</th>
+                            <th style="text-align:center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-editor" class="hidden">
+            <div class="page-header">
+                <button id="btn-back" class="btn-nav"><i class="fas fa-arrow-left"></i> Retour</button>
+                <h1 id="editor-title">Nouveau Document</h1>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-user"></i> Informations</h3>
+                <div class="header-grid">
+                    <div>
+                        <label>Client (Soussigné)</label>
+                        <input type="text" id="input-client-nom" placeholder="Nom du client...">
+                        <input type="text" id="input-client-adresse" placeholder="Adresse..." style="margin-top:5px;">
+                    </div>
+                    <div>
+                        <label>Défunt</label>
+                        <input type="text" id="input-defunt-nom" placeholder="Nom du défunt...">
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            <select id="input-type-doc"><option value="DEVIS">DEVIS</option><option value="FACTURE">FACTURE</option></select>
+                            <input type="date" id="input-date">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <select id="select-modeles" style="max-width:250px;">
+                        <option value="">-- Appliquer un Modèle --</option>
+                        <option value="INHUMATION">Inhumation</option>
+                        <option value="CREMATION">Crémation</option>
+                        <option value="RAPATRIEMENT">Rapatriement</option>
+                        <option value="EXHUMATION">Exhumation</option>
+                        <option value="TRANSPORT">Transport</option>
+                    </select>
+                    <div>
+                        <button id="btn-add-section" class="btn-nav">Titre</button>
+                        <button id="btn-add-line" class="btn-nav">Ligne</button>
+                    </div>
+                </div>
+                
+                <table class="invoice-table">
+                    <thead><tr><th>Description</th><th width="100">Type</th><th width="80">TVA</th><th width="100">Prix</th><th width="50"></th></tr></thead>
+                    <tbody id="lines-container"></tbody>
+                </table>
+                <div style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:10px;">
+                    Total : <span id="display-total">0.00 €</span>
+                </div>
+            </div>
+
+            <div style="text-align:right; margin-top:20px;">
+                <button id="btn-save" class="btn btn-green"><i class="fas fa-save"></i> ENREGISTRER (v2)</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/v2/app.js"></script>
+</body>
+</html>
