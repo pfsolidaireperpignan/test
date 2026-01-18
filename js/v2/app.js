@@ -1,4 +1,4 @@
-/* Fichier : js/v2/app.js - VERSION AVEC DRAG & DROP */
+/* Fichier : js/v2/app.js - VERSION DRAG & DROP CORRIGÉE */
 import { db, auth, onAuthStateChanged, collection, addDoc, updateDoc, doc, getDoc, getDocs, query, orderBy, COLLECTION_NAME } from './config.js';
 import { createFacture, createLigne } from './models.js';
 import { PdfService } from './pdf.service.js';
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initApp() {
     chargerHistorique();
     
-    // --- NAVIGATION ---
+    // NAVIGATION
     document.getElementById('btn-new-facture').addEventListener('click', () => ouvrirEditeur());
     document.getElementById('nav-dashboard').addEventListener('click', () => {
         document.getElementById('view-editor').classList.add('hidden');
@@ -32,7 +32,7 @@ function initApp() {
         chargerHistorique();
     });
 
-    // --- ACTIONS EDITEUR ---
+    // ACTIONS EDITEUR
     document.getElementById('btn-add-line').addEventListener('click', () => {
         App.currentDoc.lignes.push(createLigne({ type: 'line', description: '' }));
         renderLignes();
@@ -109,72 +109,75 @@ function ouvrirEditeur(docData = null) {
     document.getElementById('view-editor').classList.remove('hidden');
 }
 
-// --- RENDU DES LIGNES (AVEC DRAG & DROP) ---
+// --- RENDU AVEC DRAG & DROP ROBUSTE ---
 function renderLignes() {
     const container = document.getElementById('lines-container');
     container.innerHTML = '';
     let total = 0;
 
+    // Fonction DragStart (Commence le glissement)
+    const handleDragStart = (e, index) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index);
+        e.target.classList.add('dragging');
+    };
+
+    // Fonction DragOver (Survol)
+    const handleDragOver = (e) => {
+        e.preventDefault(); // OBLIGATOIRE pour autoriser le drop
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('drag-over');
+    };
+
+    // Fonction DragLeave (Quitte la zone)
+    const handleDragLeave = (e) => {
+        e.currentTarget.classList.remove('drag-over');
+    };
+
+    // Fonction Drop (Lâcher)
+    const handleDrop = (e, toIndex) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        e.currentTarget.classList.remove('dragging');
+        
+        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+        
+        if (fromIndex !== toIndex) {
+            console.log(`Déplacement de ${fromIndex} vers ${toIndex}`);
+            // Échange des données
+            const item = App.currentDoc.lignes.splice(fromIndex, 1)[0];
+            App.currentDoc.lignes.splice(toIndex, 0, item);
+            // On redessine tout
+            renderLignes();
+        }
+    };
+
     App.currentDoc.lignes.forEach((ligne, index) => {
         const tr = document.createElement('tr');
-        
-        // ACTIVATION DU DRAG & DROP
-        tr.setAttribute('draggable', 'true');
-        tr.style.cursor = 'grab'; // Change le curseur pour indiquer qu'on peut attraper
+        tr.className = 'draggable-row'; // Classe pour le CSS
+        tr.setAttribute('draggable', 'true'); // Rend la ligne déplaçable
 
-        // 1. Quand on commence à glisser
-        tr.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', index); // On mémorise l'ID de la ligne
-            tr.style.opacity = '0.5'; // On la rend un peu transparente
+        // --- ATTACHEMENT DES ÉVÉNEMENTS ---
+        tr.addEventListener('dragstart', (e) => handleDragStart(e, index));
+        tr.addEventListener('dragover', handleDragOver);
+        tr.addEventListener('dragleave', handleDragLeave);
+        tr.addEventListener('drop', (e) => handleDrop(e, index));
+        tr.addEventListener('dragend', (e) => {
+             e.currentTarget.classList.remove('dragging');
+             e.currentTarget.classList.remove('drag-over');
         });
-
-        // 2. Quand on passe au-dessus d'une autre ligne
-        tr.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Nécessaire pour autoriser le "drop"
-            tr.style.borderTop = '2px solid #22c55e'; // Ligne verte pour visualiser l'emplacement
-        });
-
-        // 3. Quand on quitte la zone
-        tr.addEventListener('dragleave', () => {
-            tr.style.borderTop = '';
-        });
-
-        // 4. Quand on lâche (DROP)
-        tr.addEventListener('drop', (e) => {
-            e.preventDefault();
-            tr.style.borderTop = '';
-            tr.style.opacity = '1';
-            
-            const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            const toIndex = index;
-
-            // Si on a bougé, on fait l'échange dans les données
-            if (fromIndex !== toIndex) {
-                const elementDeplace = App.currentDoc.lignes.splice(fromIndex, 1)[0];
-                App.currentDoc.lignes.splice(toIndex, 0, elementDeplace);
-                renderLignes(); // On redessine tout
-            }
-        });
-
-        // 5. Fin du mouvement (si on lâche ailleurs)
-        tr.addEventListener('dragend', () => {
-            tr.style.opacity = '1';
-            tr.style.borderTop = '';
-        });
-
 
         // --- CONTENU VISUEL ---
-        
-        // Icône poignée pour attraper facilement
-        const dragHandle = `<i class="fas fa-grip-vertical" style="color:#cbd5e1; margin-right:10px; cursor:grab;"></i>`;
+        // Notez la classe "drag-handle" sur l'icône
+        const dragIcon = `<i class="fas fa-grip-vertical drag-handle"></i>`;
 
         if (ligne.type === 'section') {
             tr.style.background = '#f1f5f9';
             tr.innerHTML = `
                 <td colspan="4" style="display:flex; align-items:center;">
-                    ${dragHandle}
+                    ${dragIcon}
                     <input type="text" value="${ligne.description}" 
-                           style="width:100%; font-weight:bold; background:transparent; border:none;"
+                           style="width:100%; font-weight:bold; background:transparent; border:none; margin-left:10px;"
                            onchange="updateLigne(${index}, 'description', this.value)">
                 </td>
                 <td style="text-align:center">
@@ -185,8 +188,8 @@ function renderLignes() {
             total += parseFloat(ligne.prix || 0);
             tr.innerHTML = `
                 <td style="display:flex; align-items:center;">
-                    ${dragHandle}
-                    <input type="text" value="${ligne.description}" style="width:100%"
+                    ${dragIcon}
+                    <input type="text" value="${ligne.description}" style="width:100%; margin-left:10px;"
                            onchange="updateLigne(${index}, 'description', this.value)">
                 </td>
                 <td>
@@ -216,7 +219,6 @@ function renderLignes() {
     App.currentDoc.total_ttc = total;
     document.getElementById('display-total').textContent = total.toFixed(2) + ' €';
 
-    // Fonctions attachées au window pour le HTML
     window.updateLigne = (idx, f, v) => { 
         if(f==='prix') v = parseFloat(v)||0; 
         App.currentDoc.lignes[idx][f] = v; 
@@ -225,7 +227,7 @@ function renderLignes() {
     window.deleteLigne = (idx) => { App.currentDoc.lignes.splice(idx, 1); renderLignes(); };
 }
 
-// --- SAUVEGARDE ---
+// --- SAUVEGARDE & MODELES (Inchangés) ---
 async function sauvegarderDocument() {
     const btn = document.getElementById('btn-save');
     btn.innerHTML = '...'; btn.disabled = true;

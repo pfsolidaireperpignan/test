@@ -133,7 +133,25 @@ body {
 .history-table td, .invoice-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
 .invoice-table input, .invoice-table select { border: 1px solid transparent; background: transparent; padding: 5px; margin: 0; }
 .invoice-table input:focus, .invoice-table select:focus { border-color: var(--accent); background: white; }
-
+/* AJOUT POUR DRAG & DROP v2 */
+.drag-handle {
+    cursor: grab;
+    color: #cbd5e1;
+    font-size: 1.2rem;
+    padding: 10px;
+    transition: color 0.2s;
+}
+.drag-handle:hover {
+    color: #3b82f6; /* Devient bleu au survol */
+    cursor: grabbing;
+}
+.draggable-row.dragging {
+    opacity: 0.5;
+    background: #e2e8f0;
+}
+.draggable-row.drag-over {
+    border-top: 3px solid #22c55e; /* Ligne verte */
+}
 /* Badges Statut */
 .status-tag { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
 .tag-facture { background: #ecfccb; color: #365314; }
