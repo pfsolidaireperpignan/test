@@ -1,118 +1,125 @@
-/* Fichier : js/script.js (CORRIGÉ - SANS IMPORT PDF) */
+/* Fichier : js/script.js (RACINE) */
 import { auth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
 
-// NOTE : On ne met PAS d'import jsPDF ici car il est déjà chargé par le fichier HTML.
-
-// 1. GESTION DU CHARGEMENT & CONNEXION
+// GESTION CONNEXION
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('app-loader');
     const loginScreen = document.getElementById('login-screen');
-    const mainContent = document.getElementById('main-content');
+    const mainContent = document.querySelector('.main-content');
     const sidebar = document.querySelector('.sidebar');
 
     onAuthStateChanged(auth, (user) => {
-        if(loader) loader.style.display = 'none'; // On cache le chargement
-        
+        if(loader) loader.style.display = 'none';
         if (user) {
-            // UTILISATEUR CONNECTÉ
             if(loginScreen) loginScreen.classList.add('hidden');
             if(mainContent) mainContent.classList.remove('hidden');
             if(sidebar) sidebar.classList.remove('hidden');
-            console.log("Connecté :", user.email);
         } else {
-            // UTILISATEUR DÉCONNECTÉ
             if(loginScreen) loginScreen.classList.remove('hidden');
             if(mainContent) mainContent.classList.add('hidden');
             if(sidebar) sidebar.classList.add('hidden');
         }
     });
 
-    // BOUTON DECONNEXION
     const btnLogout = document.getElementById('btn-logout');
-    if(btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            if(confirm("Se déconnecter ?")) signOut(auth);
-        });
-    }
+    if(btnLogout) btnLogout.addEventListener('click', () => { if(confirm("Se déconnecter ?")) signOut(auth); });
 
-    // BOUTON CONNEXION
     const btnLogin = document.getElementById('btn-login');
-    if(btnLogin) {
-        btnLogin.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            const errorMsg = document.getElementById('login-error');
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (error) {
-                console.error(error);
-                if(errorMsg) errorMsg.textContent = "Erreur : Email ou mot de passe incorrect.";
-            }
-        });
-    }
+    if(btnLogin) btnLogin.addEventListener('click', async () => {
+        try {
+            await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
+        } catch (e) { document.getElementById('login-error').textContent = "Erreur d'identification"; }
+    });
 });
 
-// 2. GENERATEUR PDF (ADMINISTRATIF)
-// Cette fonction est appelée par les boutons HTML
+// GENERATEUR PDF (STRUCTURE STANDARD CONSERVÉE)
 window.genererPDF = function(type) {
-    // C'EST ICI LA CORRECTION : On récupère l'outil directement depuis la page
-    if (!window.jspdf) { alert("Erreur: Librairie PDF non chargée"); return; }
+    if (!window.jspdf) { alert("Erreur librairie PDF"); return; }
     const { jsPDF } = window.jspdf;
-
-    const defunt = document.getElementById('defunt_nom').value || "..................";
-    const dateDeces = document.getElementById('date_deces').value;
-    const lieuDeces = document.getElementById('lieu_deces').value || "..................";
-    
-    // Formatage date
-    let dateStr = "..................";
-    if(dateDeces) {
-        dateStr = new Date(dateDeces).toLocaleDateString('fr-FR');
-    }
-
     const doc = new jsPDF();
+
+    // Récupération des données
+    const defunt = document.getElementById('defunt_nom').value || "......................";
+    const dateDeces = document.getElementById('date_deces').value;
+    const heureDeces = document.getElementById('heure_deces').value || "..h..";
+    const lieuDeces = document.getElementById('lieu_deces').value || "......................";
+    const neLe = document.getElementById('date_naissance').value;
+    const declarant = document.getElementById('declarant_nom').value || "......................";
     
-    // En-tête standard
+    // Format Dates
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : "................";
+    const dateStr = fmtDate(dateDeces);
+    const neLeStr = fmtDate(neLe);
+
+    // En-tête Entreprise (Standard)
     doc.setFontSize(10);
     doc.text("PF SOLIDAIRE PERPIGNAN", 15, 15);
     doc.text("32 boulevard Léon Jean Grégory", 15, 20);
-    doc.text("66300 THUIR", 15, 25);
+    doc.text("66300 THUIR - Tél: 07 55 18 27 77", 15, 25);
+    doc.line(15, 28, 195, 28);
+
+    // CONTENU SELON TYPE
+    let y = 40;
 
     if (type === 'POUVOIR') {
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
-        doc.text("POUVOIR POUR DEMARCHES", 105, 40, {align:'center'});
-        
+        doc.text("POUVOIR", 105, y, {align:'center'});
+        y += 20;
         doc.setFontSize(12); doc.setFont("helvetica", "normal");
-        const texte = `Je soussigné(e) .....................................................................\n\n` +
-                      `Agissant en qualité de ...............................................................\n\n` +
-                      `Donne pouvoir à la société PF SOLIDAIRE PERPIGNAN pour effectuer toutes les démarches\n` +
-                      `administratives nécessaires suite au décès de :\n\n` +
-                      `Monsieur/Madame : ${defunt}\n` +
-                      `Survenu le : ${dateStr}\n` +
-                      `À : ${lieuDeces}\n\n` +
-                      `Pour valoir ce que de droit.`;
-        
-        doc.text(texte, 20, 60);
-        doc.text("Signature et mention 'Bon pour pouvoir'", 120, 150);
+        doc.text(`Je soussigné(e) : ${declarant}`, 20, y); y+=10;
+        doc.text(`Agissant en qualité de : ${document.getElementById('declarant_lien').value}`, 20, y); y+=15;
+        doc.text("Donne pouvoir à PF SOLIDAIRE PERPIGNAN pour effectuer les démarches", 20, y); y+=7;
+        doc.text("administratives relatives aux obsèques de :", 20, y); y+=15;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Monsieur/Madame ${defunt}`, 20, y); y+=7;
+        doc.setFont("helvetica", "normal");
+        doc.text(`Décédé(e) le ${dateStr} à ${heureDeces}`, 20, y); y+=7;
+        doc.text(`À : ${lieuDeces}`, 20, y); y+=20;
+        doc.text("Pour valoir ce que de droit.", 20, y); y+=20;
+        doc.text("Signature :", 120, y);
     }
     else if (type === 'DECES') {
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
-        doc.text("DECLARATION DE DECES", 105, 40, {align:'center'});
-        
+        doc.text("DÉCLARATION DE DÉCÈS", 105, y, {align:'center'});
+        y += 20;
         doc.setFontSize(12); doc.setFont("helvetica", "normal");
-        doc.text(`Nous déclarons le décès de : ${defunt}`, 20, 60);
-        doc.text(`Survenu le : ${dateStr}`, 20, 70);
-        doc.text(`À la commune de : ${lieuDeces}`, 20, 80);
-        doc.text(`Cette déclaration est faite pour l'organisation des obsèques.`, 20, 100);
+        doc.text("À Monsieur l'Officier de l'État Civil,", 20, y); y+=15;
+        doc.text(`Nous déclarons le décès de : ${defunt}`, 20, y); y+=10;
+        doc.text(`Né(e) le : ${neLeStr}`, 20, y); y+=10;
+        doc.text(`Domicilié(e) : ${document.getElementById('domicile_defunt').value}`, 20, y); y+=15;
+        doc.text(`Décès survenu le ${dateStr} à ${heureDeces}`, 20, y); y+=10;
+        doc.text(`À la commune de : ${lieuDeces}`, 20, y); y+=20;
+        doc.text("Le Déclarant (PF SOLIDAIRE) :", 120, y);
     }
     else if (type === 'FERMETURE') {
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
-        doc.text("DEMANDE DE FERMETURE DE CERCUEIL", 105, 40, {align:'center'});
-        
+        doc.text("DEMANDE DE FERMETURE DE CERCUEIL", 105, y, {align:'center'});
+        y += 20;
         doc.setFontSize(12); doc.setFont("helvetica", "normal");
-        doc.text(`Concerne le défunt : ${defunt}`, 20, 60);
-        doc.text(`Décédé(e) le : ${dateStr}`, 20, 70);
-        doc.text("Nous demandons l'autorisation de procéder à la fermeture du cercueil.", 20, 90);
+        doc.text("Maire de la commune de : " + document.getElementById('lieu_mise_biere').value, 20, y); y+=20;
+        doc.text(`Je soussigné, représentant les PF SOLIDAIRE,`, 20, y); y+=10;
+        doc.text(`Sollicite l'autorisation de fermeture du cercueil de :`, 20, y); y+=15;
+        doc.setFont("helvetica", "bold");
+        doc.text(`${defunt}`, 40, y); y+=15;
+        doc.setFont("helvetica", "normal");
+        doc.text(`Mise en bière prévue à : ${document.getElementById('lieu_mise_biere').value}`, 20, y); y+=10;
+        doc.text(`Destination : ${document.getElementById('destination').value}`, 20, y); y+=30;
+        doc.text("Fait à THUIR, le " + new Date().toLocaleDateString(), 20, y);
+    }
+    else if (type === 'TRANSPORT') {
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
+        doc.text("DÉCLARATION DE TRANSPORT DE CORPS", 105, y, {align:'center'});
+        doc.setFontSize(10); y+=7;
+        doc.text("(Après Mise en Bière)", 105, y, {align:'center'});
+        y += 20;
+        doc.setFontSize(12); doc.setFont("helvetica", "normal");
+        doc.text(`Défunt : ${defunt}`, 20, y); y+=10;
+        doc.text(`Départ : ${document.getElementById('lieu_mise_biere').value}`, 20, y); y+=10;
+        doc.text(`Arrivée : ${document.getElementById('destination').value}`, 20, y); y+=20;
+        doc.text("Moyens de transport :", 20, y); y+=10;
+        doc.text(`- Véhicule Agréé : ${document.getElementById('vehicule_immat').value}`, 20, y); y+=10;
+        doc.text(`- Chauffeur : ${document.getElementById('chauffeur_nom').value}`, 20, y); y+=30;
+        doc.text("Le Conseiller Funéraire", 120, y);
     }
 
     doc.save(`${type}_${defunt}.pdf`);
