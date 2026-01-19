@@ -1,26 +1,23 @@
-/* Fichier : js/script.js - VERSION GOLD (ADMINISTRATION COMPLETE) */
+/* Fichier : js/script.js - VERSION CORRIGÉE (BOUTON NOUVEAU ACTIF) */
 import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
 
 // ==========================================================================
 // 1. INITIALISATION & CONNEXION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    chargerLogoBase64(); // Prépare le logo pour les PDF
+    chargerLogoBase64(); 
     const loader = document.getElementById('app-loader');
     
-    // Vérification Utilisateur Connecté
     onAuthStateChanged(auth, (user) => {
         if(loader) loader.style.display = 'none';
         if (user) {
             document.getElementById('login-screen').classList.add('hidden');
-            // On charge la liste des clients pour l'import
             chargerClientsFacturation(); 
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
     });
 
-    // Boutons de l'interface
     if(document.getElementById('btn-login')) {
         document.getElementById('btn-login').addEventListener('click', async () => {
             try { 
@@ -29,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Boutons d'action
     if(document.getElementById('btn-import')) {
         document.getElementById('btn-import').addEventListener('click', importerClient);
     }
@@ -38,88 +36,53 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. FONCTIONS UTILITAIRES (DESIGN EXACT & LOGO)
+// 2. FONCTIONS INTERFACE (NOUVEAU / IMPORT)
 // ==========================================================================
-let logoBase64 = null;
 
-// Charge l'image Logo.png en mémoire pour les PDF
-function chargerLogoBase64() {
-    const imgElement = document.getElementById('logo-source');
-    if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) return;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = imgElement.naturalWidth;
-    canvas.height = imgElement.naturalHeight;
-    ctx.drawImage(imgElement, 0, 0);
-    try { logoBase64 = canvas.toDataURL("image/png"); } catch (e) { logoBase64 = null; }
-}
+// --- A. GESTION DU BOUTON "NOUVEAU" (RESET) ---
+// Cette fonction était manquante, la voici restaurée.
+window.viderFormulaire = function() {
+    if(confirm("Voulez-vous vider tous les champs pour créer un nouveau dossier ?\n(Cela effacera les données non enregistrées)")) {
+        // On vide tous les champs texte et date du panneau Admin
+        const inputs = document.querySelectorAll('#view-admin input');
+        inputs.forEach(input => input.value = '');
+        
+        // On remet les selects à la première option
+        const selects = document.querySelectorAll('#view-admin select');
+        selects.forEach(select => select.selectedIndex = 0);
 
-// Ajoute le filigrane léger en fond (Optionnel, désactivé par défaut si pas besoin)
-function ajouterFiligrane(pdf) {
-    if (logoBase64) {
-        try {
-            pdf.saveGraphicsState();
-            pdf.setGState(new pdf.GState({ opacity: 0.06 }));
-            const width = 100; const height = 100; 
-            pdf.addImage(logoBase64, 'PNG', (210 - width) / 2, (297 - height) / 2, width, height);
-            pdf.restoreGraphicsState();
-        } catch(e) {}
+        // On remet les valeurs par défaut importantes
+        if(document.getElementById('immatriculation')) document.getElementById('immatriculation').value = 'DA-081-ZQ';
+        if(document.getElementById('faita')) document.getElementById('faita').value = 'THUIR';
+        if(document.getElementById('nationalite')) document.getElementById('nationalite').value = 'Française';
+        if(document.getElementById('nationalite_mandant')) document.getElementById('nationalite_mandant').value = 'Française';
+        
+        alert("✅ Formulaire réinitialisé. Vous pouvez saisir un nouveau dossier.");
     }
-}
+};
 
-// L'EN-TÊTE OFFICIEL
-// Utilise la couleur verte exacte : RGB(34, 155, 76)
-function headerPF(pdf, yPos = 20) {
-    pdf.setFont("helvetica", "bold"); 
-    pdf.setTextColor(34, 155, 76); // VERT EXACT
-    pdf.setFontSize(12);
-    pdf.text("POMPES FUNEBRES SOLIDAIRE PERPIGNAN", 105, yPos, { align: "center" });
-    
-    pdf.setTextColor(80); // GRIS FONCÉ
-    pdf.setFontSize(8); 
-    pdf.setFont("helvetica", "normal");
-    pdf.text("32 boulevard Léon Jean Grégory Thuir - TEL : 07.55.18.27.77", 105, yPos + 5, { align: "center" });
-    pdf.text("HABILITATION N° : 23-66-0205 | SIRET : 53927029800042", 105, yPos + 9, { align: "center" });
-    
-    pdf.setDrawColor(34, 155, 76); // LIGNE VERTE
-    pdf.setLineWidth(0.5);
-    pdf.line(40, yPos + 12, 170, yPos + 12);
-}
-
-// Récupère la valeur d'un champ HTML
-function getVal(id) { 
-    const el = document.getElementById(id); 
-    return el ? el.value : ""; 
-}
-
-// Formate la date (AAAA-MM-JJ -> JJ/MM/AAAA)
-function formatDate(d) { 
-    if (!d) return ".................";
-    if (d.includes("-")) return d.split("-").reverse().join("/");
-    return d;
-}
-
-// ==========================================================================
-// 3. LOGIQUE MÉTIER (IMPORT DEPUIS FACTURATION)
-// ==========================================================================
+// --- B. IMPORTATION CLIENTS (LIAISON FACTURATION) ---
 let clientsCache = [];
 
-// Va chercher les clients dans la base de données Facturation V2
 async function chargerClientsFacturation() {
     const select = document.getElementById('select-import-client');
     if(!select) return;
     try {
         const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
         const snap = await getDocs(q);
+        
         select.innerHTML = '<option value="">-- Sélectionner un dossier Facturation --</option>';
         clientsCache = [];
+        
         snap.forEach(doc => {
             const data = doc.data();
             if(data.client && data.client.nom) {
                 const opt = document.createElement('option');
                 opt.value = doc.id; 
-                // Affiche "NOM CLIENT | Défunt: NOM DÉFUNT"
-                opt.textContent = `${data.client.nom} | Défunt: ${data.defunt ? data.defunt.nom : '?'}`;
+                // On affiche le Type et le Numéro pour aider à retrouver le devis
+                const typeDoc = data.type || "DOC";
+                const numDoc = data.numero || "???";
+                opt.textContent = `${typeDoc} ${numDoc} | ${data.client.nom} (Défunt: ${data.defunt ? data.defunt.nom : '?'})`;
                 select.appendChild(opt);
                 clientsCache.push({ id: doc.id, data: data });
             }
@@ -127,27 +90,39 @@ async function chargerClientsFacturation() {
     } catch (e) { console.error("Erreur chargement clients:", e); }
 }
 
-// Remplit les champs quand on clique sur "Importer"
 function importerClient() {
     const id = document.getElementById('select-import-client').value;
     if(!id) return;
     const dossier = clientsCache.find(c => c.id === id);
+    
     if(dossier) {
         const d = dossier.data;
-        // Remplissage automatique
+        // Remplissage automatique des champs
         if(d.client) {
-            document.getElementById('soussigne').value = d.client.nom || ''; // Le payeur devient le mandant
+            document.getElementById('soussigne').value = d.client.nom || ''; // Le client facturé devient le mandant
             document.getElementById('demeurant').value = d.client.adresse || '';
+            document.getElementById('declarant_nom').value = d.client.nom || '';
+            document.getElementById('declarant_adresse').value = d.client.adresse || '';
         }
         if(d.defunt) {
             document.getElementById('nom').value = d.defunt.nom || ''; 
+            document.getElementById('defunt_nom').value = d.defunt.nom || ''; 
         }
-        alert("✅ Données importées depuis la Facturation ! Complétez les détails manquants.");
+        
+        // Message d'aide pour l'utilisateur
+        const msg = `✅ Données importées du dossier ${d.numero} !\n\n` +
+                    `Pour voir le détail financier (prix, prestations), ` +
+                    `veuillez aller dans le menu 'Facturation V2' et chercher le document n° ${d.numero}.`;
+        alert(msg);
     }
 }
 
-// Sauvegarde le dossier administratif dans Firebase
+// --- C. SAUVEGARDE EN BASE ---
 async function sauvegarderEnBase() {
+    const btn = document.getElementById('btn-save-bdd');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+    
     try {
         const dossier = {
             defunt: { 
@@ -169,14 +144,73 @@ async function sauvegarderEnBase() {
             date_creation: new Date().toISOString()
         };
         await addDoc(collection(db, "dossiers_admin"), dossier);
-        alert("✅ Dossier sauvegardé avec succès en base de données !");
-    } catch(e) { alert("Erreur sauvegarde: " + e.message); }
+        btn.style.background = "#22c55e";
+        btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
+        setTimeout(() => { 
+            btn.innerHTML = oldText; 
+            btn.style.background = ""; 
+        }, 2000);
+    } catch(e) { 
+        alert("Erreur sauvegarde: " + e.message); 
+        btn.innerHTML = oldText;
+    }
 }
 
 // ==========================================================================
-// 4. MOTEUR PDF (VOTRE ANCIEN CODE INTEGRE & RESTAURÉ)
+// 3. FONCTIONS UTILITAIRES (PDF)
 // ==========================================================================
-// Toutes ces fonctions proviennent de votre fichier pdf_admin.js
+let logoBase64 = null;
+
+function chargerLogoBase64() {
+    const imgElement = document.getElementById('logo-source');
+    if (!imgElement || !imgElement.complete || imgElement.naturalWidth === 0) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = imgElement.naturalWidth;
+    canvas.height = imgElement.naturalHeight;
+    ctx.drawImage(imgElement, 0, 0);
+    try { logoBase64 = canvas.toDataURL("image/png"); } catch (e) { logoBase64 = null; }
+}
+
+function ajouterFiligrane(pdf) {
+    if (logoBase64) {
+        try {
+            pdf.saveGraphicsState();
+            pdf.setGState(new pdf.GState({ opacity: 0.06 }));
+            const width = 100; const height = 100; 
+            pdf.addImage(logoBase64, 'PNG', (210 - width) / 2, (297 - height) / 2, width, height);
+            pdf.restoreGraphicsState();
+        } catch(e) {}
+    }
+}
+
+function headerPF(pdf, yPos = 20) {
+    pdf.setFont("helvetica", "bold"); 
+    pdf.setTextColor(34, 155, 76); // VERT EXACT
+    pdf.setFontSize(12);
+    pdf.text("POMPES FUNEBRES SOLIDAIRE PERPIGNAN", 105, yPos, { align: "center" });
+    
+    pdf.setTextColor(80); 
+    pdf.setFontSize(8); 
+    pdf.setFont("helvetica", "normal");
+    pdf.text("32 boulevard Léon Jean Grégory Thuir - TEL : 07.55.18.27.77", 105, yPos + 5, { align: "center" });
+    pdf.text("HABILITATION N° : 23-66-0205 | SIRET : 53927029800042", 105, yPos + 9, { align: "center" });
+    
+    pdf.setDrawColor(34, 155, 76); 
+    pdf.setLineWidth(0.5);
+    pdf.line(40, yPos + 12, 170, yPos + 12);
+}
+
+function getVal(id) { const el = document.getElementById(id); return el ? el.value : ""; }
+function formatDate(d) { 
+    if (!d) return ".................";
+    if (d.includes("-")) return d.split("-").reverse().join("/");
+    return d;
+}
+
+// ==========================================================================
+// 4. MOTEUR PDF (VOS DOCUMENTS COMPLETS)
+// ==========================================================================
 
 // --- 4.1 POUVOIR ---
 window.genererPouvoir = function() {
@@ -217,7 +251,6 @@ window.genererPouvoir = function() {
     pdf.text("- Signer toute demande d'autorisation nécessaire.", x+5, y); y+=6;
     if(typePresta.includes("RAPATRIEMENT")) {
         pdf.text("- Accomplir les formalités consulaires et douanières.", x+5, y); y+=6;
-        pdf.text("- Organiser le transport aérien ou terrestre.", x+5, y); y+=6;
     }
     y = 240;
     pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, x, y);
@@ -238,7 +271,6 @@ window.genererDeclaration = function() {
     pdf.line(55, 39, 155, 39);
     
     let y = 60; const margin = 20;
-    // Fonction helper pour les lignes pointillées
     const drawLine = (label, val, yPos) => {
         pdf.setFont(fontMain, "bold"); pdf.text(label, margin, yPos);
         const startDots = margin + pdf.getTextWidth(label) + 2;
@@ -348,7 +380,6 @@ window.genererDemandeRapatriement = function() {
     
     pdf.text(`Destination : ${getVal("rap_pays")} - Ville : ${getVal("rap_ville")}`, x, y); y+=10;
     
-    // Vols (si renseignés)
     if(getVal("vol1_num")) {
         pdf.text(`Vol N° ${getVal("vol1_num")} - LTA : ${getVal("rap_lta")}`, x, y); y+=6;
         pdf.text(`Départ : ${getVal("vol1_dep_aero")} - Arrivée : ${getVal("vol1_arr_aero")}`, x, y); y+=10;
@@ -398,7 +429,6 @@ window.genererDemandeOuverture = function() {
     let y = 60;
     pdf.setFontSize(12);
     pdf.text(`POUR : ${type.toUpperCase()}`, 25, y);
-    // (Version simplifiée pour l'exemple, mais structure correcte)
     y += 20;
     pdf.setFont("times", "normal");
     pdf.text("Nous soussignons :", 25, y); y+=10;
