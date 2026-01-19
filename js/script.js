@@ -1,8 +1,7 @@
-/* Fichier : js/script.js (VERSION GESTION + SAUVEGARDE) */
-import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, limit } from "./config.js";
-// Note: On importe aussi 'updateDoc' et 'doc' si on veut modifier, mais commençons simple (ajout).
+/* Fichier : js/script.js (INTEGRATION TOTALE) */
+import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
 
-// 1. GESTION CONNEXION & CHARGEMENT
+// --- INITIALISATION ---
 document.addEventListener('DOMContentLoaded', () => {
     const loader = document.getElementById('app-loader');
     const loginScreen = document.getElementById('login-screen');
@@ -15,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(loginScreen) loginScreen.classList.add('hidden');
             if(mainContent) mainContent.classList.remove('hidden');
             if(sidebar) sidebar.classList.remove('hidden');
-            chargerDossiers(); // ON CHARGE LA LISTE AU DEMARRAGE
+            chargerClientsFacturation(); // IMPORT DEPUIS FACTURATION
         } else {
             if(loginScreen) loginScreen.classList.remove('hidden');
             if(mainContent) mainContent.classList.add('hidden');
@@ -23,238 +22,195 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const btnLogout = document.getElementById('btn-logout');
-    if(btnLogout) btnLogout.addEventListener('click', () => { if(confirm("Se déconnecter ?")) signOut(auth); });
-
-    const btnLogin = document.getElementById('btn-login');
-    if(btnLogin) btnLogin.addEventListener('click', async () => {
-        try {
-            await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value);
-        } catch (e) { document.getElementById('login-error').textContent = "Erreur d'identification"; }
+    if(document.getElementById('btn-login')) document.getElementById('btn-login').addEventListener('click', async () => {
+        try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); }
+        catch(e) { alert("Erreur connexion"); }
     });
-
-    // BOUTON SAUVEGARDER
-    const btnSave = document.getElementById('btn-save-admin');
-    if(btnSave) btnSave.addEventListener('click', sauvegarderDossier);
+    
+    // BOUTON IMPORT
+    document.getElementById('btn-import').addEventListener('click', importerClient);
 });
 
-// --- FONCTIONS BASE DE DONNEES ---
+// --- LIAISON AVEC LA FACTURATION V2 (LE "LINK") ---
+let clientsCache = [];
 
-async function sauvegarderDossier() {
-    const btn = document.getElementById('btn-save-admin');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
-    btn.disabled = true;
-
-    try {
-        const dossier = {
-            defunt_nom: document.getElementById('defunt_nom').value,
-            date_deces: document.getElementById('date_deces').value,
-            heure_deces: document.getElementById('heure_deces').value,
-            lieu_deces: document.getElementById('lieu_deces').value,
-            date_naissance: document.getElementById('date_naissance').value,
-            domicile_defunt: document.getElementById('domicile_defunt').value,
-            
-            declarant_nom: document.getElementById('declarant_nom').value,
-            declarant_lien: document.getElementById('declarant_lien').value,
-            
-            lieu_mise_biere: document.getElementById('lieu_mise_biere').value,
-            destination: document.getElementById('destination').value,
-            vehicule_immat: document.getElementById('vehicule_immat').value,
-            chauffeur_nom: document.getElementById('chauffeur_nom').value,
-            
-            date_creation: new Date().toISOString()
-        };
-
-        if(!dossier.defunt_nom) throw new Error("Le nom du défunt est obligatoire.");
-
-        // On enregistre dans une nouvelle collection "dossiers_admin"
-        await addDoc(collection(db, "dossiers_admin"), dossier);
-        
-        btn.innerHTML = '✅ Enregistré !';
-        btn.style.background = '#22c55e';
-        setTimeout(() => { 
-            btn.innerHTML = originalText; 
-            btn.style.background = ''; 
-            btn.disabled = false;
-        }, 2000);
-
-        chargerDossiers(); // On rafraîchit la liste
-
-    } catch (e) {
-        console.error(e);
-        alert("Erreur : " + e.message);
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-}
-
-async function chargerDossiers() {
-    const tbody = document.getElementById('list-dossiers-body');
-    if(!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="2">Chargement...</td></tr>';
+async function chargerClientsFacturation() {
+    const select = document.getElementById('select-import-client');
+    select.innerHTML = '<option>Chargement...</option>';
     
     try {
-        const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"), limit(20));
+        // On va chercher dans la collection des FACTURES car c'est là que sont les clients
+        const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
         const snap = await getDocs(q);
         
-        tbody.innerHTML = '';
-        if(snap.empty) {
-            tbody.innerHTML = '<tr><td colspan="2" style="color:#94a3b8; font-style:italic;">Aucun dossier.</td></tr>';
-            return;
-        }
+        select.innerHTML = '<option value="">-- Sélectionner un dossier Facturation --</option>';
+        clientsCache = [];
 
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <div style="font-weight:bold;">${data.defunt_nom}</div>
-                    <div style="font-size:0.8em; color:#64748b;">${new Date(data.date_creation).toLocaleDateString()}</div>
-                </td>
-                <td style="text-align:right;">
-                    <button class="btn-icon" style="color:#3b82f6;" title="Charger"><i class="fas fa-folder-open"></i></button>
-                </td>
-            `;
-            // Clic sur le bouton Charger
-            tr.querySelector('button').addEventListener('click', () => {
-                remplirFormulaire(data);
-            });
-            tbody.appendChild(tr);
+        snap.forEach(doc => {
+            const data = doc.data();
+            if(data.client && data.client.nom) {
+                // On crée une entrée simple pour la liste
+                const label = `${data.client.nom} (Défunt: ${data.defunt ? data.defunt.nom : '?'})`;
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.textContent = label;
+                select.appendChild(opt);
+                clientsCache.push({ id: doc.id, data: data });
+            }
         });
-
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Erreur chargement clients facturation", e); }
 }
 
-function remplirFormulaire(data) {
-    if(confirm("Charger le dossier de " + data.defunt_nom + " ?")) {
-        document.getElementById('defunt_nom').value = data.defunt_nom || '';
-        document.getElementById('date_deces').value = data.date_deces || '';
-        document.getElementById('heure_deces').value = data.heure_deces || '';
-        document.getElementById('lieu_deces').value = data.lieu_deces || '';
-        document.getElementById('date_naissance').value = data.date_naissance || '';
-        document.getElementById('domicile_defunt').value = data.domicile_defunt || '';
-        
-        document.getElementById('declarant_nom').value = data.declarant_nom || '';
-        document.getElementById('declarant_lien').value = data.declarant_lien || '';
-        
-        document.getElementById('lieu_mise_biere').value = data.lieu_mise_biere || '';
-        document.getElementById('destination').value = data.destination || '';
-        document.getElementById('vehicule_immat').value = data.vehicule_immat || 'DA-081-ZQ';
-        document.getElementById('chauffeur_nom').value = data.chauffeur_nom || '';
+function importerClient() {
+    const id = document.getElementById('select-import-client').value;
+    if(!id) return;
+    
+    const dossier = clientsCache.find(c => c.id === id);
+    if(dossier) {
+        const d = dossier.data;
+        // Remplissage automatique
+        if(d.client) {
+            document.getElementById('declarant_nom').value = d.client.nom || '';
+            document.getElementById('declarant_adresse').value = d.client.adresse || '';
+        }
+        if(d.defunt) {
+            document.getElementById('defunt_nom').value = d.defunt.nom || '';
+            // On essaie de séparer Nom Prénom si possible, sinon tout dans Nom
+            document.getElementById('defunt_prenom').value = ''; 
+        }
+        alert("✅ Données importées depuis la Facture N° " + d.numero);
     }
 }
 
-window.viderFormulaire = function() {
-    if(confirm("Tout effacer pour un nouveau dossier ?")) {
-        document.querySelectorAll('input').forEach(i => i.value = '');
-        document.getElementById('vehicule_immat').value = 'DA-081-ZQ';
-    }
-}
-
-// 2. GENERATEUR PDF (DESIGN ORIGINAL GARANTI)
+// --- GENERATEUR PDF COMPLEXE (ISSU DE VOTRE ANCIEN FICHIER) ---
 window.genererPDF = function(type) {
-    if (!window.jspdf) { alert("Erreur : Librairie PDF non chargée."); return; }
+    if (!window.jspdf) { alert("Erreur PDF"); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // DONNEES
-    const defunt = document.getElementById('defunt_nom').value || "...................................";
-    const dateDeces = document.getElementById('date_deces').value;
-    const heureDeces = document.getElementById('heure_deces').value || "......";
-    const lieuDeces = document.getElementById('lieu_deces').value || "...................................";
-    const dateNaissance = document.getElementById('date_naissance').value;
-    const domicile = document.getElementById('domicile_defunt').value || "...................................";
+    // DONNEES FORMULAIRE
+    const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value : "";
     
-    const declarant = document.getElementById('declarant_nom').value || "...................................";
-    const declarantLien = document.getElementById('declarant_lien') ? document.getElementById('declarant_lien').value : "";
+    const defunt = `${getVal('defunt_nom')} ${getVal('defunt_prenom')}`;
+    const dateDeces = getVal('date_deces');
+    const lieuDeces = getVal('lieu_deces');
+    const neLe = getVal('date_naissance');
+    const lieuNaiss = getVal('lieu_naissance');
+    const declarant = getVal('declarant_nom');
+    const adresseDeclarant = getVal('declarant_adresse');
+    const lien = getVal('declarant_lien');
     
-    const lieuMiseBiere = document.getElementById('lieu_mise_biere').value || "...................................";
-    const destination = document.getElementById('destination').value || "...................................";
-    const immat = document.getElementById('vehicule_immat').value || "DA-081-ZQ";
-    const chauffeur = document.getElementById('chauffeur_nom').value || "...................................";
+    // Dates formatées
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : "................";
+    const dateStr = fmtDate(dateDeces);
+    const today = new Date().toLocaleDateString('fr-FR');
 
-    // FORMATAGE
-    const fmtDate = (d) => {
-        if(!d) return "..................";
-        const [y, m, dDay] = d.split('-');
-        return `${dDay}/${m}/${y}`;
-    };
-    const dateStr = dateDeces ? fmtDate(dateDeces) : "..................";
-    const neLeStr = dateNaissance ? fmtDate(dateNaissance) : "..................";
-    const dateJour = new Date().toLocaleDateString('fr-FR');
-
-    // EN-TÊTE
+    // EN-TÊTE PRO (LOGO + SIRET)
     const imgLogo = document.getElementById('logo-model');
     if (imgLogo && imgLogo.src) { try { doc.addImage(imgLogo, 'PNG', 15, 10, 40, 40); } catch(e){} }
 
     doc.setTextColor(22, 101, 52); 
     doc.setFontSize(14); doc.setFont("helvetica", "bold");
     doc.text("POMPES FUNEBRES SOLIDAIRE", 60, 20);
-    
     doc.setTextColor(50, 50, 50); 
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
     doc.text("32 boulevard Léon Jean Grégory, 66300 THUIR", 60, 26);
-    doc.text("Tél: 07 55 18 27 77", 60, 31);
-    doc.text("HABILITATION N°: 23-66-0205 | SIRET: 53927029800042", 60, 36);
+    doc.text("Tél: 07 55 18 27 77 | Habilitation 23-66-0205", 60, 31);
+    doc.setDrawColor(22, 101, 52); doc.line(15, 50, 195, 50);
+
+    let y = 65;
+    doc.setTextColor(0);
+
+    // --- LOGIQUE SPECIFIQUE SELON LE TYPE ---
+
+    if (type === 'PV_FERMETURE') {
+        // VOTRE ANCIEN CODE "PV POLICE" RESTAURÉ
+        doc.setFillColor(52, 73, 94); doc.rect(0, 35, 210, 15, 'F');
+        doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(255, 255, 255);
+        doc.text("PROCÈS-VERBAL DE FERMETURE DE CERCUEIL", 105, 45, { align: "center" });
+        
+        doc.setTextColor(0); doc.setFontSize(10); y = 70;
+        doc.text("Nous, soussignés, certifions avoir procédé à la fermeture et au scellement du cercueil.", 20, y); y+=10;
+        
+        doc.setFillColor(240, 240, 240); doc.rect(20, y, 170, 30, 'F');
+        doc.setFont("helvetica", "bold"); doc.text("IDENTITÉ DU DÉFUNT(E)", 25, y+6);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Nom : ${defunt}`, 25, y+15);
+        doc.text(`Né(e) le : ${fmtDate(neLe)} à ${lieuNaiss}`, 25, y+22);
+        doc.text(`Décédé(e) le : ${dateStr} à ${lieuDeces}`, 100, y+22); y+=40;
+
+        doc.setFont("helvetica", "bold"); doc.text("EN PRÉSENCE DE :", 20, y); y+=10;
+        doc.rect(20, y, 170, 30);
+        doc.text("LA FAMILLE / AUTORITÉ DE POLICE", 25, y+6);
+        doc.setFont("helvetica", "normal");
+        doc.text("Nom & Qualité : .................................................................", 25, y+15);
+        
+        y+=40;
+        doc.text(`Fait à ${getVal('lieu_mise_biere')}, le ${today}`, 20, y); y+=20;
+        doc.text("Signature Opérateur Funéraire", 30, y);
+        doc.text("Signature Police / Famille", 130, y);
+    }
     
-    doc.setDrawColor(22, 101, 52); doc.setLineWidth(0.5); doc.line(15, 55, 195, 55);
+    else if (type === 'RAPATRIEMENT') {
+        // VOTRE ANCIEN CODE "PREFECTURE" RESTAURÉ
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
+        doc.text("DEMANDE D'AUTORISATION DE TRANSPORT DE CORPS", 105, y, {align:'center'});
+        doc.text("HORS DU TERRITOIRE METROPOLITAIN", 105, y+8, {align:'center'}); y+=25;
+        
+        doc.setFontSize(11); doc.setFont("helvetica", "normal");
+        doc.text("Je soussigné M. CHERKAOUI Mustapha, Dirigeant PF Solidaire,", 20, y); y+=8;
+        doc.text("Sollicite l'autorisation de transporter le corps de :", 20, y); y+=15;
+        
+        doc.setFont("helvetica", "bold"); doc.text(defunt, 50, y); doc.setFont("helvetica", "normal"); y+=10;
+        doc.text(`Vers le pays : ${getVal('rap_pays')}`, 20, y); y+=10;
+        doc.text(`Ville de destination : ${getVal('rap_ville_dest')}`, 20, y); y+=15;
+        
+        doc.setFont("helvetica", "bold"); doc.text("MOYENS DE TRANSPORT", 20, y); y+=10; doc.setFont("helvetica", "normal");
+        doc.text(`- Vol N° : ${getVal('rap_vol_num')}`, 20, y); y+=7;
+        doc.text(`- LTA : ${getVal('rap_lta')}`, 20, y); y+=7;
+        doc.text(`- Aéroport Départ : ${getVal('rap_aero_dep')}`, 20, y); y+=7;
+        doc.text(`- Aéroport Arrivée : ${getVal('rap_aero_arr')}`, 20, y); y+=20;
+        
+        doc.text("Fait à THUIR, le " + today, 20, y); y+=20;
+        doc.text("Signature et Cachet", 130, y);
+    }
+    
+    else if (type === 'CREMATION') {
+         doc.setFontSize(16); doc.setFont("helvetica", "bold");
+         doc.text("DEMANDE D'AUTORISATION DE CRÉMATION", 105, y, {align:'center'}); y+=20;
+         doc.setFontSize(11); doc.setFont("helvetica", "normal");
+         
+         doc.text(`Je soussigné(e) ${declarant}, lien : ${lien}`, 20, y); y+=10;
+         doc.text(`Demeurant : ${adresseDeclarant}`, 20, y); y+=15;
+         doc.text("Sollicite l'autorisation de procéder à la crémation de :", 20, y); y+=10;
+         doc.setFont("helvetica", "bold"); doc.text(defunt, 40, y); doc.setFont("helvetica", "normal"); y+=10;
+         doc.text(`Au crématorium de : ${getVal('destination')}`, 20, y); y+=20;
+         doc.text("Je certifie que le défunt n'était pas porteur d'un stimulateur cardiaque.", 20, y); y+=20;
+         doc.text("Signature du demandeur :", 120, y);
+    }
 
-    doc.setTextColor(0, 0, 0);
-    let y = 70;
-
-    if (type === 'POUVOIR') {
-        doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor(22, 101, 52);
+    else if (type === 'POUVOIR') {
+        doc.setFontSize(18); doc.setFont("helvetica", "bold");
         doc.text("POUVOIR", 105, y, {align:'center'}); y += 20;
-        doc.setFontSize(12); doc.setFont("helvetica", "normal"); doc.setTextColor(0);
+        doc.setFontSize(12); doc.setFont("helvetica", "normal");
         doc.text(`Je soussigné(e) : ${declarant}`, 20, y); y+=10;
-        doc.text(`Agissant en qualité de : ${declarantLien}`, 20, y); y+=15;
-        doc.text("Donne pouvoir aux PF SOLIDAIRE PERPIGNAN pour effectuer", 20, y); y+=7;
-        doc.text("les démarches administratives relatives aux obsèques de :", 20, y); y+=15;
-        doc.setFont("helvetica", "bold"); doc.text(`M. / Mme : ${defunt}`, 20, y); y+=8; doc.setFont("helvetica", "normal");
+        doc.text(`Agissant en qualité de : ${lien}`, 20, y); y+=10;
+        doc.text(`Demeurant : ${adresseDeclarant}`, 20, y); y+=15;
+        doc.text("Donne pouvoir aux PF SOLIDAIRE PERPIGNAN pour les démarches.", 20, y); y+=15;
+        doc.setFont("helvetica", "bold"); doc.text(`Défunt : ${defunt}`, 20, y); y+=10; doc.setFont("helvetica", "normal");
         doc.text(`Décédé(e) le ${dateStr} à ${lieuDeces}`, 20, y); y+=20;
-        doc.text("Pour valoir ce que de droit.", 20, y); y+=30;
-        doc.text(`Fait à THUIR, le ${dateJour}`, 20, y); y+=20;
-        doc.text("Le Mandant (Signature)", 130, y);
+        doc.text("Signature :", 130, y);
     }
-    else if (type === 'DECES') {
-        doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor(22, 101, 52);
-        doc.text("DÉCLARATION DE DÉCÈS", 105, y, {align:'center'}); y += 20;
-        doc.setFontSize(12); doc.setFont("helvetica", "normal"); doc.setTextColor(0);
-        doc.text("À Monsieur l'Officier de l'État Civil,", 20, y); y+=15;
-        doc.text(`Nous déclarons le décès de : ${defunt}`, 20, y); y+=10;
-        doc.text(`Né(e) le : ${neLeStr}`, 20, y); y+=10;
-        doc.text(`Domicilié(e) : ${domicile}`, 20, y); y+=15;
-        doc.text(`Survenu le ${dateStr} à ${heureDeces}`, 20, y); y+=10;
-        doc.text(`À la commune de : ${lieuDeces}`, 20, y); y+=25;
-        doc.text("Le Déclarant (PF SOLIDAIRE) :", 120, y);
-    }
-    else if (type === 'FERMETURE') {
-        doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor(22, 101, 52);
-        doc.text("DEMANDE DE FERMETURE", 105, y, {align:'center'}); y+=8;
-        doc.text("DE CERCUEIL", 105, y, {align:'center'}); y += 20;
-        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.setTextColor(0);
-        doc.text("Je soussigné M. CHERKAOUI Mustapha, Dirigeant PF SOLIDAIRE,", 20, y); y+=10;
-        doc.text("Sollicite l'autorisation de fermeture du cercueil de :", 20, y); y+=15;
-        doc.setFont("helvetica", "bold"); doc.text(`${defunt}`, 40, y); y+=15; doc.setFont("helvetica", "normal");
-        doc.text(`Mise en bière à : ${lieuMiseBiere}`, 20, y); y+=10;
-        doc.text(`Destination : ${destination}`, 20, y); y+=30;
-        doc.text(`Fait à THUIR, le ${dateJour}`, 20, y); y+=20;
-        doc.text("Cachet de l'entreprise :", 120, y);
-    }
-    else if (type === 'TRANSPORT') {
-        doc.setFontSize(18); doc.setFont("helvetica", "bold"); doc.setTextColor(22, 101, 52);
-        doc.text("DÉCLARATION DE TRANSPORT", 105, y, {align:'center'}); y+=8;
-        doc.text("AVANT MISE EN BIÈRE", 105, y, {align:'center'}); y += 20;
-        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.setTextColor(0);
-        doc.text(`Défunt : ${defunt}`, 20, y); y+=10;
-        doc.text(`Départ : ${lieuMiseBiere}`, 20, y); y+=10;
-        doc.text(`Arrivée : ${destination}`, 20, y); y+=20;
-        doc.setFont("helvetica", "bold"); doc.text("MOYENS DE TRANSPORT :", 20, y); y+=10; doc.setFont("helvetica", "normal");
-        doc.text(`- Véhicule : ${immat}`, 20, y); y+=10;
-        doc.text(`- Chauffeur : ${chauffeur}`, 20, y); y+=30;
-        doc.text("Le Conseiller Funéraire", 120, y);
+    
+    else {
+        // DEFAUT (Transport, Fermeture classique...)
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
+        doc.text("DOCUMENT ADMINISTRATIF", 105, y, {align:'center'}); y+=20;
+        doc.setFontSize(12); doc.setFont("helvetica", "normal");
+        doc.text(`Concerne : ${defunt}`, 20, y); y+=10;
+        doc.text(`Date décès : ${dateStr}`, 20, y); y+=10;
+        doc.text(`Transport : ${getVal('vehicule_immat')}`, 20, y); y+=10;
+        doc.text(`Chauffeur : ${getVal('chauffeur_nom')}`, 20, y);
     }
 
     doc.save(`${type}_${defunt}.pdf`);
