@@ -11,7 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-<img id="logo-model" src="Logo.png" style="display:none;" crossorigin="anonymous">
+
     <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center;">
         <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:#3b82f6;"></i>
     </div>
@@ -50,18 +50,21 @@
                 <h1>Bienvenue</h1>
                 <p style="color:#64748b;">Sélectionnez un module pour commencer.</p>
             </div>
+
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-top:20px;">
-                <div class="card" style="cursor:pointer;" onclick="showSection('admin')">
-                    <div style="display:flex; align-items:center; gap:15px;">
+                <div class="card" style="cursor:pointer; transition:transform 0.2s;" onclick="showSection('admin')" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                         <div style="width:50px; height:50px; background:#e0f2fe; color:#0284c7; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5em;"><i class="fas fa-folder-open"></i></div>
-                        <div><h3 style="margin:0;">Administration</h3><div style="color:#64748b; font-size:0.9em;">Papiers Mairie, Police...</div></div>
+                        <div><h3 style="margin:0;">Administration</h3><div style="color:#64748b; font-size:0.9em;">Papiers Mairie, Police, Transport...</div></div>
+                        <i class="fas fa-chevron-right" style="margin-left:auto; color:#cbd5e1;"></i>
                     </div>
                 </div>
                 <a href="facturation_v2.html" style="text-decoration:none; color:inherit;">
-                    <div class="card" style="cursor:pointer;">
-                        <div style="display:flex; align-items:center; gap:15px;">
+                    <div class="card" style="cursor:pointer; transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                             <div style="width:50px; height:50px; background:#dcfce7; color:#166534; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.5em;"><i class="fas fa-calculator"></i></div>
-                            <div><h3 style="margin:0;">Comptabilité</h3><div style="color:#64748b; font-size:0.9em;">Devis & Factures</div></div>
+                            <div><h3 style="margin:0;">Comptabilité & Factures</h3><div style="color:#64748b; font-size:0.9em;">Devis, Factures, Encaissements (V2)</div></div>
+                            <i class="fas fa-chevron-right" style="margin-left:auto; color:#cbd5e1;"></i>
                         </div>
                     </div>
                 </a>
@@ -70,57 +73,83 @@
 
         <div id="view-admin" class="hidden">
             <div class="page-header">
-                <h1>Générateur de Documents</h1>
-                <button class="btn-nav" onclick="showSection('home')">Retour</button>
+                <h1>Gestion des Dossiers Administratifs</h1>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" onclick="window.viderFormulaire()" style="background:#64748b; color:white;">Nouveau</button>
+                    <button class="btn btn-green" id="btn-save-admin"><i class="fas fa-save"></i> ENREGISTRER LE DOSSIER</button>
+                </div>
             </div>
             
-            <div class="card">
-                <h3><i class="fas fa-user"></i> Le Défunt</h3>
-                <div class="form-grid">
-                    <div><label>Nom & Prénom</label><input type="text" id="defunt_nom" placeholder="ex: DUPONT Jean"></div>
-                    <div><label>Date du Décès</label><input type="date" id="date_deces"></div>
-                    <div><label>Heure du Décès</label><input type="time" id="heure_deces"></div>
-                    <div>
-                        <label>Lieu du Décès (Ville)</label>
-                        <input type="text" id="lieu_deces" list="list-villes" placeholder="Ville...">
+            <div class="form-grid-layout" style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+                
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="card">
+                        <h3><i class="fas fa-user"></i> Le Défunt</h3>
+                        <div class="form-grid">
+                            <input type="hidden" id="dossier_id"> <div><label>Nom & Prénom</label><input type="text" id="defunt_nom" placeholder="ex: DUPONT Jean"></div>
+                            <div><label>Date du Décès</label><input type="date" id="date_deces"></div>
+                            <div><label>Heure du Décès</label><input type="time" id="heure_deces"></div>
+                            <div><label>Lieu du Décès</label><input type="text" id="lieu_deces" list="list-villes" placeholder="Ville..."></div>
+                            <div><label>Date de Naissance</label><input type="date" id="date_naissance"></div>
+                            <div><label>Domicile</label><input type="text" id="domicile_defunt"></div>
+                        </div>
                         <datalist id="list-villes">
-                            <option value="Perpignan"><option value="Thuir"><option value="Canet-en-Roussillon"><option value="Saint-Estève">
-                            <option value="Cabestany"><option value="Rivesaltes"><option value="Toulouges">
+                            <option value="Perpignan"><option value="Thuir"><option value="Canet-en-Roussillon"><option value="Saint-Estève"><option value="Cabestany">
                         </datalist>
                     </div>
-                    <div><label>Date de Naissance</label><input type="date" id="date_naissance"></div>
-                    <div><label>Domicile</label><input type="text" id="domicile_defunt" placeholder="Adresse complète"></div>
-                </div>
-            </div>
 
-            <div class="card">
-                <h3><i class="fas fa-user-friends"></i> Le Déclarant / Famille</h3>
-                <div class="form-grid">
-                    <div><label>Nom du Déclarant</label><input type="text" id="declarant_nom"></div>
-                    <div><label>Lien de Parenté</label><select id="declarant_lien"><option>Fils/Fille</option><option>Conjoint(e)</option><option>Frère/Soeur</option><option>Autre</option></select></div>
-                </div>
-            </div>
+                    <div class="card">
+                        <h3><i class="fas fa-user-friends"></i> Le Déclarant</h3>
+                        <div class="form-grid">
+                            <div><label>Nom du Déclarant</label><input type="text" id="declarant_nom"></div>
+                            <div><label>Lien de Parenté</label><select id="declarant_lien"><option>Fils/Fille</option><option>Conjoint(e)</option><option>Frère/Soeur</option><option>Autre</option></select></div>
+                        </div>
+                    </div>
 
-            <div class="card">
-                <h3><i class="fas fa-truck"></i> Transport & Technique</h3>
-                <div class="form-grid">
-                    <div><label>Lieu de Mise en Bière</label><input type="text" id="lieu_mise_biere" list="list-villes"></div>
-                    <div><label>Destination (Cimetière/Crématorium)</label><input type="text" id="destination"></div>
-                    <div><label>Véhicule (Immat)</label><input type="text" id="vehicule_immat" value="GF-123-ZY"></div>
-                    <div><label>Chauffeur</label><input type="text" id="chauffeur_nom" value="M. Le Chauffeur"></div>
-                </div>
-            </div>
+                    <div class="card">
+                        <h3><i class="fas fa-truck"></i> Transport & Technique</h3>
+                        <div class="form-grid">
+                            <div><label>Mise en Bière (Lieu)</label><input type="text" id="lieu_mise_biere" list="list-villes"></div>
+                            <div><label>Destination</label><input type="text" id="destination"></div>
+                            <div><label>Véhicule</label><input type="text" id="vehicule_immat" value="DA-081-ZQ"></div>
+                            <div><label>Chauffeur</label><input type="text" id="chauffeur_nom"></div>
+                        </div>
+                    </div>
 
-            <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="btn btn-purple" onclick="window.genererPDF('POUVOIR')"><i class="fas fa-file-signature"></i> Pouvoir</button>
-                <button class="btn btn-purple" onclick="window.genererPDF('DECES')"><i class="fas fa-file-medical"></i> Déclaration Décès</button>
-                <button class="btn btn-purple" onclick="window.genererPDF('FERMETURE')"><i class="fas fa-box"></i> Fermeture Cercueil</button>
-                <button class="btn btn-purple" onclick="window.genererPDF('TRANSPORT')"><i class="fas fa-ambulance"></i> Transport Corps</button>
+                    <div class="card" style="background:#f8fafc; border:none;">
+                        <h4 style="margin-top:0;">Générer les documents :</h4>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="btn btn-purple" onclick="window.genererPDF('POUVOIR')"><i class="fas fa-file-signature"></i> Pouvoir</button>
+                            <button class="btn btn-purple" onclick="window.genererPDF('DECES')"><i class="fas fa-file-medical"></i> Déclaration Décès</button>
+                            <button class="btn btn-purple" onclick="window.genererPDF('FERMETURE')"><i class="fas fa-box"></i> Fermeture Cercueil</button>
+                            <button class="btn btn-purple" onclick="window.genererPDF('TRANSPORT')"><i class="fas fa-ambulance"></i> Transport Corps</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="height:fit-content;">
+                    <h3><i class="fas fa-history"></i> Historique Dossiers</h3>
+                    <div style="max-height:600px; overflow-y:auto;">
+                        <table class="history-table" style="font-size:0.9em;">
+                            <thead>
+                                <tr>
+                                    <th>Défunt</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-dossiers-body">
+                                <tr><td colspan="2" style="text-align:center;">Chargement...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
 
     </main>
 
+    <img id="logo-model" src="Logo.png" style="display:none;" crossorigin="anonymous">
     <script>
         function showSection(id) {
             document.getElementById('view-home').classList.add('hidden');
@@ -128,7 +157,6 @@
             document.getElementById('view-' + id).classList.remove('hidden');
         }
     </script>
-    
     <script type="module" src="js/script.js"></script>
 </body>
 </html>
