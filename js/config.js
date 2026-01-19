@@ -29,7 +29,7 @@ try {
 
 // Exportation (AJOUT DE 'doc' et 'updateDoc' ICI AUSSI)
 export { auth, db, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, onAuthStateChanged, signInWithEmailAndPassword, signOut };
-    
+
 
 
 
