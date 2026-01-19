@@ -1,5 +1,5 @@
-/* Fichier : js/script.js - VERSION FUSIONNÉE (PDF EXPERT + SUPPRESSION) */
-// 1. On ajoute 'deleteDoc' et 'doc' dans les imports pour la suppression
+/* Fichier : js/script.js - VERSION EXPERTE (PDF COMPLETS + SUPPRESSION) */
+// On importe deleteDoc et doc pour que le bouton poubelle marche
 import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, doc } from "./config.js";
 
 // ==========================================================================
@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(loader) loader.style.display = 'none';
         if (user) {
             document.getElementById('login-screen').classList.add('hidden');
+            window.chargerBaseClients(); // On charge la liste
             chargerClientsFacturation(); 
-            window.chargerBaseClients(); // On charge la liste au démarrage
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
@@ -30,22 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if(document.getElementById('btn-import')) document.getElementById('btn-import').addEventListener('click', importerClient);
     if(document.getElementById('btn-save-bdd')) document.getElementById('btn-save-bdd').addEventListener('click', sauvegarderEnBase);
-    
-    // Recherche
-    const searchInput = document.getElementById('search-client');
-    if(searchInput) {
-        searchInput.addEventListener('keyup', (e) => {
-            const term = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#clients-table-body tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
-            });
-        });
-    }
 });
 
-// Navigation
 window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-base').classList.add('hidden');
@@ -85,7 +71,7 @@ window.togglePolice = function() {
 };
 
 // ==========================================================================
-// 2. LOGIQUE MÉTIER (IMPORT / SAVE / DELETE)
+// 2. LOGIQUE MÉTIER
 // ==========================================================================
 
 window.viderFormulaire = function() {
@@ -159,14 +145,14 @@ async function sauvegarderEnBase() {
     } catch(e) { alert("Erreur: " + e.message); btn.innerHTML = oldText; }
 }
 
-// --- FONCTION SUPPRESSION (AJOUTÉE) ---
+// --- AJOUT DE LA FONCTION SUPPRIMER (Celle qui manquait) ---
 window.supprimerDossier = async function(id) {
     if(confirm("⚠️ Supprimer définitivement ce dossier ?")) {
         try {
             await deleteDoc(doc(db, "dossiers_admin", id));
             alert("🗑️ Dossier supprimé.");
             window.chargerBaseClients();
-        } catch (e) { alert("Erreur suppression: " + e.message); }
+        } catch (e) { alert("Erreur : " + e.message); }
     }
 };
 
@@ -185,6 +171,7 @@ window.chargerBaseClients = async function() {
             const dateC = new Date(data.date_creation).toLocaleDateString();
             const op = data.technique ? data.technique.type_operation : "Inhumation";
             
+            // J'AI AJOUTÉ LE BOUTON ROUGE ICI
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${dateC}</td>
@@ -192,8 +179,8 @@ window.chargerBaseClients = async function() {
                 <td>${data.mandant?.nom || '-'}</td>
                 <td><span class="badge">${op}</span></td>
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="window.showSection('admin')" title="Modifier"><i class="fas fa-edit" style="color:#3b82f6;"></i></button>
-                    <button class="btn-icon" onclick="window.supprimerDossier('${docSnap.id}')" title="Supprimer" style="margin-left:10px;"><i class="fas fa-trash" style="color:#ef4444;"></i></button>
+                    <button class="btn-icon" onclick="window.showSection('admin')"><i class="fas fa-edit" style="color:#3b82f6;"></i></button>
+                    <button class="btn-icon" onclick="window.supprimerDossier('${docSnap.id}')" style="margin-left:10px;"><i class="fas fa-trash" style="color:#ef4444;"></i></button>
                 </td>`;
             tbody.appendChild(tr);
         });
@@ -241,7 +228,6 @@ function getVal(key) {
         'destination': 'destination', 'vehicule_immat': 'immatriculation', 'chauffeur': 'chauffeur_nom',
         'cimetiere_nom': 'cimetiere_nom', 'num_concession': 'num_concession', 'titulaire_concession': 'titulaire_concession',
         'type_sepulture': 'type_sepulture',
-        // Rapatriement
         'rap_pays': 'rap_pays', 'rap_ville': 'rap_ville', 'rap_lta': 'rap_lta',
         'rap_immat': 'rap_immat', 'rap_date_dep_route': 'rap_date_dep_route',
         'rap_ville_dep': 'rap_ville_dep', 'rap_ville_arr': 'rap_ville_arr',
@@ -258,7 +244,7 @@ function getVal(key) {
 function formatDate(d) { return d?d.split("-").reverse().join("/"): "................."; }
 
 // ==========================================================================
-// 4. FONCTIONS PDF - RESTAURATION COMPLÈTE (VOTRE VERSION)
+// 4. FONCTIONS PDF - VOS VERSIONS EXPERTES ORIGINALES
 // ==========================================================================
 
 window.genererDemandeRapatriement = function() {
@@ -482,9 +468,7 @@ window.genererFermeture = function() {
     pdf.setFont("helvetica", "normal");
     pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
     pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
-    
     const isPolice = document.querySelector('input[name="type_presence"][value="police"]').checked;
-    
     pdf.setFont("helvetica", "bold"); pdf.text("EN PRÉSENCE DE :", x, y); y+=10;
     pdf.rect(x, y, 170, 30);
     if(isPolice) {
