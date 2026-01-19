@@ -3,157 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facturation PRO v2 - PF Solidaire</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>PF Solidaire - Facturation</title>
+    <link rel="stylesheet" href="style.css"> <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    
     <img id="logo-source" src="Logo.png" style="display:none;" crossorigin="anonymous">
 
-    <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column;">
-        <div style="font-size:2rem; color:#22c55e; margin-bottom:20px;"><i class="fas fa-circle-notch fa-spin"></i></div>
-        <div style="font-family:sans-serif; color:#64748b;">Chargement v2.0...</div>
-    </div>
-
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF SOLIDAIRE v2</div>
+        <div class="brand"><i class="fas fa-dove"></i> PF ERP</div>
         <ul class="nav-menu">
-            <li class="nav-item" style="margin-bottom: 20px;">
-                <a href="index.html" class="nav-link" style="background:rgba(255,255,255,0.1); border-left:4px solid #facc15;">
-                    <i class="fas fa-file-signature"></i> <strong>MODULE ADMIN</strong>
-                </a>
+            <li class="nav-item">
+                <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Accueil / Admin</a>
             </li>
-
-            <li class="nav-item"><a href="#" id="nav-dashboard" class="nav-link active"><i class="fas fa-list"></i> Compta / Factures</a></li>
-            
-            <li class="nav-item" style="margin-top:auto; border-top:1px solid rgba(255,255,255,0.1);">
+            <li class="nav-item">
+                <a href="#" class="nav-link active"><i class="fas fa-file-invoice-dollar"></i> Facturation</a>
+            </li>
+            <li class="nav-item" style="margin-top:auto;">
                 <a href="#" id="btn-logout" class="nav-link" style="color:#fca5a5;"><i class="fas fa-power-off"></i> Déconnexion</a>
             </li>
         </ul>
     </nav>
 
     <main class="main-content">
-        <div id="view-dashboard">
-            <div class="page-header">
-                <h1>Comptabilité & Facturation</h1>
-                <div style="display:flex; gap:10px;">
-                    <button id="btn-export" class="btn" style="background:#166534; color:white;"><i class="fas fa-file-excel"></i> Export Compta</button>
-                    <button id="btn-new-facture" class="btn btn-purple"><i class="fas fa-plus"></i> Nouveau Document</button>
-                </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:20px;">
-                <div style="background:white; padding:20px; border-radius:10px; border-left:5px solid #3b82f6; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="color:#64748b; font-size:0.9em; font-weight:bold;">CHIFFRE D'AFFAIRES (Annuel)</div>
-                    <div id="stat-ca" style="font-size:1.8em; font-weight:bold; color:#1e293b; margin-top:5px;">0,00 €</div>
-                </div>
-                <div style="background:white; padding:20px; border-radius:10px; border-left:5px solid #22c55e; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="color:#64748b; font-size:0.9em; font-weight:bold;">ENCAISSÉ</div>
-                    <div id="stat-paye" style="font-size:1.8em; font-weight:bold; color:#166534; margin-top:5px;">0,00 €</div>
-                </div>
-                <div style="background:white; padding:20px; border-radius:10px; border-left:5px solid #ef4444; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="color:#64748b; font-size:0.9em; font-weight:bold;">À PERCEVOIR</div>
-                    <div id="stat-reste" style="font-size:1.8em; font-weight:bold; color:#991b1b; margin-top:5px;">0,00 €</div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th><th>Numéro</th><th>Type</th><th>Client / Défunt</th>
-                            <th style="text-align:right">Total TTC</th><th style="text-align:right">Reste Dû</th>
-                            <th style="text-align:center">Statut</th><th style="text-align:center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
+        <div class="page-header">
+            <h1>Comptabilité & Facturation</h1>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-green" onclick="window.exporterCompta()"><i class="fas fa-file-excel"></i> Export Compta</button>
+                <button class="btn btn-purple" onclick="window.nouveauDocument()"><i class="fas fa-plus"></i> Nouveau Devis</button>
             </div>
         </div>
 
-        <div id="view-editor" class="hidden">
-            <div class="page-header">
-                <button id="btn-back" class="btn-nav"><i class="fas fa-arrow-left"></i> Retour</button>
-                <h1 id="editor-title">Nouveau Document</h1>
-            </div>
-
-            <div class="card">
-                <h3><i class="fas fa-user"></i> Informations</h3>
-                <div class="header-grid">
-                    <div>
-                        <label>Client (Soussigné)</label>
-                        <input type="text" id="input-client-nom" list="list-clients" placeholder="Nom du client..." autocomplete="off">
-                        <datalist id="list-clients"></datalist>
-                        <input type="text" id="input-client-adresse" placeholder="Adresse..." style="margin-top:5px;">
-                    </div>
-                    <div>
-                        <label>Défunt</label>
-                        <input type="text" id="input-defunt-nom" placeholder="Nom du défunt...">
-                        <div style="display:flex; gap:10px; margin-top:5px;">
-                            <select id="input-type-doc"><option value="DEVIS">DEVIS</option><option value="FACTURE">FACTURE</option></select>
-                            <input type="date" id="input-date">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                    <select id="select-modeles" style="max-width:250px;">
-                        <option value="">-- Appliquer un Modèle --</option>
-                        <option value="INHUMATION">Inhumation</option>
-                        <option value="CREMATION">Crémation</option>
-                        <option value="RAPATRIEMENT">Rapatriement</option>
-                        <option value="EXHUMATION">Exhumation</option>
-                        <option value="TRANSPORT">Transport</option>
-                    </select>
-                    <div>
-                        <button id="btn-add-section" class="btn-nav">Titre</button>
-                        <button id="btn-add-line" class="btn-nav">Ligne</button>
-                    </div>
-                </div>
-                <table class="invoice-table">
-                    <thead><tr><th>Description</th><th width="100">Type</th><th width="80">TVA</th><th width="100">Prix</th><th width="50"></th></tr></thead>
-                    <tbody id="lines-container"></tbody>
-                </table>
-                <div style="text-align:right; font-size:1.2em; font-weight:bold; margin-top:10px;">
-                    Total : <span id="display-total">0.00 €</span>
-                </div>
-            </div>
-
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:30px;">
             <div class="card" style="border-left: 4px solid #3b82f6;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3><i class="fas fa-euro-sign"></i> Règlements</h3>
-                    <div style="text-align:right;">
-                        <span style="color:#64748b; font-size:0.9em;">Reste à payer :</span>
-                        <div id="display-reste" style="font-size:1.4em; font-weight:bold; color:#ef4444;">0.00 €</div>
-                    </div>
-                </div>
-                <div style="display:flex; gap:10px; margin:15px 0; background:#f8fafc; padding:10px; border-radius:6px; flex-wrap:wrap;">
-                    <input type="date" id="pay-date" style="border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
-                    <select id="pay-mode" style="border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
-                        <option value="VIREMENT">Virement</option><option value="CHÈQUE">Chèque</option><option value="ESPÈCES">Espèces</option><option value="CB">Carte Bancaire</option>
-                    </select>
-                    <input type="number" id="pay-montant" placeholder="Montant €" style="width:120px; border:1px solid #cbd5e1; padding:8px; border-radius:4px;">
-                    <button id="btn-add-pay" class="btn" style="background:#3b82f6; color:white;"><i class="fas fa-plus"></i> Ajouter</button>
-                </div>
-                <table class="invoice-table">
-                    <thead><tr><th>Date</th><th>Mode</th><th style="text-align:right;">Montant</th><th width="50"></th></tr></thead>
-                    <tbody id="payments-container"></tbody>
-                </table>
+                <div style="color:#64748b; font-size:0.9rem;">CHIFFRE D'AFFAIRES (2026)</div>
+                <div style="font-size:1.8rem; font-weight:bold; color:#1e293b;" id="stats-ca">0,00 €</div>
             </div>
+            <div class="card" style="border-left: 4px solid #22c55e;">
+                <div style="color:#64748b; font-size:0.9rem;">ENCAISSÉ</div>
+                <div style="font-size:1.8rem; font-weight:bold; color:#166534;" id="stats-encaisse">0,00 €</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #ef4444;">
+                <div style="color:#64748b; font-size:0.9rem;">À PERCEVOIR</div>
+                <div style="font-size:1.8rem; font-weight:bold; color:#ef4444;" id="stats-reste">0,00 €</div>
+            </div>
+        </div>
 
-            <div style="text-align:right; margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
-                <button id="btn-print" class="btn" style="background:#475569; color:white;"><i class="fas fa-print"></i> PDF</button>
-                <button id="btn-save" class="btn btn-green"><i class="fas fa-save"></i> ENREGISTRER (v2)</button>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3><i class="fas fa-list"></i> Historique</h3>
+                <input type="text" id="search-facture" placeholder="Rechercher..." style="padding:8px; border:1px solid #e2e8f0; border-radius:5px;">
             </div>
+            
+            <table class="client-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Numéro</th>
+                        <th>Type</th>
+                        <th>Client / Défunt</th>
+                        <th style="text-align:right;">Total TTC</th>
+                        <th style="text-align:right;">Reste Dû</th>
+                        <th style="text-align:center;">Statut</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    </tbody>
+            </table>
         </div>
     </main>
 
-    <script type="module" src="js/v2/app.js"></script>
+    <div id="modal-editor" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width:900px; width:95%;">
+            <div class="modal-header">
+                <h3 id="modal-title">Édition Document</h3>
+                <button onclick="window.fermerModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div class="form-grid-layout" style="grid-template-columns: 1fr 2fr; gap:20px;">
+                <div style="background:#f8fafc; padding:15px; border-radius:8px;">
+                    <h4 style="margin-top:0;">Infos Client</h4>
+                    <div class="input-group"><label>Nom Client</label><input id="edit-client-nom"></div>
+                    <div class="input-group"><label>Adresse</label><input id="edit-client-adresse"></div>
+                    <div class="input-group"><label>Défunt (Concerne)</label><input id="edit-defunt-nom"></div>
+                    <hr style="margin:15px 0; border-top:1px solid #e2e8f0;">
+                    <div class="input-group"><label>Date</label><input type="date" id="edit-date"></div>
+                    <div class="input-group"><label>Numéro</label><input id="edit-numero" readonly style="background:#e2e8f0;"></div>
+                </div>
+
+                <div>
+                    <h4 style="margin-top:0;">Prestations</h4>
+                    <div id="lignes-container" style="max-height:400px; overflow-y:auto; margin-bottom:15px;">
+                        </div>
+                    <button class="btn btn-outline small" onclick="window.ajouterLigne()">+ Ajouter Ligne</button>
+                    <button class="btn btn-outline small" onclick="window.ajouterSection()">+ Ajouter Titre</button>
+                    
+                    <div style="margin-top:20px; text-align:right; font-size:1.2rem; font-weight:bold;">
+                        Total : <span id="edit-total">0.00</span> €
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn btn-red" onclick="window.fermerModal()">Annuler</button>
+                <button class="btn btn-green" onclick="window.sauvegarderDocument()"><i class="fas fa-save"></i> Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/v2/app.js"></script> 
 </body>
 </html>
