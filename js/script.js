@@ -1,4 +1,4 @@
-/* Fichier : js/script.js - VERSION CORRIGÉE (BOUTON NOUVEAU ACTIF) */
+/* Fichier : js/script.js - VERSION RAPATRIEMENT EXPERT */
 import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
 
 // ==========================================================================
@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Boutons d'action
     if(document.getElementById('btn-import')) {
         document.getElementById('btn-import').addEventListener('click', importerClient);
     }
@@ -36,128 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. FONCTIONS INTERFACE (NOUVEAU / IMPORT)
-// ==========================================================================
-
-// --- A. GESTION DU BOUTON "NOUVEAU" (RESET) ---
-// Cette fonction était manquante, la voici restaurée.
-window.viderFormulaire = function() {
-    if(confirm("Voulez-vous vider tous les champs pour créer un nouveau dossier ?\n(Cela effacera les données non enregistrées)")) {
-        // On vide tous les champs texte et date du panneau Admin
-        const inputs = document.querySelectorAll('#view-admin input');
-        inputs.forEach(input => input.value = '');
-        
-        // On remet les selects à la première option
-        const selects = document.querySelectorAll('#view-admin select');
-        selects.forEach(select => select.selectedIndex = 0);
-
-        // On remet les valeurs par défaut importantes
-        if(document.getElementById('immatriculation')) document.getElementById('immatriculation').value = 'DA-081-ZQ';
-        if(document.getElementById('faita')) document.getElementById('faita').value = 'THUIR';
-        if(document.getElementById('nationalite')) document.getElementById('nationalite').value = 'Française';
-        if(document.getElementById('nationalite_mandant')) document.getElementById('nationalite_mandant').value = 'Française';
-        
-        alert("✅ Formulaire réinitialisé. Vous pouvez saisir un nouveau dossier.");
-    }
-};
-
-// --- B. IMPORTATION CLIENTS (LIAISON FACTURATION) ---
-let clientsCache = [];
-
-async function chargerClientsFacturation() {
-    const select = document.getElementById('select-import-client');
-    if(!select) return;
-    try {
-        const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
-        const snap = await getDocs(q);
-        
-        select.innerHTML = '<option value="">-- Sélectionner un dossier Facturation --</option>';
-        clientsCache = [];
-        
-        snap.forEach(doc => {
-            const data = doc.data();
-            if(data.client && data.client.nom) {
-                const opt = document.createElement('option');
-                opt.value = doc.id; 
-                // On affiche le Type et le Numéro pour aider à retrouver le devis
-                const typeDoc = data.type || "DOC";
-                const numDoc = data.numero || "???";
-                opt.textContent = `${typeDoc} ${numDoc} | ${data.client.nom} (Défunt: ${data.defunt ? data.defunt.nom : '?'})`;
-                select.appendChild(opt);
-                clientsCache.push({ id: doc.id, data: data });
-            }
-        });
-    } catch (e) { console.error("Erreur chargement clients:", e); }
-}
-
-function importerClient() {
-    const id = document.getElementById('select-import-client').value;
-    if(!id) return;
-    const dossier = clientsCache.find(c => c.id === id);
-    
-    if(dossier) {
-        const d = dossier.data;
-        // Remplissage automatique des champs
-        if(d.client) {
-            document.getElementById('soussigne').value = d.client.nom || ''; // Le client facturé devient le mandant
-            document.getElementById('demeurant').value = d.client.adresse || '';
-            document.getElementById('declarant_nom').value = d.client.nom || '';
-            document.getElementById('declarant_adresse').value = d.client.adresse || '';
-        }
-        if(d.defunt) {
-            document.getElementById('nom').value = d.defunt.nom || ''; 
-            document.getElementById('defunt_nom').value = d.defunt.nom || ''; 
-        }
-        
-        // Message d'aide pour l'utilisateur
-        const msg = `✅ Données importées du dossier ${d.numero} !\n\n` +
-                    `Pour voir le détail financier (prix, prestations), ` +
-                    `veuillez aller dans le menu 'Facturation V2' et chercher le document n° ${d.numero}.`;
-        alert(msg);
-    }
-}
-
-// --- C. SAUVEGARDE EN BASE ---
-async function sauvegarderEnBase() {
-    const btn = document.getElementById('btn-save-bdd');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
-    
-    try {
-        const dossier = {
-            defunt: { 
-                nom: getVal('nom'), 
-                prenom: getVal('prenom'), 
-                date_deces: getVal('date_deces'),
-                lieu_deces: getVal('lieu_deces') 
-            },
-            mandant: { 
-                nom: getVal('soussigne'), 
-                adresse: getVal('demeurant'),
-                lien: getVal('lien') 
-            },
-            technique: { 
-                lieu_mise_biere: getVal('lieu_mise_biere'), 
-                vehicule: getVal('immatriculation'),
-                destination: getVal('destination')
-            },
-            date_creation: new Date().toISOString()
-        };
-        await addDoc(collection(db, "dossiers_admin"), dossier);
-        btn.style.background = "#22c55e";
-        btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
-        setTimeout(() => { 
-            btn.innerHTML = oldText; 
-            btn.style.background = ""; 
-        }, 2000);
-    } catch(e) { 
-        alert("Erreur sauvegarde: " + e.message); 
-        btn.innerHTML = oldText;
-    }
-}
-
-// ==========================================================================
-// 3. FONCTIONS UTILITAIRES (PDF)
+// 2. FONCTIONS UTILITAIRES (LOGO & HEADER)
 // ==========================================================================
 let logoBase64 = null;
 
@@ -201,7 +79,44 @@ function headerPF(pdf, yPos = 20) {
     pdf.line(40, yPos + 12, 170, yPos + 12);
 }
 
-function getVal(id) { const el = document.getElementById(id); return el ? el.value : ""; }
+// Fonction intelligente pour récupérer les valeurs (Mapping V1 -> V2)
+function getVal(key) {
+    // Mapping des anciens noms de variables (pdf_admin.js) vers les nouveaux ID HTML
+    const map = {
+        'nom': 'defunt_nom', 'prenom': 'defunt_prenom', 'nom_jeune_fille': 'nom_jeune_fille',
+        'date_naiss': 'date_naissance', 'lieu_naiss': 'lieu_naissance',
+        'date_deces': 'date_deces', 'lieu_deces': 'lieu_deces', 'heure_deces': 'heure_deces',
+        'adresse_fr': 'domicile_defunt', 
+        'pere': 'pere_nom', 'mere': 'mere_nom', 'matrimoniale': 'situation_matrimoniale',
+        'nationalite': 'nationalite', 'conjoint': 'conjoint',
+        
+        'soussigne': 'declarant_nom', 'demeurant': 'declarant_adresse', 'lien': 'declarant_lien',
+        
+        'lieu_mise_biere': 'lieu_mise_biere', 'date_fermeture': 'date_fermeture', 'lieu_fermeture': 'lieu_fermeture',
+        'destination': 'destination', 'vehicule_immat': 'immatriculation', 'chauffeur': 'chauffeur_nom',
+        'cimetiere_nom': 'cimetiere_nom', 'num_concession': 'num_concession', 'titulaire_concession': 'titulaire_concession',
+        'type_sepulture': 'type_sepulture',
+        
+        // Rapatriement (Noms V1)
+        'rap_pays': 'rap_pays', 
+        'rap_ville': 'rap_ville_dest', // L'ancien code utilise rap_ville, le HTML rap_ville_dest
+        'rap_lta': 'rap_lta',
+        'rap_immat': 'rap_immat', 'rap_date_dep_route': 'rap_date_dep_route',
+        'rap_ville_dep': 'rap_ville_dep', 'rap_ville_arr': 'rap_ville_arr',
+        
+        'vol1_num': 'vol1_num', 'vol1_dep_aero': 'vol1_dep_aero', 'vol1_arr_aero': 'vol1_arr_aero',
+        'vol1_dep_time': 'vol1_dep_time', 'vol1_arr_time': 'vol1_arr_time',
+        'vol2_num': 'vol2_num', 'vol2_dep_aero': 'vol2_dep_aero', 'vol2_arr_aero': 'vol2_arr_aero',
+        'vol2_dep_time': 'vol2_dep_time', 'vol2_arr_time': 'vol2_arr_time',
+        
+        'faita': 'faita', 'dateSignature': 'dateSignature'
+    };
+
+    const id = map[key] || key; // Si pas dans la map, on tente l'ID direct
+    const el = document.getElementById(id);
+    return el ? el.value : ""; 
+}
+
 function formatDate(d) { 
     if (!d) return ".................";
     if (d.includes("-")) return d.split("-").reverse().join("/");
@@ -209,16 +124,95 @@ function formatDate(d) {
 }
 
 // ==========================================================================
+// 3. LOGIQUE INTERFACE (IMPORT / RESET / SAVE)
+// ==========================================================================
+
+window.viderFormulaire = function() {
+    if(confirm("Voulez-vous vider tous les champs pour créer un nouveau dossier ?")) {
+        const inputs = document.querySelectorAll('#view-admin input');
+        inputs.forEach(input => input.value = '');
+        const selects = document.querySelectorAll('#view-admin select');
+        selects.forEach(select => select.selectedIndex = 0);
+
+        // Valeurs par défaut
+        if(document.getElementById('immatriculation')) document.getElementById('immatriculation').value = 'DA-081-ZQ';
+        if(document.getElementById('rap_immat')) document.getElementById('rap_immat').value = 'DA-081-ZQ';
+        if(document.getElementById('faita')) document.getElementById('faita').value = 'THUIR';
+        if(document.getElementById('nationalite')) document.getElementById('nationalite').value = 'Française';
+        
+        alert("✅ Formulaire réinitialisé.");
+    }
+};
+
+let clientsCache = [];
+async function chargerClientsFacturation() {
+    const select = document.getElementById('select-import-client');
+    if(!select) return;
+    try {
+        const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
+        const snap = await getDocs(q);
+        select.innerHTML = '<option value="">-- Sélectionner un dossier Facturation --</option>';
+        clientsCache = [];
+        snap.forEach(doc => {
+            const data = doc.data();
+            if(data.client && data.client.nom) {
+                const opt = document.createElement('option');
+                opt.value = doc.id; 
+                opt.textContent = `${data.type || 'DOC'} ${data.numero || ''} | ${data.client.nom} (Défunt: ${data.defunt ? data.defunt.nom : '?'})`;
+                select.appendChild(opt);
+                clientsCache.push({ id: doc.id, data: data });
+            }
+        });
+    } catch (e) { console.error("Erreur chargement clients:", e); }
+}
+
+function importerClient() {
+    const id = document.getElementById('select-import-client').value;
+    if(!id) return;
+    const dossier = clientsCache.find(c => c.id === id);
+    if(dossier) {
+        const d = dossier.data;
+        if(d.client) {
+            document.getElementById('soussigne').value = d.client.nom || '';
+            document.getElementById('demeurant').value = d.client.adresse || '';
+            document.getElementById('declarant_nom').value = d.client.nom || '';
+            document.getElementById('declarant_adresse').value = d.client.adresse || '';
+        }
+        if(d.defunt) {
+            document.getElementById('nom').value = d.defunt.nom || ''; 
+            document.getElementById('defunt_nom').value = d.defunt.nom || ''; 
+        }
+        alert(`✅ Données importées du dossier ${d.numero}. Complétez les infos manquantes.`);
+    }
+}
+
+async function sauvegarderEnBase() {
+    const btn = document.getElementById('btn-save-bdd');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+    try {
+        const dossier = {
+            defunt: { nom: getVal('nom'), prenom: getVal('prenom'), date_deces: getVal('date_deces') },
+            mandant: { nom: getVal('soussigne') },
+            date_creation: new Date().toISOString()
+        };
+        await addDoc(collection(db, "dossiers_admin"), dossier);
+        btn.style.background = "#22c55e"; btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
+        setTimeout(() => { btn.innerHTML = oldText; btn.style.background = ""; }, 2000);
+    } catch(e) { alert("Erreur sauvegarde: " + e.message); btn.innerHTML = oldText; }
+}
+
+// ==========================================================================
 // 4. MOTEUR PDF (VOS DOCUMENTS COMPLETS)
 // ==========================================================================
 
-// --- 4.1 POUVOIR ---
+// --- 1. POUVOIR ---
 window.genererPouvoir = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     ajouterFiligrane(pdf); headerPF(pdf);
     
-    let typePresta = getVal("prestation").toUpperCase();
+    let typePresta = document.getElementById('prestation') ? document.getElementById('prestation').value.toUpperCase() : "INHUMATION";
     if(typePresta === "RAPATRIEMENT") typePresta += ` vers ${getVal("rap_pays").toUpperCase()}`;
     
     pdf.setFillColor(241, 245, 249); pdf.rect(20, 45, 170, 12, 'F');
@@ -251,6 +245,7 @@ window.genererPouvoir = function() {
     pdf.text("- Signer toute demande d'autorisation nécessaire.", x+5, y); y+=6;
     if(typePresta.includes("RAPATRIEMENT")) {
         pdf.text("- Accomplir les formalités consulaires et douanières.", x+5, y); y+=6;
+        pdf.text("- Organiser le transport aérien ou terrestre.", x+5, y); y+=6;
     }
     y = 240;
     pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, x, y);
@@ -258,7 +253,7 @@ window.genererPouvoir = function() {
     pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
 };
 
-// --- 4.2 DÉCLARATION DÉCÈS ---
+// --- 2. DÉCLARATION DÉCÈS ---
 window.genererDeclaration = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     const fontMain = "times";
@@ -309,7 +304,7 @@ window.genererDeclaration = function() {
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
 
-// --- 4.3 DEMANDE INHUMATION ---
+// --- 3. DEMANDE INHUMATION ---
 window.genererDemandeInhumation = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
@@ -333,7 +328,7 @@ window.genererDemandeInhumation = function() {
     pdf.save(`Demande_Inhumation_${getVal("nom")}.pdf`);
 };
 
-// --- 4.4 DEMANDE CRÉMATION ---
+// --- 4. DEMANDE CRÉMATION ---
 window.genererDemandeCremation = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     headerPF(pdf);
@@ -353,7 +348,7 @@ window.genererDemandeCremation = function() {
     pdf.save(`Demande_Cremation_${getVal("nom")}.pdf`);
 };
 
-// --- 4.5 RAPATRIEMENT (PRÉFECTURE) ---
+// --- 5. RAPATRIEMENT (VOTRE VERSION EXPERTE) ---
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
@@ -377,19 +372,60 @@ window.genererDemandeRapatriement = function() {
     pdf.setFont("helvetica", "normal");
     pdf.text(`Date et lieu de naissance    : ${formatDate(getVal("date_naiss"))}       à     ${getVal("lieu_naiss")}`, x, y); y+=6;
     pdf.text(`Date et lieu de décès        : ${formatDate(getVal("date_deces"))}       à     ${getVal("lieu_deces")}`, x, y); y+=10;
+    pdf.text(`Fille de (père) : ${getVal("pere")}`, x, y); y+=6;
+    pdf.text(`et de (mère) : ${getVal("mere")}`, x, y); y+=6;
+    const conj = getVal("conjoint") ? getVal("conjoint") : "";
+    pdf.text(`Situation familiale : Époux/se de ${conj}`, x, y); y+=10;
     
-    pdf.text(`Destination : ${getVal("rap_pays")} - Ville : ${getVal("rap_ville")}`, x, y); y+=10;
+    pdf.setFont("helvetica", "bold"); pdf.setLineWidth(0.5);
+    pdf.text("Moyen de transport :", x+5, y); 
+    pdf.line(x+5, y+1, x+45, y+1); y+=10;
     
+    pdf.setFont("helvetica", "bold");
+    pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie routière :", x+15, y); y+=6;
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`- Avec le véhicule funéraire immatriculé : ${getVal("rap_immat")}`, x+20, y); y+=5;
+    pdf.text(`- Date et heure de départ le : ${getVal("rap_date_dep_route")}`, x+20, y); y+=5;
+    pdf.text(`- Lieu de départ : ${getVal("rap_ville_dep")}`, x+20, y); y+=5;
+    pdf.text(`- Commune et pays d'arrivée : ${getVal("rap_ville_arr")}`, x+20, y); y+=10;
+    
+    pdf.setFont("helvetica", "bold");
+    pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie aérienne :", x+15, y); y+=6;
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`- Numéro de LTA : ${getVal("rap_lta")}`, x+20, y); y+=6;
     if(getVal("vol1_num")) {
-        pdf.text(`Vol N° ${getVal("vol1_num")} - LTA : ${getVal("rap_lta")}`, x, y); y+=6;
-        pdf.text(`Départ : ${getVal("vol1_dep_aero")} - Arrivée : ${getVal("vol1_arr_aero")}`, x, y); y+=10;
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`- vol : ${getVal("vol1_num")}`, x+20, y); y+=5;
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`  > Départ :`, x+25, y); y+=5;
+        pdf.text(`    - Aéroport de départ : ${getVal("vol1_dep_aero")}`, x+30, y); y+=5;
+        pdf.text(`    - Date et heure de départ le : ${getVal("vol1_dep_time")}`, x+30, y); y+=5;
+        pdf.text(`  > Arrivée :`, x+25, y); y+=5;
+        pdf.text(`    - Aéroport d'Arrivée : ${getVal("vol1_arr_aero")}`, x+30, y); y+=5;
+        pdf.text(`    - Date et heure d'arrivée le : ${getVal("vol1_arr_time")}`, x+30, y); y+=8;
     }
-    
-    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 130, y);
+    const chk = document.getElementById('check_vol2');
+    if(chk && chk.checked && getVal("vol2_num")) {
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`- vol : ${getVal("vol2_num")}`, x+20, y); y+=5;
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`  > Départ :`, x+25, y); y+=5;
+        pdf.text(`    - Aéroport de départ : ${getVal("vol2_dep_aero")}`, x+30, y); y+=5;
+        pdf.text(`    - Date et heure de départ le : ${getVal("vol2_dep_time")}`, x+30, y); y+=5;
+        pdf.text(`  > Arrivée :`, x+25, y); y+=5;
+        pdf.text(`    - Aéroport d'Arrivée : ${getVal("vol2_arr_aero")}`, x+30, y); y+=5;
+        pdf.text(`    - Date et heure d'arrivée le : ${getVal("vol2_arr_time")}`, x+30, y); y+=8;
+    }
+    y+=5;
+    pdf.text(`Lieu d'inhumation du corps (Ville – Pays) : ${getVal("rap_ville")} / ${getVal("rap_pays")}`, x, y); y+=15;
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`Fait à   : ${getVal("faita")}`, 140, y); y+=6;
+    pdf.text(`Le        : ${formatDate(getVal("dateSignature"))}`, 140, y); y+=15;
+    pdf.text("Signature et cachet", 140, y);
     pdf.save(`Demande_Rapatriement_Prefecture_${getVal("nom")}.pdf`);
 };
 
-// --- 4.6 FERMETURE CERCUEIL MAIRIE ---
+// --- 6. FERMETURE CERCUEIL MAIRIE ---
 window.genererDemandeFermetureMairie = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(26, 90, 143); pdf.setLineWidth(1.5); pdf.rect(10, 10, 190, 277);
@@ -419,10 +455,10 @@ window.genererDemandeFermetureMairie = function() {
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 4.7 OUVERTURE SÉPULTURE ---
+// --- 7. OUVERTURE SÉPULTURE ---
 window.genererDemandeOuverture = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-    const type = getVal("prestation"); 
+    const type = document.getElementById('prestation') ? document.getElementById('prestation').value : "Inhumation"; 
     headerPF(pdf);
     pdf.setFont("times", "bold"); pdf.setFontSize(14);
     pdf.text("DEMANDE D'OUVERTURE D'UNE SEPULTURE DE FAMILLE", 105, 40, {align:"center"});
@@ -439,7 +475,7 @@ window.genererDemandeOuverture = function() {
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
 
-// --- 4.8 PV FERMETURE (TECHNIQUE) ---
+// --- 8. PV FERMETURE (TECHNIQUE) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
@@ -465,7 +501,6 @@ window.genererFermeture = function() {
     pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
     pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
     
-    // Détection Police/Famille
     const typePres = document.getElementById('type_presence_select');
     const isPolice = typePres && typePres.value === "police";
     
@@ -491,7 +526,7 @@ window.genererFermeture = function() {
     pdf.save(`PV_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 4.9 TRANSPORT ---
+// --- 9. TRANSPORT ---
 window.genererTransport = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
