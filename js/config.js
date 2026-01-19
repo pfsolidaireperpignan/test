@@ -14,7 +14,7 @@ const firebaseConfig = {
     messagingSenderId: "485465343242",
     appId: "1:485465343242:web:46d2a49f851a95907b26f3",
     measurementId: "G-TWLLXKF0K4"
-};
+  };
 
 // Initialisation
 let app, auth, db;
@@ -29,9 +29,3 @@ try {
 
 // Exportation (AJOUT DE 'doc' et 'updateDoc' ICI AUSSI)
 export { auth, db, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, onAuthStateChanged, signInWithEmailAndPassword, signOut };
-
-
-
-
-
-
