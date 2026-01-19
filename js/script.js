@@ -1,8 +1,8 @@
-/* Fichier : js/script.js - VERSION INTEGRALE (ERP + PDF COMPLETS) */
+/* Fichier : js/script.js - VERSION V4.1 (ERP FINAL) */
 import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "./config.js";
 
 // ==========================================================================
-// 1. INITIALISATION & CONNEXION
+// 1. INITIALISATION & NAVIGATION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     chargerLogoBase64(); 
@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(loader) loader.style.display = 'none';
         if (user) {
             document.getElementById('login-screen').classList.add('hidden');
-            chargerClientsFacturation(); 
+            window.chargerBaseClients(); // Charge la liste dès le départ
+            window.chargerClientsFacturation(); // Charge la liste import
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
@@ -26,11 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Listeners Boutons
-    if(document.getElementById('btn-import')) document.getElementById('btn-import').addEventListener('click', importerClient);
-    if(document.getElementById('btn-save-bdd')) document.getElementById('btn-save-bdd').addEventListener('click', sauvegarderEnBase);
+    if(document.getElementById('btn-import')) document.getElementById('btn-import').addEventListener('click', window.importerClient);
+    if(document.getElementById('btn-save-bdd')) document.getElementById('btn-save-bdd').addEventListener('click', window.sauvegarderEnBase);
     
-    // Recherche dynamique (Dashboard)
+    // Recherche Dashboard
     const searchInput = document.getElementById('search-client');
     if(searchInput) {
         searchInput.addEventListener('keyup', (e) => {
@@ -44,73 +44,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ==========================================================================
-// 2. DASHBOARD CLIENTS (BASE DE DONNEES)
-// ==========================================================================
-window.chargerBaseClients = async function() {
-    const tbody = document.getElementById('clients-table-body');
-    if(!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chargement...</td></tr>';
+// Navigation entre les vues (Exposée à window)
+window.showSection = function(id) {
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-base').classList.add('hidden');
+    document.getElementById('view-admin').classList.add('hidden');
+    document.getElementById('view-' + id).classList.remove('hidden');
     
-    try {
-        const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
-        const snap = await getDocs(q);
-        
-        tbody.innerHTML = '';
-        if(snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucun dossier trouvé.</td></tr>'; return; }
-
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
-            const defunt = data.defunt ? `${data.defunt.nom} ${data.defunt.prenom}` : "Inconnu";
-            const mandant = data.mandant ? data.mandant.nom : "-";
-            const dateC = new Date(data.date_creation).toLocaleDateString();
-            let operation = "Inhumation";
-            if(data.technique && data.technique.type_operation) operation = data.technique.type_operation;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${dateC}</td>
-                <td><strong>${defunt}</strong></td>
-                <td>${mandant}</td>
-                <td><span class="badge">${operation}</span></td>
-                <td style="text-align:center;">
-                    <button class="btn-icon" onclick="window.chargerDossier('${docSnap.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
-                    <a href="facturation_v2.html" class="btn-icon" title="Aller à la Facturation"><i class="fas fa-file-invoice-dollar" style="color:#22c55e;"></i></a>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5">Erreur chargement.</td></tr>'; }
+    if(id === 'base') window.chargerBaseClients();
 };
 
-window.chargerDossier = async function(id) {
-    showSection('admin');
-    alert("Pour modifier, veuillez utiliser l'importation ou recréer le dossier pour le moment.");
-};
+// Toggle des Sections (Inhumation vs Rapatriement)
+window.toggleSections = function() {
+    const type = document.getElementById('prestation').value;
+    
+    // 1. On cache tout
+    document.querySelectorAll('.specific-block').forEach(el => el.classList.add('hidden'));
+    document.getElementById('btn_inhumation').classList.add('hidden');
+    document.getElementById('btn_cremation').classList.add('hidden');
+    document.getElementById('btn_rapatriement').classList.add('hidden');
 
-// ==========================================================================
-// 3. FONCTIONS FORMULAIRE (RESET / IMPORT / SAVE)
-// ==========================================================================
-
-// --- RESET (BOUTON ANNULER) ---
-window.viderFormulaire = function() {
-    if(confirm("Confirmez-vous l'annulation ?\nTout le formulaire sera effacé.")) {
-        document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
-        document.querySelectorAll('#view-admin select').forEach(s => s.selectedIndex = 0);
-        
-        // Valeurs par défaut
-        if(document.getElementById('immatriculation')) document.getElementById('immatriculation').value = 'DA-081-ZQ';
-        if(document.getElementById('rap_immat')) document.getElementById('rap_immat').value = 'DA-081-ZQ';
-        if(document.getElementById('faita')) document.getElementById('faita').value = 'THUIR';
-        if(document.getElementById('nationalite')) document.getElementById('nationalite').value = 'Française';
-        
-        alert("✅ Dossier annulé. Prêt pour un nouveau client.");
+    // 2. On affiche le bon bloc
+    if(type === 'Inhumation') {
+        document.getElementById('bloc_inhumation').classList.remove('hidden');
+        document.getElementById('btn_inhumation').classList.remove('hidden');
+    } else if(type === 'Crémation') {
+        document.getElementById('bloc_cremation').classList.remove('hidden');
+        document.getElementById('btn_cremation').classList.remove('hidden');
+    } else if(type === 'Rapatriement') {
+        document.getElementById('bloc_rapatriement').classList.remove('hidden');
+        document.getElementById('btn_rapatriement').classList.remove('hidden');
     }
 };
 
-// --- IMPORT DEPUIS FACTURATION ---
+window.togglePolice = function() {
+    const val = document.getElementById('type_presence_select').value;
+    if(val === 'police') {
+        document.getElementById('police_fields').classList.remove('hidden');
+        document.getElementById('famille_fields').classList.add('hidden');
+    } else {
+        document.getElementById('police_fields').classList.add('hidden');
+        document.getElementById('famille_fields').classList.remove('hidden');
+    }
+};
+
+// ==========================================================================
+// 2. LOGIQUE MÉTIER (IMPORT / SAVE / DASHBOARD)
+// ==========================================================================
+
+// A. IMPORT DEPUIS FACTURATION
 let clientsCache = [];
-async function chargerClientsFacturation() {
+window.chargerClientsFacturation = async function() {
     const select = document.getElementById('select-import-client');
     if(!select) return;
     try {
@@ -123,15 +107,15 @@ async function chargerClientsFacturation() {
             if(data.client) {
                 const opt = document.createElement('option');
                 opt.value = doc.id; 
-                opt.textContent = `${data.client.nom} (Défunt: ${data.defunt ? data.defunt.nom : '?'})`;
+                opt.textContent = `${data.client.nom} | ${data.defunt ? data.defunt.nom : '?'}`;
                 select.appendChild(opt);
                 clientsCache.push({ id: doc.id, data: data });
             }
         });
     } catch (e) { console.error(e); }
-}
+};
 
-function importerClient() {
+window.importerClient = function() {
     const id = document.getElementById('select-import-client').value;
     if(!id) return;
     const dossier = clientsCache.find(c => c.id === id);
@@ -140,19 +124,17 @@ function importerClient() {
         if(d.client) {
             document.getElementById('soussigne').value = d.client.nom || ''; 
             document.getElementById('demeurant').value = d.client.adresse || '';
-            document.getElementById('declarant_nom').value = d.client.nom || ''; 
-            document.getElementById('declarant_adresse').value = d.client.adresse || '';
+            document.getElementById('lien').value = "Client (Facture)";
         }
         if(d.defunt) {
             document.getElementById('nom').value = d.defunt.nom || ''; 
-            document.getElementById('defunt_nom').value = d.defunt.nom || ''; 
         }
         alert("✅ Données importées.");
     }
-}
+};
 
-// --- SAUVEGARDE EN BASE ---
-async function sauvegarderEnBase() {
+// B. SAUVEGARDE
+window.sauvegarderEnBase = async function() {
     const btn = document.getElementById('btn-save-bdd');
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
@@ -160,23 +142,72 @@ async function sauvegarderEnBase() {
         const dossier = {
             defunt: { nom: getVal('nom'), prenom: getVal('prenom'), date_deces: getVal('date_deces') },
             mandant: { nom: getVal('soussigne') },
-            technique: { 
-                type_operation: document.getElementById('prestation').value,
-                lieu_mise_biere: getVal('lieu_mise_biere')
-            },
+            technique: { type_operation: document.getElementById('prestation').value },
             date_creation: new Date().toISOString()
         };
         await addDoc(collection(db, "dossiers_admin"), dossier);
-        btn.style.background = "#22c55e"; btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
+        btn.style.background = "#22c55e"; btn.innerHTML = '<i class="fas fa-check"></i> OK';
         setTimeout(() => { 
             btn.innerHTML = oldText; btn.style.background = ""; 
-            showSection('base'); // Redirection vers le dashboard
+            window.showSection('base'); // Redirection Dashboard
         }, 1500);
     } catch(e) { alert("Erreur: " + e.message); btn.innerHTML = oldText; }
-}
+};
+
+// C. DASHBOARD CLIENTS
+window.chargerBaseClients = async function() {
+    const tbody = document.getElementById('clients-table-body');
+    if(!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chargement...</td></tr>';
+    
+    try {
+        const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
+        const snap = await getDocs(q);
+        
+        tbody.innerHTML = '';
+        if(snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucun dossier.</td></tr>'; return; }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const defunt = data.defunt ? `${data.defunt.nom} ${data.defunt.prenom}` : "Inconnu";
+            const mandant = data.mandant ? data.mandant.nom : "-";
+            const dateC = new Date(data.date_creation).toLocaleDateString();
+            const op = data.technique ? data.technique.type_operation : "Inhumation";
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${dateC}</td>
+                <td><strong>${defunt}</strong></td>
+                <td>${mandant}</td>
+                <td><span class="badge" style="background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px;">${op}</span></td>
+                <td style="text-align:center;">
+                    <button class="btn-icon" onclick="window.chargerDossier('${docSnap.id}')" title="Voir Dossier" style="background:none; border:none; color:#3b82f6; cursor:pointer;"><i class="fas fa-edit"></i></button>
+                    <a href="facturation_v2.html" title="Facturation" style="color:#22c55e; margin-left:10px;"><i class="fas fa-file-invoice-dollar"></i></a>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5">Erreur chargement.</td></tr>'; }
+};
+
+window.chargerDossier = function(id) {
+    // Pour l'instant, on redirige juste vers le formulaire pour en créer un nouveau
+    // Dans une version V5, on fera un "getDoc" pour remplir les champs
+    window.showSection('admin');
+    alert("Veuillez utiliser le bouton Import ou saisir un nouveau dossier.");
+};
+
+window.viderFormulaire = function() {
+    if(confirm("Tout effacer ?")) {
+        document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
+        document.getElementById('prestation').selectedIndex = 0;
+        window.toggleSections();
+        alert("Dossier vidé.");
+    }
+};
 
 // ==========================================================================
-// 4. MOTEUR PDF & UTILS
+// 3. MOTEUR PDF & UTILS
 // ==========================================================================
 let logoBase64 = null;
 function chargerLogoBase64() {
@@ -197,50 +228,14 @@ function headerPF(pdf, y=20) {
     pdf.text("HABILITATION N° : 23-66-0205 | SIRET : 53927029800042",105,y+9,{align:"center"});
     pdf.setDrawColor(34,155,76); pdf.setLineWidth(0.5); pdf.line(40,y+12,170,y+12);
 }
-
-// Mapping intelligent des IDs HTML vers les variables PDF
-function getVal(key) {
-    const map = {
-        'nom': 'nom', 'prenom': 'prenom', 'nom_jeune_fille': 'nom_jeune_fille',
-        'date_naiss': 'date_naiss', 'lieu_naiss': 'lieu_naiss',
-        'date_deces': 'date_deces', 'lieu_deces': 'lieu_deces', 'heure_deces': 'heure_deces',
-        'adresse_fr': 'adresse_fr', 
-        'pere': 'pere', 'mere': 'mere', 'matrimoniale': 'matrimoniale',
-        'nationalite': 'nationalite', 'conjoint': 'conjoint',
-        
-        'soussigne': 'soussigne', 'demeurant': 'demeurant', 'lien': 'lien',
-        
-        'lieu_mise_biere': 'lieu_mise_biere', 'date_fermeture': 'date_fermeture', 'lieu_fermeture': 'lieu_mise_biere',
-        'destination': 'destination', 'vehicule_immat': 'immatriculation', 'chauffeur': 'chauffeur_nom',
-        'cimetiere_nom': 'cimetiere_nom', 'num_concession': 'num_concession', 'titulaire_concession': 'titulaire_concession',
-        'type_sepulture': 'type_sepulture',
-        
-        // Rapatriement
-        'rap_pays': 'rap_pays', 'rap_ville': 'rap_ville', 'rap_lta': 'rap_lta',
-        'rap_immat': 'rap_immat', 'rap_date_dep_route': 'rap_date_dep_route',
-        'rap_ville_dep': 'rap_ville_dep', 'rap_ville_arr': 'rap_ville_arr',
-        
-        'vol1_num': 'vol1_num', 'vol1_dep_aero': 'vol1_dep_aero', 'vol1_arr_aero': 'vol1_arr_aero',
-        'vol1_dep_time': 'vol1_dep_time', 'vol1_arr_time': 'vol1_arr_time',
-        'vol2_num': 'vol2_num', 'vol2_dep_aero': 'vol2_dep_aero', 'vol2_arr_aero': 'vol2_arr_aero',
-        'vol2_dep_time': 'vol2_dep_time', 'vol2_arr_time': 'vol2_arr_time',
-        
-        'faita': 'faita', 'dateSignature': 'dateSignature'
-    };
-    const id = map[key] || key;
-    const el = document.getElementById(id);
-    return el ? el.value : ""; 
-}
+function getVal(id) { const el=document.getElementById(id); return el?el.value:""; }
 function formatDate(d) { return d?d.split("-").reverse().join("/"): "................."; }
 
-// ==========================================================================
-// 5. TOUTES LES FONCTIONS PDF (LISTE COMPLETE)
-// ==========================================================================
+// --- 4. FONCTIONS PDF (EXPORTES WINDOW) ---
 
-// --- 5.1 POUVOIR ---
 window.genererPouvoir = function() {
     if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
-    let typePresta = document.getElementById('prestation') ? document.getElementById('prestation').value.toUpperCase() : "INHUMATION";
+    let typePresta = document.getElementById('prestation').value.toUpperCase();
     if(typePresta === "RAPATRIEMENT") typePresta += ` vers ${getVal("rap_pays").toUpperCase()}`;
     pdf.setFillColor(241,245,249); pdf.rect(20,45,170,12,'F');
     pdf.setFontSize(16); pdf.setTextColor(185,28,28); pdf.setFont("helvetica","bold"); pdf.text("POUVOIR",105,53,{align:"center"});
@@ -267,7 +262,6 @@ window.genererPouvoir = function() {
     pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
 };
 
-// --- 5.2 DECLARATION DECES ---
 window.genererDeclaration = function() {
     const {jsPDF}=window.jspdf; const pdf=new jsPDF(); const fontMain="times";
     pdf.setFont(fontMain,"bold"); pdf.setFontSize(16); pdf.text("DECLARATION DE DECES",105,30,{align:"center"});
@@ -295,7 +289,6 @@ window.genererDeclaration = function() {
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
 
-// --- 5.3 INHUMATION ---
 window.genererDemandeInhumation = function() {
     if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); headerPF(pdf);
     pdf.setFillColor(230,240,230); pdf.rect(20,40,170,10,'F');
@@ -317,7 +310,6 @@ window.genererDemandeInhumation = function() {
     pdf.save(`Demande_Inhumation_${getVal("nom")}.pdf`);
 };
 
-// --- 5.4 CREMATION ---
 window.genererDemandeCremation = function() {
     const {jsPDF}=window.jspdf; const pdf=new jsPDF(); headerPF(pdf);
     pdf.setFont("times","bold"); pdf.setFontSize(12); pdf.text(getVal("soussigne"),20,45);
@@ -333,7 +325,6 @@ window.genererDemandeCremation = function() {
     pdf.save(`Demande_Cremation_${getVal("nom")}.pdf`);
 };
 
-// --- 5.5 RAPATRIEMENT (VOTRE VERSION EXPERTE) ---
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
@@ -410,7 +401,6 @@ window.genererDemandeRapatriement = function() {
     pdf.save(`Demande_Rapatriement_Prefecture_${getVal("nom")}.pdf`);
 };
 
-// --- 5.6 FERMETURE MAIRIE ---
 window.genererDemandeFermetureMairie = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(26, 90, 143); pdf.setLineWidth(1.5); pdf.rect(10, 10, 190, 277);
@@ -440,27 +430,6 @@ window.genererDemandeFermetureMairie = function() {
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 5.7 OUVERTURE SEPULTURE ---
-window.genererDemandeOuverture = function() {
-    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-    const type = document.getElementById('prestation') ? document.getElementById('prestation').value : "Inhumation"; 
-    headerPF(pdf);
-    pdf.setFont("times", "bold"); pdf.setFontSize(14);
-    pdf.text("DEMANDE D'OUVERTURE D'UNE SEPULTURE DE FAMILLE", 105, 40, {align:"center"});
-    let y = 60;
-    pdf.setFontSize(12);
-    pdf.text(`POUR : ${type.toUpperCase()}`, 25, y);
-    y += 20;
-    pdf.setFont("times", "normal");
-    pdf.text("Nous soussignons :", 25, y); y+=10;
-    pdf.setFont("times", "bold");
-    pdf.text(getVal("soussigne"), 35, y); y+=10;
-    pdf.setFont("times", "normal");
-    pdf.text("Demandons l'ouverture de la concession n° " + getVal("num_concession"), 25, y);
-    pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
-};
-
-// --- 5.8 PV FERMETURE (POLICE) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
@@ -485,8 +454,8 @@ window.genererFermeture = function() {
     pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
     pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
     
-    const typePres = document.getElementById('type_presence_select');
-    const isPolice = typePres && typePres.value === "police";
+    const valPres = document.querySelector('input[name="type_presence"]:checked');
+    const isPolice = valPres && valPres.value === "police";
     
     pdf.setFont("helvetica", "bold"); pdf.text("EN PRÉSENCE DE :", x, y); y+=10;
     pdf.rect(x, y, 170, 30);
@@ -510,15 +479,14 @@ window.genererFermeture = function() {
     pdf.save(`PV_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 5.9 TRANSPORT ---
 window.genererTransport = function() {
     if(!logoBase64) chargerLogoBase64();
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277);
     headerPF(pdf);
     pdf.setFillColor(200); pdf.rect(10, 35, 190, 15, 'F');
-    const typeT = document.querySelector('input[name="transport_type"]:checked').value;
-    const labelT = typeT === "avant" ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
+    const valT = document.querySelector('input[name="transport_type"]:checked');
+    const labelT = (valT && valT.value === "avant") ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text(`DÉCLARATION DE TRANSPORT DE CORPS`, 105, 42, { align: "center" });
     pdf.setFontSize(12); pdf.text(labelT, 105, 47, { align: "center" });
@@ -547,4 +515,23 @@ window.genererTransport = function() {
     pdf.text(`Fait à ${getVal("faita_transport")}, le ${formatDate(getVal("dateSignature_transport"))}`, 120, y);
     pdf.text("Cachet de l'entreprise :", 120, y+10);
     pdf.save(`Transport_${getVal("nom")}.pdf`);
+};
+
+window.genererDemandeOuverture = function() {
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+    const type = document.getElementById('prestation').value; 
+    headerPF(pdf);
+    pdf.setFont("times", "bold"); pdf.setFontSize(14);
+    pdf.text("DEMANDE D'OUVERTURE D'UNE SEPULTURE DE FAMILLE", 105, 40, {align:"center"});
+    let y = 60;
+    pdf.setFontSize(12);
+    pdf.text(`POUR : ${type.toUpperCase()}`, 25, y);
+    y += 20;
+    pdf.setFont("times", "normal");
+    pdf.text("Nous soussignons :", 25, y); y+=10;
+    pdf.setFont("times", "bold");
+    pdf.text(getVal("soussigne"), 35, y); y+=10;
+    pdf.setFont("times", "normal");
+    pdf.text("Demandons l'ouverture de la concession n° " + getVal("num_concession"), 25, y);
+    pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
