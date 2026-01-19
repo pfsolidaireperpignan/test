@@ -1,11 +1,11 @@
-/* Fichier : js/config.js (CORRIGÉ - AVEC 'doc' et 'updateDoc') */
-// Importation des outils Firebase
+/* Fichier : js/config.js (VERSION CORRIGÉE ET VÉRIFIÉE) */
+
+// 1. On importe les outils depuis Firebase (Notez bien 'doc' et 'updateDoc')
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-// AJOUT ICI DE 'doc' et 'updateDoc'
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ⚠️ REMPLACEZ CECI PAR VOS VRAIES CLÉS FIREBASE ⚠️
+// 2. Vos clés (Ne touchez pas si elles marchaient avant)
 const firebaseConfig = {
     apiKey: "AIzaSyDmsIkTjW2IFkIks5BUAnxLLnc7pnj2e0w",
     authDomain: "pf-solidaire.firebaseapp.com",
@@ -16,16 +16,31 @@ const firebaseConfig = {
     measurementId: "G-TWLLXKF0K4"
   };
 
-// Initialisation
+// 3. Initialisation
 let app, auth, db;
 try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    console.log("Firebase connecté !");
+    console.log("Firebase connecté avec succès (Config)");
 } catch (e) {
     console.error("Erreur Config Firebase :", e);
 }
 
-// Exportation (AJOUT DE 'doc' et 'updateDoc' ICI AUSSI)
-export { auth, db, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, onAuthStateChanged, signInWithEmailAndPassword, signOut };
+// 4. EXPORTATION (C'est ici que l'erreur se produisait avant)
+// On rend 'doc' et 'updateDoc' disponibles pour les autres fichiers
+export { 
+    auth, 
+    db, 
+    collection, 
+    addDoc, 
+    getDocs, 
+    query, 
+    orderBy, 
+    limit, 
+    doc,        // <--- INDISPENSABLE
+    updateDoc,  // <--- INDISPENSABLE
+    onAuthStateChanged, 
+    signInWithEmailAndPassword, 
+    signOut 
+};
