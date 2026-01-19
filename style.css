@@ -240,3 +240,37 @@ body {
 }
 .status-paid { background: #dcfce7; color: #166534; }
 .status-pending { background: #ffedd5; color: #9a3412; }
+/* --- AJOUT INDISPENSABLE POUR LES POP-UPS (MODAL) --- */
+
+/* Le fond noir transparent */
+.modal-overlay {
+    position: fixed; /* OBLIGATOIRE pour flotter */
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Fond sombre */
+    z-index: 9999; /* Au dessus de tout */
+    display: flex;
+    justify-content: center; /* Centrer horizontalement */
+    align-items: center;     /* Centrer verticalement */
+    backdrop-filter: blur(2px); /* Petit effet flou joli */
+}
+
+/* La boîte blanche au centre */
+.modal-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh; /* Ne dépasse pas la hauteur de l'écran */
+    overflow-y: auto; /* Scroll si trop grand */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative; /* Pour positionner les éléments internes */
+}
+
+/* La classe pour cacher */
+.hidden {
+    display: none !important;
+}
