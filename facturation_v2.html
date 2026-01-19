@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V5</title>
+    <title>PF Solidaire - Facturation V6</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -11,7 +11,25 @@
     <style>
         /* Style spécifique Drag & Drop */
         .ligne-item.dragging { opacity: 0.5; border: 2px dashed #3b82f6; }
-        .ligne-item { cursor: move; } /* Curseur de déplacement */
+        .ligne-item { cursor: move; }
+        
+        /* Correction Affichage Modal (Barre de défilement garantie) */
+        .modal-box {
+            max-width: 95% !important;
+            width: 1200px !important;
+            max-height: 90vh !important; /* Hauteur max écran */
+            overflow-y: auto !important; /* Force le défilement vertical */
+            display: block !important;   /* Enlève le mode flex bloquant */
+            padding: 20px !important;
+        }
+        
+        /* Ajustement des colonnes dans la modal */
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
     </style>
 </head>
 <body>
@@ -34,7 +52,7 @@
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; margin-bottom:30px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-bottom:30px;">
             <div class="card" style="border-left: 4px solid #3b82f6;">
                 <div style="color:#64748b; font-size:0.8rem;">TOTAL CA FACTURÉ</div>
                 <div style="font-size:1.5rem; font-weight:bold; color:#1e293b;" id="stats-ca">0,00 €</div>
@@ -45,7 +63,7 @@
             </div>
             <div class="card" style="border-left: 4px solid #f59e0b;">
                 <div style="color:#64748b; font-size:0.8rem;">DÉTAIL ENCAISSEMENTS</div>
-                <div style="font-size:0.85rem;">
+                <div style="font-size:0.85rem; line-height: 1.4;">
                     <div><i class="fas fa-money-bill-wave"></i> Esp: <strong id="stats-esp">0 €</strong></div>
                     <div><i class="fas fa-money-check"></i> Chq: <strong id="stats-chq">0 €</strong></div>
                     <div><i class="fas fa-university"></i> Vir: <strong id="stats-vir">0 €</strong></div>
@@ -81,61 +99,64 @@
     </main>
 
     <div id="modal-editor" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width:95%; height:90vh; display:flex; flex-direction:column;">
-            <div class="modal-header" style="flex-shrink:0;">
-                <h3 id="modal-title">Édition</h3>
+        <div class="modal-box">
+            
+            <div class="modal-header" style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h3 id="modal-title" style="margin:0;">Édition</h3>
                 <button onclick="window.fermerModal()" style="border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
             </div>
             
-            <div class="form-grid-layout" style="grid-template-columns: 250px 1fr; gap:20px; flex:1; overflow:hidden; padding:10px;">
+            <div class="modal-grid">
                 
-                <div style="background:#f8fafc; padding:15px; border-radius:8px; overflow-y:auto;">
+                <div style="background:#f8fafc; padding:15px; border-radius:8px;">
                     <h4 style="margin-top:0;">Infos Générales</h4>
                     <div class="input-group"><label>Numéro</label><input id="edit-numero" readonly style="background:#e2e8f0;"></div>
                     <div class="input-group"><label>Date</label><input type="date" id="edit-date"></div>
-                    <hr>
-                    <div class="input-group"><label>Client</label><input id="edit-client-nom"></div>
+                    <hr style="margin:15px 0; border-top:1px solid #e2e8f0;">
+                    
+                    <div class="input-group"><label>Client (Facturé)</label><input id="edit-client-nom"></div>
                     <div class="input-group"><label>Adresse</label><input id="edit-client-adresse"></div>
-                    <div class="input-group"><label>Défunt</label><input id="edit-defunt-nom"></div>
+                    <div class="input-group"><label>Défunt (Concerne)</label><input id="edit-defunt-nom"></div>
                     
-                    <hr style="margin:20px 0;">
+                    <hr style="margin:20px 0; border-top:2px solid #cbd5e1;">
                     
-                    <h4 style="color:#166534;"><i class="fas fa-wallet"></i> Règlements</h4>
-                    <div id="payments-container" style="margin-bottom:10px;">
+                    <h4 style="color:#166534; margin-bottom:10px;"><i class="fas fa-wallet"></i> Règlements</h4>
+                    <div id="payments-container" style="margin-bottom:10px; font-size:0.9em;">
                         </div>
+                    
                     <div style="background:#dcfce7; padding:10px; border-radius:5px;">
-                        <input type="number" id="pay-amount" placeholder="Montant" style="width:100%; margin-bottom:5px;">
-                        <select id="pay-method" style="width:100%; margin-bottom:5px;">
+                        <input type="number" id="pay-amount" placeholder="Montant (€)" style="width:100%; margin-bottom:5px; padding:5px;">
+                        <select id="pay-method" style="width:100%; margin-bottom:5px; padding:5px;">
                             <option value="VIREMENT">Virement</option>
                             <option value="CHEQUE">Chèque</option>
                             <option value="ESPECE">Espèces</option>
                         </select>
-                        <button onclick="window.ajouterPaiement()" class="btn btn-green small" style="width:100%;">+ Ajouter Règlements</button>
+                        <button onclick="window.ajouterPaiement()" class="btn btn-green small" style="width:100%;">+ Ajouter</button>
                     </div>
                     <div style="margin-top:10px; font-weight:bold;">
-                        Déjà réglé : <span id="total-paye">0.00</span> €
+                        Total Réglé : <span id="total-paye">0.00</span> €
                     </div>
                 </div>
 
-                <div style="display:flex; flex-direction:column; height:100%;">
-                    <div style="flex-shrink:0; margin-bottom:10px; display:flex; justify-content:space-between;">
-                        <h4>Détail des Prestations</h4>
-                        <div>
-                            <button class="btn btn-outline small" onclick="window.ajouterSection()">+ Titre</button>
-                            <button class="btn btn-outline small" onclick="window.ajouterLigne()">+ Ligne</button>
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="margin:0;">Détail des Prestations</h4>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-outline small" onclick="window.ajouterSection()">+ Titre Section</button>
+                            <button class="btn btn-outline small" onclick="window.ajouterLigne()">+ Ligne Article</button>
                         </div>
                     </div>
                     
-                    <div id="lignes-container" style="flex:1; overflow-y:auto; border:1px solid #e2e8f0; padding:10px; border-radius:5px;">
+                    <div id="lignes-container" style="border:1px solid #e2e8f0; padding:10px; border-radius:5px; min-height:300px; background:white;">
                         </div>
                     
-                    <div style="flex-shrink:0; margin-top:10px; text-align:right; font-size:1.5rem; font-weight:bold; color:#3b82f6;">
+                    <div style="margin-top:15px; text-align:right; font-size:1.5rem; font-weight:bold; color:#3b82f6;">
                         Total TTC : <span id="edit-total">0.00</span> €
                     </div>
                 </div>
             </div>
 
-            <div class="modal-footer" style="flex-shrink:0; margin-top:10px; display:flex; justify-content:flex-end; gap:10px;">
+            <div class="modal-footer" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; gap:10px;">
                 <button class="btn btn-red" onclick="window.fermerModal()">Fermer</button>
                 <button class="btn btn-green" onclick="window.sauvegarderDocument()"><i class="fas fa-save"></i> ENREGISTRER</button>
             </div>
