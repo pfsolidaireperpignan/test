@@ -164,3 +164,79 @@ body {
 
 #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f1f5f9; z-index: 2000; display: flex; justify-content: center; align-items: center; }
 .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+/* --- AJOUT A LA FIN DE STYLE.CSS --- */
+
+/* 1. Design des Tableaux Modernes */
+.client-table, .history-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px; /* Espacement entre les lignes */
+    margin-top: 10px;
+}
+
+.client-table th, .history-table th {
+    text-align: left;
+    padding: 15px;
+    color: #64748b;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.client-table td, .history-table td {
+    background: white;
+    padding: 15px;
+    vertical-align: middle;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.client-table tr:hover td {
+    background: #f8fafc; /* Effet survol */
+    transform: scale(1.005);
+    transition: all 0.2s ease;
+}
+
+.client-table td:first-child { border-left: 1px solid #f1f5f9; border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.client-table td:last-child { border-right: 1px solid #f1f5f9; border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+/* 2. Colonne "Actions" (Les boutons) */
+.actions-cell {
+    display: flex;
+    gap: 8px; /* Espace entre les boutons */
+    justify-content: center;
+}
+
+.btn-icon-action {
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.btn-edit { background: #eff6ff; color: #3b82f6; } /* Bleu clair */
+.btn-edit:hover { background: #3b82f6; color: white; }
+
+.btn-print { background: #f1f5f9; color: #475569; } /* Gris clair */
+.btn-print:hover { background: #475569; color: white; }
+
+.btn-delete { background: #fef2f2; color: #ef4444; } /* Rouge clair */
+.btn-delete:hover { background: #ef4444; color: white; }
+
+/* 3. Badges de statut jolis */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.status-paid { background: #dcfce7; color: #166534; }
+.status-pending { background: #ffedd5; color: #9a3412; }
