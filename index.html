@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP v7.3</title>
+    <title>PF Solidaire - ERP v7.4</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,27 +13,17 @@
     <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
     
     <datalist id="villes_list">
-        <option value="Perpignan">
-        <option value="Thuir">
-        <option value="Toulouse">
-        <option value="Montpellier">
-        <option value="Paris">
-        <option value="Marseille">
-        <option value="Lyon">
-        <option value="Casablanca">
-        <option value="Rabat">
-        <option value="Tanger">
-        <option value="Fès">
-        <option value="Marrakech">
-        <option value="Oujda">
-        <option value="Nador">
-        <option value="Agadir">
-        <option value="Alger">
-        <option value="Oran">
-        <option value="Constantine">
-        <option value="Annaba">
-        <option value="Tlemcen">
-        <option value="Béjaïa">
+        <option value="Perpignan"><option value="Thuir"><option value="Toulouse"><option value="Montpellier"><option value="Paris"><option value="Marseille"><option value="Lyon">
+        <option value="Casablanca"><option value="Rabat"><option value="Tanger"><option value="Fès"><option value="Marrakech"><option value="Oujda"><option value="Nador"><option value="Agadir">
+        <option value="Alger"><option value="Oran"><option value="Constantine"><option value="Annaba"><option value="Tlemcen"><option value="Béjaïa">
+    </datalist>
+
+    <datalist id="liens_list">
+        <option value="Fils"><option value="Fille"><option value="Époux"><option value="Épouse">
+        <option value="Père"><option value="Mère"><option value="Frère"><option value="Sœur">
+        <option value="Petit-fils"><option value="Petite-fille"><option value="Neveu"><option value="Nièce">
+        <option value="Cousin"><option value="Cousine"><option value="Gendre"><option value="Belle-fille">
+        <option value="Ami(e)"><option value="Exécuteur Testamentaire">
     </datalist>
 
     <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center;">
@@ -137,7 +127,7 @@
                         <h3 style="color:#1e3a8a;"><i class="fas fa-user-tie"></i> IDENTITÉ MANDANT (Client)</h3>
                         <div class="form-grid">
                             <div class="span-2"><label>Nom & Prénom</label><input id="soussigne" placeholder="Ex: M. DUPONT Jean"></div>
-                            <div><label>Lien de parenté</label><input id="lien" placeholder="Ex: Fils, Épouse..."></div>
+                            <div><label>Lien de parenté</label><input id="lien" placeholder="Sélectionnez..." list="liens_list"></div>
                             <div class="span-2"><label>Adresse Complète</label><input id="demeurant" placeholder="Adresse complète" list="villes_list"></div>
                         </div>
                     </div>
@@ -148,20 +138,14 @@
                             <div><label>Nom</label><input id="nom" style="font-weight:bold;"></div>
                             <div><label>Prénom</label><input id="prenom" style="font-weight:bold;"></div>
                             <div><label>Nom de Jeune Fille</label><input id="nom_jeune_fille"></div>
-                            
                             <div><label>Date Décès</label><input type="date" id="date_deces"></div>
                             <div><label>Lieu Décès</label><input id="lieu_deces" placeholder="Ville..." list="villes_list"></div>
                             <div><label>Heure Décès</label><input type="time" id="heure_deces"></div>
-                            
                             <div><label>Date Naissance</label><input type="date" id="date_naiss"></div>
                             <div><label>Lieu Naissance</label><input id="lieu_naiss" placeholder="Ville..." list="villes_list"></div>
                             <div><label>Nationalité</label><input id="nationalite" value="Française"></div>
-                            
                             <div class="span-2"><label>Domicile Défunt</label><input id="adresse_fr" placeholder="Adresse complète..." list="villes_list"></div>
-                            
-                            <div class="span-2" style="margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e1;">
-                                <small style="color:#64748b; font-weight:bold;">FILIATION & SITUATION</small>
-                            </div>
+                            <div class="span-2" style="margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e1;"><small style="color:#64748b; font-weight:bold;">FILIATION & SITUATION</small></div>
                             <div><label>Père</label><input id="pere" placeholder="Prénom Nom"></div>
                             <div><label>Mère</label><input id="mere" placeholder="Prénom Nom"></div>
                             <div><label>Situation</label><select id="matrimoniale"><option>Marié(e)</option><option>Veuf(ve)</option><option>Célibataire</option><option>Divorcé(e)</option></select></div>
@@ -182,14 +166,23 @@
                                     <option value="police">Police (Absence famille)</option>
                                 </select>
                             </div>
+                            
                             <div id="police_fields" class="span-2 form-grid hidden" style="background:#fee2e2; padding:10px;">
                                 <div><label>Nom & Grade</label><input id="p_nom_grade"></div>
                                 <div><label>Commissariat</label><input id="p_commissariat"></div>
                             </div>
-                            <div id="famille_fields" class="span-2 form-grid">
-                                <div><label>Témoin Famille</label><input id="f_nom_prenom"></div>
-                                <div><label>Lien</label><input id="f_lien"></div>
+                            
+                            <div id="famille_fields" class="span-2 form-grid" style="background:#f0f9ff; padding:10px; border:1px solid #bae6fd;">
+                                <div class="span-2" style="margin-bottom:5px;">
+                                    <input type="checkbox" id="copy_mandant" onchange="window.copierMandant()">
+                                    <label for="copy_mandant" style="font-weight:bold; color:#0284c7; cursor:pointer;">
+                                        <i class="fas fa-copy"></i> C'est le Mandant (Copier auto)
+                                    </label>
+                                </div>
+                                <div><label>Nom & Prénom Témoin</label><input id="f_nom_prenom"></div>
+                                <div><label>Lien avec Défunt</label><input id="f_lien" placeholder="Sélectionnez..." list="liens_list"></div>
                             </div>
+
                             <div class="span-2" style="background:#f0fdf4; padding:10px; margin-top:10px;">
                                 <label style="font-weight:bold;">Transport de Corps</label>
                                 <div style="margin-bottom:5px;"><input type="radio" name="transport_type" value="avant" checked> Avant MEB <input type="radio" name="transport_type" value="apres"> Après MEB</div>
