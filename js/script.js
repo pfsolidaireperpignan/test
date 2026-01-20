@@ -1,15 +1,13 @@
 /**
  * ====================================================================
- * PF SOLIDAIRE ERP - VERSION 7.6 (OUVERTURE SÉPULTURE PERFECTIONNÉE)
+ * PF SOLIDAIRE ERP - VERSION 7.7 (AVEC CIVILITÉ COMPLÈTE)
  * ====================================================================
- * Base : V7.5 Strict.
- * Modif unique : Refonte visuelle totale du PDF "Ouverture Sépulture".
  */
 
 import { auth, db, collection, addDoc, getDocs, getDoc, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail } from "./config.js";
 
 // ==========================================================================
-// 1. INITIALISATION & AUTHENTIFICATION
+// 1. INITIALISATION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     chargerLogoBase64(); 
@@ -26,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Login
     if(document.getElementById('btn-login')) {
         document.getElementById('btn-login').addEventListener('click', async () => {
             try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } 
@@ -34,12 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mot de passe oublié
     if(document.getElementById('btn-forgot')) {
         document.getElementById('btn-forgot').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
-            if(!email) return alert("Veuillez saisir l'email d'abord.");
-            if(confirm("Envoyer un lien de réinitialisation à : " + email + " ?")) {
+            if(!email) return alert("Email requis.");
+            if(confirm("Envoyer lien reset ?")) {
                 try { await sendPasswordResetEmail(auth, email); alert("📧 Email envoyé !"); } 
                 catch(e) { alert("Erreur : " + e.message); }
             }
@@ -55,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Recherche
     const searchInput = document.getElementById('search-client');
     if(searchInput) {
         searchInput.addEventListener('keyup', (e) => {
@@ -68,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. INTERFACE (UI)
+// 2. INTERFACE
 // ==========================================================================
 window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
@@ -112,11 +107,12 @@ window.toggleVol2 = function() {
     }
 };
 
-// COPIER MANDANT VERS TEMOIN
 window.copierMandant = function() {
     const chk = document.getElementById('copy_mandant');
     if(chk && chk.checked) {
-        document.getElementById('f_nom_prenom').value = document.getElementById('soussigne').value;
+        // On copie aussi la civilité si on veut être complet, mais pour l'instant juste le nom
+        const civ = document.getElementById('civilite_mandant').value;
+        document.getElementById('f_nom_prenom').value = civ + " " + document.getElementById('soussigne').value;
         document.getElementById('f_lien').value = document.getElementById('lien').value;
     }
 };
@@ -126,18 +122,15 @@ window.viderFormulaire = function() {
         document.getElementById('dossier_id').value = ""; 
         document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
         document.getElementById('prestation').selectedIndex = 0;
-        
-        // Reset des cases à cocher
         if(document.getElementById('check_vol2')) document.getElementById('check_vol2').checked = false;
         if(document.getElementById('copy_mandant')) document.getElementById('copy_mandant').checked = false;
-        
         window.toggleSections();
         document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     }
 };
 
 // ==========================================================================
-// 3. LOGIQUE DONNÉES (DATABASE)
+// 3. DONNÉES (CRUD AVEC CIVILITÉ)
 // ==========================================================================
 let clientsCache = [];
 async function chargerClientsFacturation() {
@@ -153,9 +146,11 @@ async function chargerClientsFacturation() {
             if(data.client) {
                 const opt = document.createElement('option');
                 opt.value = doc.id; 
+                // Affichage propre
+                const civC = data.client.civility || "";
                 const nomClient = data.client.nom || "Inconnu";
-                const nomDefunt = (data.defunt && data.defunt.nom) ? data.defunt.nom : "Défunt inconnu";
-                opt.textContent = `${nomClient} (Défunt: ${nomDefunt})`;
+                const nomDefunt = (data.defunt && data.defunt.nom) ? data.defunt.nom : "Inconnu";
+                opt.textContent = `${civC} ${nomClient} (Défunt: ${nomDefunt})`;
                 select.appendChild(opt);
                 clientsCache.push({ id: doc.id, data: data });
             }
@@ -171,9 +166,11 @@ function importerClient() {
         if(d.client) {
             if(document.getElementById('soussigne')) document.getElementById('soussigne').value = d.client.nom || '';
             if(document.getElementById('demeurant')) document.getElementById('demeurant').value = d.client.adresse || '';
+            if(document.getElementById('civilite_mandant')) document.getElementById('civilite_mandant').value = d.client.civility || "M.";
         }
         if(d.defunt) {
             if(document.getElementById('nom')) document.getElementById('nom').value = d.defunt.nom || '';
+            if(document.getElementById('civilite_defunt')) document.getElementById('civilite_defunt').value = d.defunt.civility || "M.";
         }
         alert("✅ Données importées.");
     }
@@ -186,6 +183,7 @@ async function sauvegarderEnBase() {
     try {
         const dossierData = {
             defunt: { 
+                civility: getVal('civilite_defunt'), // AJOUTÉ
                 nom: getVal('nom'), prenom: getVal('prenom'), nom_jeune_fille: getVal('nom_jeune_fille'),
                 date_deces: getVal('date_deces'), lieu_deces: getVal('lieu_deces'), heure_deces: getVal('heure_deces'),
                 date_naiss: getVal('date_naiss'), lieu_naiss: getVal('lieu_naiss'), nationalite: getVal('nationalite'),
@@ -193,6 +191,7 @@ async function sauvegarderEnBase() {
                 situation: getVal('matrimoniale'), conjoint: getVal('conjoint'), profession: getVal('prof_type')
             },
             mandant: { 
+                civility: getVal('civilite_mandant'), // AJOUTÉ
                 nom: getVal('soussigne'), lien: getVal('lien'), adresse: getVal('demeurant') 
             },
             technique: { 
@@ -225,7 +224,6 @@ async function sauvegarderEnBase() {
     } catch(e) { alert("Erreur: " + e.message); btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; }
 }
 
-// --- CHARGER POUR MODIFICATION ---
 window.chargerDossier = async function(id) {
     try {
         const docRef = doc(db, "dossiers_admin", id);
@@ -238,6 +236,7 @@ window.chargerDossier = async function(id) {
             document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
 
             if(data.defunt) {
+                if(data.defunt.civility) document.getElementById('civilite_defunt').value = data.defunt.civility; // Chargement civilité
                 setVal('nom', data.defunt.nom); setVal('prenom', data.defunt.prenom); setVal('nom_jeune_fille', data.defunt.nom_jeune_fille);
                 setVal('date_deces', data.defunt.date_deces); setVal('lieu_deces', data.defunt.lieu_deces); setVal('heure_deces', data.defunt.heure_deces);
                 setVal('date_naiss', data.defunt.date_naiss); setVal('lieu_naiss', data.defunt.lieu_naiss); setVal('nationalite', data.defunt.nationalite);
@@ -246,6 +245,7 @@ window.chargerDossier = async function(id) {
                 if(data.defunt.situation) document.getElementById('matrimoniale').value = data.defunt.situation;
             }
             if(data.mandant) {
+                if(data.mandant.civility) document.getElementById('civilite_mandant').value = data.mandant.civility; // Chargement civilité
                 setVal('soussigne', data.mandant.nom); setVal('lien', data.mandant.lien); setVal('demeurant', data.mandant.adresse);
             }
             if(data.technique) {
@@ -259,11 +259,8 @@ window.chargerDossier = async function(id) {
                 setVal('rap_pays', data.details_op.rapa_pays); setVal('rap_ville', data.details_op.rapa_ville); setVal('rap_lta', data.details_op.rapa_lta);
                 setVal('vol1_num', data.details_op.vol1); setVal('vol2_num', data.details_op.vol2);
             }
-
-            window.toggleSections();
-            window.togglePolice();
+            window.toggleSections(); window.togglePolice();
             if(document.getElementById('vol2_num').value) { document.getElementById('check_vol2').checked = true; window.toggleVol2(); }
-
         } else { alert("Dossier introuvable."); }
     } catch (e) { alert("Erreur Chargement : " + e.message); }
 };
@@ -289,11 +286,14 @@ window.chargerBaseClients = async function() {
         snap.forEach(docSnap => {
             const data = docSnap.data();
             const op = data.technique ? data.technique.type_operation : "Inhumation";
+            // Affichage Civilité dans le tableau aussi
+            const nomD = (data.defunt?.civility || "") + " " + (data.defunt?.nom || '?');
+            const nomM = (data.mandant?.civility || "") + " " + (data.mandant?.nom || '-');
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${new Date(data.date_creation).toLocaleDateString()}</td>
-                <td><strong>${data.defunt?.nom || '?'}</strong></td>
-                <td>${data.mandant?.nom || '-'}</td>
+                <td><strong>${nomD}</strong></td>
+                <td>${nomM}</td>
                 <td><span class="badge">${op}</span></td>
                 <td style="text-align:center;">
                     <button class="btn-icon" onclick="window.chargerDossier('${docSnap.id}')" title="Modifier"><i class="fas fa-edit" style="color:#3b82f6;"></i></button>
@@ -305,7 +305,7 @@ window.chargerBaseClients = async function() {
 };
 
 // ==========================================================================
-// 4. MOTEUR PDF & UTILS
+// 4. MOTEUR PDF (AVEC CIVILITÉ INTÉGRÉE)
 // ==========================================================================
 let logoBase64 = null;
 function chargerLogoBase64() {
@@ -326,16 +326,8 @@ function headerPF(pdf, y=20) {
     pdf.text("HABILITATION N° : 23-66-0205 | SIRET : 53927029800042",105,y+9,{align:"center"});
     pdf.setDrawColor(34,155,76); pdf.setLineWidth(0.5); pdf.line(40,y+12,170,y+12);
 }
-function getVal(id) { 
-    const el=document.getElementById(id); 
-    if(id === "profession_autre") return document.getElementById('profession_autre') ? document.getElementById('profession_autre').value : "";
-    return el?el.value:""; 
-}
+function getVal(id) { return document.getElementById(id) ? document.getElementById(id).value : ""; }
 function formatDate(d) { return d?d.split("-").reverse().join("/"): "................."; }
-
-// ==========================================================================
-// 5. FONCTIONS PDF
-// ==========================================================================
 
 // --- 1. POUVOIR ---
 window.genererPouvoir = function() {
@@ -345,12 +337,14 @@ window.genererPouvoir = function() {
     pdf.setFillColor(241,245,249); pdf.rect(20,45,170,12,'F');
     pdf.setFontSize(16); pdf.setTextColor(185,28,28); pdf.setFont("helvetica","bold"); pdf.text("POUVOIR",105,53,{align:"center"});
     let y=75; const x=25; pdf.setFontSize(10); pdf.setTextColor(0); pdf.setFont("helvetica","normal");
-    pdf.text(`Je soussigné(e) : ${getVal("soussigne")}`,x,y); y+=8;
+    // Avec civilité
+    pdf.text(`Je soussigné(e) : ${getVal("civilite_mandant")} ${getVal("soussigne")}`,x,y); y+=8;
     pdf.text(`Demeurant à : ${getVal("demeurant")}`,x,y); y+=8;
     pdf.text(`Agissant en qualité de : ${getVal("lien")}`,x,y); y+=15;
     pdf.text("Ayant qualité pour pourvoir aux funérailles de :",x,y); y+=8;
     pdf.setDrawColor(200); pdf.setFillColor(250); pdf.rect(x-5,y-5,170,40,'FD');
-    pdf.setFont("helvetica","bold"); pdf.text(`${getVal("nom")} ${getVal("prenom")}`,x,y+2); y+=8;
+    // Avec civilité
+    pdf.setFont("helvetica","bold"); pdf.text(`${getVal("civilite_defunt")} ${getVal("nom")} ${getVal("prenom")}`,x,y+2); y+=8;
     pdf.setFont("helvetica","normal");
     pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))} à ${getVal("lieu_naiss")}`,x,y); y+=6;
     pdf.text(`Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`,x,y); y+=6;
@@ -367,69 +361,42 @@ window.genererPouvoir = function() {
     pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
 };
 
-// --- 2. RAPATRIEMENT (STRICT + VOL 2) ---
+// --- 2. RAPATRIEMENT ---
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
     pdf.rect(15, 20, 180, 20, 'FD');
     pdf.setTextColor(0); pdf.setFont("helvetica", "bold"); pdf.setFontSize(14);
     pdf.text("DEMANDE D'AUTORISATION DE TRANSPORT DE CORPS", 105, 32, {align:"center"});
-
     let y = 60; const x = 15;
     pdf.setFontSize(10); pdf.setFont("helvetica", "bold");
-    pdf.text("Je soussigné(e) (nom et prénom) : CHERKAOUI MUSTPAHA", x, y); y+=6;
-    pdf.text("Représentant légal de : ", x, y);
-    pdf.setFont("helvetica", "normal");
+    pdf.text("Je soussigné(e) : CHERKAOUI MUSTPAHA", x, y); y+=6;
+    pdf.text("Représentant légal de : ", x, y); pdf.setFont("helvetica", "normal");
     pdf.text("Pompes Funèbres Solidaire Perpignan, 32 boulevard Léon Jean Grégory Thuir", x+45, y); y+=6;
+    pdf.setFont("helvetica", "bold"); pdf.text("Habilitée sous le n° : 23-66-0205", x, y); y+=6;
+    pdf.setFont("helvetica", "normal"); pdf.text("Dûment mandaté, sollicite l'autorisation de faire transporter hors métropole le corps de :", x, y); y+=10;
+    
     pdf.setFont("helvetica", "bold");
-    pdf.text("Habilitée sous le n° : 23-66-0205", x, y); y+=6;
+    // Civilité
+    pdf.text(`Défunt(e) : ${getVal("civilite_defunt")} ${getVal("nom").toUpperCase()} ${getVal("prenom")}`, x, y); y+=6;
     pdf.setFont("helvetica", "normal");
-    pdf.text("Dûment mandaté par la famille de la défunte, sollicite l'autorisation de faire transporter en dehors du", x, y); y+=5;
-    pdf.text("territoire métropolitain le corps après mise en bière de :", x, y); y+=10;
+    pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))} à ${getVal("lieu_naiss")}`, x, y); y+=6;
+    pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`, x, y); y+=10;
     
-    pdf.setFont("helvetica", "bold");
-    pdf.text(`Nom et prénom défunt(e) : ${getVal("nom").toUpperCase()} ${getVal("prenom")}`, x, y); y+=6;
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`Date et lieu de naissance    : ${formatDate(getVal("date_naiss"))}       à     ${getVal("lieu_naiss")}`, x, y); y+=6;
-    pdf.text(`Date et lieu de décès        : ${formatDate(getVal("date_deces"))}       à     ${getVal("lieu_deces")}`, x, y); y+=10;
-    pdf.text(`Fille de (père) : ${getVal("pere")}`, x, y); y+=6;
-    pdf.text(`et de (mère) : ${getVal("mere")}`, x, y); y+=6;
-    const conj = getVal("conjoint") ? getVal("conjoint") : "";
-    pdf.text(`Situation familiale : Époux/se de ${conj}`, x, y); y+=10;
-    
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Moyen de transport :", x+5, y); 
-    pdf.line(x+5, y+1, x+45, y+1); y+=10;
-    
-    pdf.setFont("helvetica", "bold");
+    pdf.setFont("helvetica", "bold"); pdf.text("Moyen de transport :", x+5, y); pdf.line(x+5, y+1, x+45, y+1); y+=10;
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie routière :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
-    pdf.text(`- Avec le véhicule funéraire immatriculé : ${getVal("rap_immat")}`, x+20, y); y+=5;
-    pdf.text(`- Date et heure de départ le : ${getVal("rap_date_dep_route")}`, x+20, y); y+=5;
-    pdf.text(`- Lieu de départ : ${getVal("rap_ville_dep")}`, x+20, y); y+=5;
-    pdf.text(`- Commune et pays d'arrivée : ${getVal("rap_ville_arr")}`, x+20, y); y+=10;
-    
+    pdf.text(`- Véhicule : ${getVal("rap_immat")}`, x+20, y); y+=5;
+    pdf.text(`- Départ le : ${getVal("rap_date_dep_route")}`, x+20, y); y+=5;
+    pdf.text(`- Trajet : ${getVal("rap_ville_dep")} -> ${getVal("rap_ville_arr")}`, x+20, y); y+=10;
     pdf.setFont("helvetica", "bold");
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie aérienne :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
-    pdf.text(`- Numéro de LTA : ${getVal("rap_lta")}`, x+20, y); y+=6;
-    if(getVal("vol1_num")) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text(`- Vol 1 : ${getVal("vol1_num")}`, x+20, y); y+=5;
-        pdf.setFont("helvetica", "normal");
-        pdf.text(`  Départ : ${getVal("vol1_dep_aero")} le ${getVal("vol1_dep_time")}`, x+25, y); y+=5;
-        pdf.text(`  Arrivée : ${getVal("vol1_arr_aero")} le ${getVal("vol1_arr_time")}`, x+25, y); y+=8;
-    }
-    const chk = document.getElementById('check_vol2');
-    if(chk && chk.checked && getVal("vol2_num")) {
-        pdf.setFont("helvetica", "bold");
-        pdf.text(`- Vol 2 (Correspondance) : ${getVal("vol2_num")}`, x+20, y); y+=5;
-        pdf.setFont("helvetica", "normal");
-        pdf.text(`  Départ : ${getVal("vol2_dep_aero")} le ${getVal("vol2_dep_time")}`, x+25, y); y+=5;
-        pdf.text(`  Arrivée : ${getVal("vol2_arr_aero")} le ${getVal("vol2_arr_time")}`, x+25, y); y+=8;
-    }
+    pdf.text(`- LTA : ${getVal("rap_lta")}`, x+20, y); y+=6;
+    if(getVal("vol1_num")) { pdf.text(`- Vol 1 : ${getVal("vol1_num")} (${getVal("vol1_dep_aero")} -> ${getVal("vol1_arr_aero")})`, x+20, y); y+=6; }
+    if(document.getElementById('check_vol2').checked && getVal("vol2_num")) { pdf.text(`- Vol 2 : ${getVal("vol2_num")} (${getVal("vol2_dep_aero")} -> ${getVal("vol2_arr_aero")})`, x+20, y); y+=6; }
     y+=5;
-    pdf.text(`Lieu d'inhumation (Ville – Pays) : ${getVal("rap_ville")} / ${getVal("rap_pays")}`, x, y); y+=20;
+    pdf.text(`Inhumation à : ${getVal("rap_ville")} (${getVal("rap_pays")})`, x, y); y+=20;
     pdf.setFont("helvetica", "bold");
     pdf.text(`Fait à : ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y); y+=10;
     pdf.text("Signature et cachet :", 120, y);
@@ -459,22 +426,22 @@ window.genererDeclaration = function() {
         }
     };
     
+    // Pas de civilité ici car les champs sont séparés (NOM, Prénom...)
     drawLine("NOM : ", getVal("nom"), y); y+=14;
     drawLine("NOM DE JEUNE FILLE : ", getVal("nom_jeune_fille"), y); y+=14;
     drawLine("Prénoms : ", getVal("prenom"), y); y+=14;
     drawLine("Né(e) le : ", formatDate(getVal("date_naiss")), y); y+=14;
     drawLine("A : ", getVal("lieu_naiss"), y); y+=14;
-    
     pdf.setFont(fontMain, "bold"); pdf.text("DATE ET LIEU DU DECES LE", margin, y);
     pdf.setFont(fontMain, "normal"); pdf.text(formatDate(getVal("date_deces")), margin+70, y);
     pdf.setFont(fontMain, "bold"); pdf.text("A", 120, y); pdf.text(getVal("lieu_deces").toUpperCase(), 130, y); y += 18;
     
     pdf.text("PROFESSION : ", margin, y); y+=8;
-    const prof = document.querySelector('input[name="prof_type"]:checked') ? document.querySelector('input[name="prof_type"]:checked').value : getVal("prof_type");
+    const prof = getVal("prof_type");
     pdf.setFont(fontMain, "normal");
     pdf.rect(margin+5, y-4, 5, 5); if(prof === "Sans profession") pdf.text("X", margin+6, y); pdf.text("Sans profession", margin+15, y);
     pdf.rect(margin+60, y-4, 5, 5); if(prof === "Retraité(e)") pdf.text("X", margin+61, y); pdf.text("retraité(e)", margin+70, y);
-    if(prof === "Active") pdf.text(`Active : ${getVal("profession_autre")}`, margin+110, y); 
+    if(prof === "Active") pdf.text(`Active`, margin+110, y); 
     y += 15;
     
     drawLine("DOMICILIE(E) ", getVal("adresse_fr"), y); y+=14;
@@ -482,7 +449,6 @@ window.genererDeclaration = function() {
     drawLine("Et de (Mère) :", getVal("mere"), y); y+=14;
     drawLine("Situation Matrimoniale : ", getVal("matrimoniale"), y); y+=14;
     drawLine("NATIONALITE : ", getVal("nationalite"), y); y+=25;
-    
     pdf.setFont(fontMain, "bold"); pdf.text("NOM ET SIGNATURE DES POMPES FUNEBRES", 105, y, { align: "center" });
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
@@ -498,7 +464,8 @@ window.genererDemandeInhumation = function() {
     pdf.setFont("helvetica", "normal");
     pdf.text("Je soussigné M. CHERKAOUI Mustapha, dirigeant des PF Solidaire,", x, y); y+=6;
     pdf.text("Sollicite l'autorisation d'inhumer le défunt :", x, y); y+=12;
-    pdf.setFont("helvetica", "bold"); pdf.text(`${getVal("nom").toUpperCase()} ${getVal("prenom")}`, x+10, y); y+=6;
+    // Civilité
+    pdf.setFont("helvetica", "bold"); pdf.text(`${getVal("civilite_defunt")} ${getVal("nom").toUpperCase()} ${getVal("prenom")}`, x+10, y); y+=6;
     pdf.setFont("helvetica", "normal"); pdf.text(`Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`, x+10, y); y+=15;
     pdf.text("Lieu d'inhumation :", x, y); y+=6;
     pdf.setFont("helvetica", "bold"); pdf.text(`Cimetière : ${getVal("cimetiere_nom")}`, x+10, y); y+=6;
@@ -513,14 +480,15 @@ window.genererDemandeInhumation = function() {
 window.genererDemandeCremation = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
     pdf.setFont("times", "bold"); pdf.setFontSize(12);
-    pdf.text(getVal("soussigne"), 20, 45); 
+    // Civilité
+    pdf.text(`${getVal("civilite_mandant")} ${getVal("soussigne")}`, 20, 45); 
     pdf.setFont("times", "normal"); pdf.text(getVal("demeurant"), 20, 51);
     pdf.setFont("times", "bold"); pdf.setFontSize(14);
     pdf.text("Monsieur le Maire", 150, 60, {align:"center"});
     pdf.setFontSize(12); pdf.text("OBJET : DEMANDE D'AUTORISATION DE CREMATION", 20, 80);
     let y = 100;
     pdf.setFont("times", "normal");
-    const txt = `Monsieur le Maire,\n\nJe soussigné(e) ${getVal("soussigne")}, agissant en qualité de ${getVal("lien")} du défunt(e), sollicite l'autorisation de procéder à la crémation de :\n\n${getVal("nom").toUpperCase()} ${getVal("prenom")}\nNé(e) le ${formatDate(getVal("date_naiss"))} et décédé(e) le ${formatDate(getVal("date_deces"))}.\n\nLa crémation aura lieu le ${formatDate(getVal("date_cremation"))} au ${getVal("crematorium_nom")}.\nDestination des cendres : ${getVal("destination_cendres")}.\n\nJe certifie que le défunt n'était pas porteur d'un stimulateur cardiaque.`;
+    const txt = `Monsieur le Maire,\n\nJe soussigné(e) ${getVal("civilite_mandant")} ${getVal("soussigne")}, agissant en qualité de ${getVal("lien")} du défunt(e), sollicite l'autorisation de procéder à la crémation de :\n\n${getVal("civilite_defunt")} ${getVal("nom").toUpperCase()} ${getVal("prenom")}\nNé(e) le ${formatDate(getVal("date_naiss"))} et décédé(e) le ${formatDate(getVal("date_deces"))}.\n\nLa crémation aura lieu le ${formatDate(getVal("date_cremation"))} au ${getVal("crematorium_nom")}.\nDestination des cendres : ${getVal("destination_cendres")}.\n\nJe certifie que le défunt n'était pas porteur d'un stimulateur cardiaque.`;
     const splitTxt = pdf.splitTextToSize(txt, 170); pdf.text(splitTxt, 20, y);
     y += (splitTxt.length * 7) + 20;
     pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y);
@@ -546,7 +514,8 @@ window.genererDemandeFermetureMairie = function() {
     pdf.setFont("helvetica", "bold");
     pdf.text("A l'honneur de solliciter votre autorisation de fermeture du cercueil de :", x, y); y+=15;
     pdf.setFillColor(245, 245, 245); pdf.rect(x-5, y-5, 170, 35, 'F');
-    pdf.text("• Nom et Prénom : " + getVal("nom").toUpperCase() + " " + getVal("prenom"), x+10, y); y+=10;
+    // Civilité
+    pdf.text("• Nom et Prénom : " + getVal("civilite_defunt") + " " + getVal("nom").toUpperCase() + " " + getVal("prenom"), x+10, y); y+=10;
     pdf.text("• Né(e) le : " + formatDate(getVal("date_naiss")) + " à " + getVal("lieu_naiss"), x+10, y); y+=10;
     pdf.text("• Décédé(e) le : " + formatDate(getVal("date_deces")) + " à " + getVal("lieu_deces"), x+10, y); y+=20;
     pdf.text("Et ce,", x, y); y+=10;
@@ -558,138 +527,78 @@ window.genererDemandeFermetureMairie = function() {
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 7. OUVERTURE SÉPULTURE (VERSION PARFAITE - STYLE ADMINISTRATIF) ---
-// --- 7. OUVERTURE SÉPULTURE (CORRECTIF VISUEL : CASES DESSINÉES) ---
+// --- 7. OUVERTURE SÉPULTURE (AVEC CASES DESSINÉES) ---
 window.genererDemandeOuverture = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     headerPF(pdf);
-
-    // Titre avec fond couleur
     pdf.setFillColor(230, 235, 240); pdf.rect(10, 35, 190, 12, 'F');
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(0);
     pdf.text("DEMANDE D'OUVERTURE DE SÉPULTURE DE FAMILLE", 105, 43, { align: "center" });
-
-    let y = 60; const x = 15;
-    pdf.setFontSize(10);
-
-    // Bloc OBJET
+    let y = 60; const x = 15; pdf.setFontSize(10);
     pdf.setFillColor(245, 245, 245); pdf.rect(x, y-5, 180, 25, 'F'); pdf.setDrawColor(200); pdf.rect(x, y-5, 180, 25);
     pdf.setFont("helvetica", "bold"); pdf.text("OBJET DE L'OPÉRATION :", x+5, y);
-    
     const type = getVal("prestation");
-
-    // --- DESSIN DES CASES À COCHER (METHODE FIABLE) ---
     pdf.setDrawColor(0); pdf.setFillColor(255); 
-
-    // Option 1 : Inhumation
-    pdf.rect(x+55, y-3, 4, 4); // Le carré
-    if(type === "Inhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+55.8, y); } // La croix
-    pdf.setFont("helvetica", "normal"); pdf.text("Pour INHUMATION", x+62, y);
-
-    // Option 2 : Exhumation
-    pdf.rect(x+110, y-3, 4, 4); // Le carré
-    if(type === "Exhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+110.8, y); } // La croix
-    pdf.setFont("helvetica", "normal"); pdf.text("Pour EXHUMATION", x+117, y);
-
-    // Option 3 : Scellement (Statique pour l'instant)
-    pdf.rect(x+55, y+7, 4, 4); // Le carré vide
-    pdf.text("Pour SCELLEMENT D'URNE", x+62, y+10);
-
+    pdf.rect(x+55, y-3, 4, 4); if(type === "Inhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+55.8, y); } pdf.setFont("helvetica", "normal"); pdf.text("Pour INHUMATION", x+62, y);
+    pdf.rect(x+110, y-3, 4, 4); if(type === "Exhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+110.8, y); } pdf.setFont("helvetica", "normal"); pdf.text("Pour EXHUMATION", x+117, y);
+    pdf.rect(x+55, y+7, 4, 4); pdf.text("Pour SCELLEMENT D'URNE", x+62, y+10);
     y += 35;
-
-    // Bloc DEMANDEUR
     pdf.setFont("helvetica", "bold"); pdf.text("JE SOUSSIGNÉ(E) (Le Demandeur) :", x, y); y+=5;
     pdf.setLineWidth(0.5); pdf.setDrawColor(150); pdf.rect(x, y, 180, 30);
     pdf.setFont("helvetica", "normal");
-    pdf.text(`Nom et Prénom : ${getVal("soussigne").toUpperCase()}`, x+5, y+8);
+    // Civilité
+    pdf.text(`Nom et Prénom : ${getVal("civilite_mandant")} ${getVal("soussigne").toUpperCase()}`, x+5, y+8);
     pdf.text(`Demeurant à : ${getVal("demeurant")}`, x+5, y+16);
     pdf.text(`Agissant en qualité de : ${getVal("lien")}`, x+5, y+24);
-    
     y += 40;
-
-    // Bloc DETAILS CONCESSION
     pdf.setFont("helvetica", "bold"); pdf.text("DEMANDE L'AUTORISATION D'OUVRIR LA SÉPULTURE SUIVANTE :", x, y); y+=5;
     pdf.rect(x, y, 180, 30);
     pdf.setFont("helvetica", "normal");
     pdf.text(`Située au Cimetière de : ${getVal("cimetiere_nom")}`, x+5, y+8);
     pdf.text(`Numéro de Concession : ${getVal("num_concession")}`, x+5, y+16);
     pdf.text(`Titulaire de la Concession : ${getVal("titulaire_concession")}`, x+5, y+24);
-
     y += 40;
-    
-    // Texte Légal
     pdf.setFontSize(9);
     const legalTxt = "La présente déclaration dont j'assure la pleine et entière responsabilité m'engage à garantir la ville contre toute réclamation qui pourrait survenir suite à l'opération qui en fait l'objet.\nEnfin, conformément à la réglementation en vigueur, je m'engage à fournir la preuve de la qualité du ou des ayants droits et déposer au service Réglementation funéraire de la ville, la copie des documents prouvant cette qualité.";
     const splitLegal = pdf.splitTextToSize(legalTxt, 180);
-    pdf.text(splitLegal, x, y);
-
-    y += 30;
-
-    // Signatures
+    pdf.text(splitLegal, x, y); y += 30;
     pdf.setFontSize(11);
-    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 130, y);
-    y += 15;
-    
-    pdf.setFont("helvetica", "bold");
-    pdf.text("Signature du Demandeur", 30, y);
-    pdf.text("Cachet PF SOLIDAIRE", 140, y);
-
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 130, y); y += 15;
+    pdf.setFont("helvetica", "bold"); pdf.text("Signature du Demandeur", 30, y); pdf.text("Cachet PF SOLIDAIRE", 140, y);
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
 
-// --- 8. PV FERMETURE (TECHNIQUE) ---
-// --- 8. PV FERMETURE (TITRE CORRIGÉ : MISE EN BIERE + FERMETURE) ---
-// --- 8. PV FERMETURE (CORRECTION : LIEU MISE EN BIERE) ---
+// --- 8. PV MISE EN BIERE (CORRECT) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64(); 
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); 
     ajouterFiligrane(pdf); headerPF(pdf);
-
-    // Titre
     pdf.setFillColor(52, 73, 94); pdf.rect(0, 35, 210, 15, 'F');
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(255, 255, 255);
     pdf.text("DÉCLARATION DE MISE EN BIÈRE, DE FERMETURE", 105, 41, { align: "center" });
     pdf.text("ET DE SCELLEMENT DE CERCUEIL", 105, 47, { align: "center" });
-    
     pdf.setTextColor(0); pdf.setFontSize(10);
     let y = 65; const x = 20;
-
-    // Bloc Opérateur
     pdf.setDrawColor(200); pdf.setLineWidth(0.5); pdf.rect(x, y, 170, 20);
     pdf.setFont("helvetica", "bold"); pdf.text("L'OPÉRATEUR FUNÉRAIRE", x+5, y+5);
     pdf.setFont("helvetica", "normal");
     pdf.text("PF SOLIDAIRE PERPIGNAN - 32 Bd Léon Jean Grégory, Thuir", x+5, y+10);
-    pdf.text("Habilitation : 23-66-0205", x+5, y+15); 
-    
-    y += 30;
+    pdf.text("Habilitation : 23-66-0205", x+5, y+15); y += 30;
     pdf.text("Je, soussigné M. CHERKAOUI Mustapha, certifie avoir procédé à la mise en bière,", x, y);
-    pdf.text("à la fermeture et au scellement du cercueil.", x, y+5); 
-    y+=15;
-    
+    pdf.text("à la fermeture et au scellement du cercueil.", x, y+5); y+=15;
     pdf.setFont("helvetica", "bold");
     pdf.text(`DATE : ${formatDate(getVal("date_fermeture"))}`, x, y);
-    
-    // --- CORRECTION ICI : ON PREND 'lieu_mise_biere' ---
-    pdf.text(`LIEU : ${getVal("lieu_mise_biere")}`, x+80, y); 
-    
-    y+=15;
-
-    // Bloc Défunt
+    pdf.text(`LIEU : ${getVal("lieu_mise_biere")}`, x+80, y); y+=15;
     pdf.setFillColor(240, 240, 240); pdf.rect(x, y, 170, 30, 'F');
     pdf.setFont("helvetica", "bold"); pdf.text("IDENTITÉ DU DÉFUNT(E)", x+5, y+6);
     pdf.setFont("helvetica", "normal");
-    pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
-    pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); 
-    
-    y+=40;
-
-    // Selecteur Police/Famille
+    // Civilité
+    pdf.text(`Nom : ${getVal("civilite_defunt")} ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
+    pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
     const typePresence = document.getElementById('type_presence_select').value;
     const isPolice = (typePresence === 'police'); 
-
     pdf.setFont("helvetica", "bold"); pdf.text("EN PRÉSENCE DE :", x, y); y+=10;
     pdf.setDrawColor(0); pdf.rect(x, y, 170, 30);
-    
     if(isPolice) {
         pdf.text("AUTORITÉ DE POLICE (Absence de famille)", x+5, y+6);
         pdf.setFont("helvetica", "normal");
@@ -701,23 +610,17 @@ window.genererFermeture = function() {
         pdf.text(`Nom : ${getVal("f_nom_prenom")}`, x+5, y+14);
         pdf.text(`Lien de parenté : ${getVal("f_lien")}`, x+80, y+14);
     }
-
-    y+=45; 
-    pdf.line(20, y, 190, y); 
-    y+=10;
-    
+    y+=45; pdf.line(20, y, 190, y); y+=10;
     pdf.setFont("helvetica", "bold");
     pdf.text("Signature Opérateur", 40, y);
     pdf.text(isPolice ? "Signature Police" : "Signature Famille", 140, y);
-
     pdf.save(`PV_Mise_En_Biere_Fermeture_${getVal("nom")}.pdf`);
 };
 
 // --- 9. TRANSPORT ---
 window.genererTransport = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-    pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277);
-    headerPF(pdf);
+    pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277); headerPF(pdf);
     pdf.setFillColor(200); pdf.rect(10, 35, 190, 15, 'F');
     const typeT = document.querySelector('input[name="transport_type"]:checked').value;
     const labelT = typeT === "avant" ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
@@ -731,7 +634,8 @@ window.genererTransport = function() {
     pdf.text("PF SOLIDAIRE PERPIGNAN - 32 Bd Léon J. Grégory, Thuir", x, y); y+=15;
     pdf.setDrawColor(0); pdf.rect(x, y, 170, 25);
     pdf.setFont("helvetica", "bold"); pdf.text("DÉFUNT(E)", x+5, y+6);
-    pdf.setFontSize(14); pdf.text(`${getVal("nom")} ${getVal("prenom")}`, 105, y+15, {align:"center"});
+    // Civilité
+    pdf.setFontSize(14); pdf.text(`${getVal("civilite_defunt")} ${getVal("nom")} ${getVal("prenom")}`, 105, y+15, {align:"center"});
     pdf.setFontSize(10); pdf.setFont("helvetica", "normal");
     pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))}`, 105, y+21, {align:"center"}); y+=35;
     pdf.setLineWidth(0.5); pdf.rect(x, y, 80, 50); pdf.rect(x+90, y, 80, 50);
