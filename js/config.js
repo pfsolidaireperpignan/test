@@ -1,9 +1,9 @@
-/* Fichier : js/config.js (VOS CLÉS + FONCTIONS ACTIVES) */
+/* Fichier : js/config.js (AVEC RESET PASSWORD) */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-// AJOUT DES OUTILS MANQUANTS ICI : doc, updateDoc, deleteDoc
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// VOS CLÉS (Ne changez rien ici si c'est déjà bon chez vous)
 const firebaseConfig = {
     apiKey: "AIzaSyDmsIkTjW2IFkIks5BUAnxLLnc7pnj2e0w",
     authDomain: "pf-solidaire.firebaseapp.com",
@@ -19,13 +19,13 @@ try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    console.log("Firebase connecté (PF Solidaire) !");
+    console.log("Firebase connecté (Config)");
 } catch (e) {
     console.error("Erreur Config :", e);
 }
 
 export { 
     auth, db, collection, addDoc, getDocs, query, orderBy, limit, 
-    doc, updateDoc, deleteDoc, // <--- C'EST CA QUI MANQUAIT POUR SUPPRIMER
-    onAuthStateChanged, signInWithEmailAndPassword, signOut 
+    doc, updateDoc, deleteDoc, 
+    onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail // <--- AJOUTÉ ICI
 };
