@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation & Compta</title>
+    <title>PF Solidaire - Facturation Intelligente</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -11,65 +11,45 @@
     
     <style>
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
-        
-        /* UTILITAIRES */
         .hidden { display: none !important; }
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
         .btn:hover { opacity: 0.9; }
         
+        /* Couleurs Boutons */
         .btn-blue { background: #3b82f6; color: white; }
         .btn-green { background: #22c55e; color: white; }
-        .btn-orange { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
+        .btn-orange { background: #f97316; color: white; }
         .btn-red { background: #fee2e2; color: #ef4444; }
         .btn-grey { background: #e2e8f0; color: #475569; }
+        .btn-purple { background: #8b5cf6; color: white; }
 
-        /* --- STATISTIQUES (NOUVEAU) --- */
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;
-        }
-        .stat-card {
-            background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #ccc;
-        }
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #ccc; }
         .stat-info h3 { margin: 0; font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
         .stat-info p { margin: 5px 0 0 0; font-size: 1.5rem; font-weight: bold; color: #1e293b; }
         .stat-icon { font-size: 2.5rem; opacity: 0.2; }
-        
         .card-ca { border-color: #22c55e; } .card-ca .stat-icon { color: #22c55e; }
         .card-fact { border-color: #3b82f6; } .card-fact .stat-icon { color: #3b82f6; }
         .card-devis { border-color: #f59e0b; } .card-devis .stat-icon { color: #f59e0b; }
 
-        /* --- VUE 1 : TABLEAU DE BORD --- */
-        .dashboard-header {
-            display: flex; justify-content: space-between; align-items: center;
-            background: white; padding: 20px; border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px; 
-        }
-        .compta-table {
-            width: 100%; background: white; border-radius: 8px; overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse;
-        }
+        /* Dashboard */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .compta-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse; }
         .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
         .compta-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .compta-table tr:hover { background: #f8fafc; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
         .badge-devis { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
         .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 
-        /* --- VUE 2 : ÉDITEUR --- */
+        /* Éditeur */
         .editor-container { max-width: 1200px; margin: 0 auto; }
-        .top-bar-editor {
-            background: white; padding: 15px; border-radius: 8px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-top: 4px solid #f59e0b;
-        }
+        .top-bar-editor { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 4px solid #f59e0b; }
         .grid-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .label-section { color: #3b82f6; font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; display: block; text-transform: uppercase; }
         .input-clean { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
-
+        
         .facture-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .facture-table th { background: #e2e8f0; padding: 12px; text-align: left; color: #475569; font-size: 0.85rem; text-transform: uppercase; }
         .facture-table td { border-bottom: 1px solid #f1f5f9; padding: 5px; vertical-align: middle; }
@@ -80,43 +60,60 @@
         .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; }
         .input-section { font-weight: bold; color: #c2410c; text-transform: uppercase; }
         .total-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 15px; text-align: right; font-size: 1.4rem; font-weight: bold; margin-top: 10px; border-radius: 8px; }
+
+        /* Modal Choix */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; }
+        .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
+        .modal-btn i { margin-right: 10px; width: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
+    <div id="modal-choix" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="color:#1e293b; margin-top:0;">CHOISIR UN MODÈLE</h3>
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Pour pré-remplir le devis automatiquement</p>
+            
+            <button class="modal-btn" onclick="window.loadTemplate('Inhumation')"><i class="fas fa-church"></i> INHUMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Cremation')"><i class="fas fa-fire"></i> CRÉMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Rapatriement')"><i class="fas fa-plane"></i> RAPATRIEMENT</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Exhumation')"><i class="fas fa-box-open"></i> EXHUMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Transport')"><i class="fas fa-ambulance"></i> TRANSPORT SIMPLE</button>
+            
+            <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:10px;">
+                <button class="btn btn-grey" style="width:100%; justify-content:center;" onclick="window.loadTemplate('Vide')">Devis Vierge</button>
+            </div>
+            <div style="margin-top:10px;">
+                <a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444; font-size:0.8rem;">Annuler</a>
+            </div>
+        </div>
+    </div>
+
     <div id="view-list">
-        
         <div class="dashboard-header">
             <div>
                 <h1 style="margin:0; font-size:1.5rem;">Gestion Facturation</h1>
-                <p style="margin:5px 0 0 0; color:#64748b;">Espace Comptable</p>
+                <p style="margin:5px 0 0 0; color:#64748b;">Comptabilité & Devis</p>
             </div>
             <div style="display:flex; gap:10px;">
                 <a href="index.html" class="btn btn-grey"><i class="fas fa-home"></i> Accueil</a>
-                <button class="btn btn-blue" onclick="window.nouveauDocument()"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
+                <button class="btn btn-blue" onclick="document.getElementById('modal-choix').classList.remove('hidden')"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
             </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card card-ca">
-                <div class="stat-info">
-                    <h3>Chiffre d'Affaire (Annuel)</h3>
-                    <p id="stat-ca">0.00 €</p>
-                </div>
+                <div class="stat-info"><h3>CA Annuel 2026</h3><p id="stat-ca">0.00 €</p></div>
                 <i class="fas fa-chart-line stat-icon"></i>
             </div>
             <div class="stat-card card-fact">
-                <div class="stat-info">
-                    <h3>Factures Émises</h3>
-                    <p id="stat-factures">0</p>
-                </div>
+                <div class="stat-info"><h3>Factures</h3><p id="stat-factures">0</p></div>
                 <i class="fas fa-file-invoice-dollar stat-icon"></i>
             </div>
             <div class="stat-card card-devis">
-                <div class="stat-info">
-                    <h3>Devis (3 derniers mois)</h3>
-                    <p id="stat-devis">0</p>
-                </div>
+                <div class="stat-info"><h3>Devis (3 mois)</h3><p id="stat-devis">0</p></div>
                 <i class="fas fa-file-contract stat-icon"></i>
             </div>
         </div>
@@ -124,12 +121,7 @@
         <table class="compta-table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Client</th>
-                    <th>Défunt</th>
-                    <th style="text-align:right;">Montant TTC</th>
-                    <th style="text-align:center;">Actions</th>
+                    <th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:center;">Actions</th>
                 </tr>
             </thead>
             <tbody id="list-body">
@@ -139,13 +131,12 @@
     </div>
 
     <div id="view-editor" class="hidden editor-container">
-        
         <input type="hidden" id="current_doc_id">
 
         <div class="top-bar-editor">
             <button onclick="window.showList()" class="btn btn-grey"><i class="fas fa-arrow-left"></i> RETOUR</button>
-            <h2 style="margin:0; color:#1e293b; font-size:1.2rem;">ÉDITION DE DOCUMENT</h2>
-            <div style="display:flex; gap:5px;">
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-purple hidden" id="btn-transform" onclick="window.transformerEnFacture()"><i class="fas fa-magic"></i> TRANSFORMER EN FACTURE</button>
                 <button class="btn btn-green" id="btn-save"><i class="fas fa-save"></i> ENREGISTRER</button>
                 <button class="btn btn-blue" id="btn-pdf"><i class="fas fa-print"></i> PDF</button>
             </div>
@@ -174,7 +165,7 @@
         </div>
 
         <div style="background:white; padding:10px; display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0; border:1px solid #e2e8f0;">
-            <div style="font-weight:bold; color:#64748b;">DÉTAIL (Drag & Drop)</div>
+            <div style="font-weight:bold; color:#64748b;">DÉTAIL (Drag & Drop actif)</div>
             <div>
                 <button class="btn btn-orange" onclick="window.ajouterSection()"><i class="fas fa-heading"></i> SECTION</button>
                 <button class="btn btn-blue" onclick="window.ajouterLigne()"><i class="fas fa-plus"></i> LIGNE</button>
@@ -183,27 +174,109 @@
 
         <table class="facture-table">
             <thead>
-                <tr>
-                    <th style="width: 30px;"></th>
-                    <th style="width: 50%;">DÉSIGNATION</th>
-                    <th style="width: 15%;">TYPE</th>
-                    <th style="width: 10%;">TVA</th>
-                    <th style="width: 15%; text-align:right;">PRIX TTC</th>
-                    <th style="width: 5%;"></th>
-                </tr>
+                <tr><th style="width: 30px;"></th><th style="width: 50%;">DÉSIGNATION</th><th style="width: 15%;">TYPE</th><th style="width: 10%;">TVA</th><th style="width: 15%; text-align:right;">PRIX TTC</th><th style="width: 5%;"></th></tr>
             </thead>
             <tbody id="tbody_lignes"></tbody>
         </table>
 
-        <div class="total-box">
-            TOTAL TTC : <span id="total_display">0.00</span> €
-        </div>
+        <div class="total-box">TOTAL TTC : <span id="total_display">0.00</span> €</div>
     </div>
 
 <script type="module">
-    import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "./js/config.js";
+    import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "./js/config.js";
 
-    // --- LOGIQUE COMPTABILITÉ (STATS) ---
+    // --- DONNÉES : MODÈLES DE DEVIS (PRE-REMPLISSAGE) ---
+    const MODELES = {
+        "Inhumation": [
+            { type: 'section', text: '1. DÉMARCHES & ADMINISTRATIF' },
+            { desc: 'Démarches administratives (Mairie, Préfecture)', cat: 'Courant', prix: 250 },
+            { desc: 'Vacation de Police', cat: 'Avance', prix: 25 },
+            { type: 'section', text: '2. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Modèle Standard (Chêne clair)', cat: 'Courant', prix: 850 },
+            { desc: 'Plaque d\'identité gravée', cat: 'Courant', prix: 35 },
+            { desc: 'Capiton Taffetas', cat: 'Courant', prix: 80 },
+            { type: 'section', text: '3. PERSONNEL & VÉHICULE' },
+            { desc: 'Corbillard avec chauffeur (Cérémonie)', cat: 'Courant', prix: 400 },
+            { desc: 'Porteurs (x4) pour mise en bière et inhumation', cat: 'Courant', prix: 600 }
+        ],
+        "Cremation": [
+            { type: 'section', text: '1. DÉMARCHES' },
+            { desc: 'Démarches administratives', cat: 'Courant', prix: 250 },
+            { desc: 'Frais de Crématorium', cat: 'Avance', prix: 700 },
+            { type: 'section', text: '2. CERCUEIL' },
+            { desc: 'Cercueil Crémation (Pin ou Peuplier)', cat: 'Courant', prix: 650 },
+            { desc: 'Urne Cinéraire Standard', cat: 'Courant', prix: 150 },
+            { type: 'section', text: '3. TRANSPORT' },
+            { desc: 'Corbillard vers Crématorium', cat: 'Courant', prix: 350 }
+        ],
+        "Rapatriement": [
+            { type: 'section', text: '1. ADMINISTRATIF & CONSULAT' },
+            { desc: 'Démarches Préfecture & Consulat', cat: 'Courant', prix: 350 },
+            { desc: 'Frais Consulaires (Est.)', cat: 'Avance', prix: 0 },
+            { type: 'section', text: '2. CERCUEIL & SOINS' },
+            { desc: 'Cercueil Hermétique (Zinc + Bois) pour Export', cat: 'Courant', prix: 1200 },
+            { desc: 'Soins de conservation (Obligatoire)', cat: 'Courant', prix: 350 },
+            { type: 'section', text: '3. TRANSPORT' },
+            { desc: 'Transport Aéroport', cat: 'Courant', prix: 250 },
+            { desc: 'Fret Aérien (Estimation)', cat: 'Avance', prix: 0 }
+        ],
+        "Exhumation": [
+            { type: 'section', text: '1. TECHNIQUE' },
+            { desc: 'Demande d\'ouverture de sépulture', cat: 'Courant', prix: 150 },
+            { desc: 'Ouverture de fosse / Caveau', cat: 'Courant', prix: 600 },
+            { desc: 'Exhumation et réduction de corps', cat: 'Courant', prix: 450 },
+            { desc: 'Reliquaire (si nécessaire)', cat: 'Courant', prix: 120 }
+        ],
+        "Transport": [
+            { desc: 'Transport de corps avant mise en bière', cat: 'Courant', prix: 300 },
+            { desc: 'Housse mortuaire', cat: 'Courant', prix: 40 }
+        ]
+    };
+
+    // --- FONCTION : CHARGER UN MODÈLE ---
+    window.loadTemplate = function(type) {
+        document.getElementById('modal-choix').classList.add('hidden');
+        window.nouveauDocument(); // Reset
+        
+        if (MODELES[type]) {
+            // Vide les lignes par défaut
+            document.getElementById('tbody_lignes').innerHTML = "";
+            // Ajoute les lignes du modèle
+            MODELES[type].forEach(item => {
+                if(item.type === 'section') {
+                    window.ajouterSection(item.text);
+                } else {
+                    window.ajouterLigne(item.desc, item.prix, item.cat);
+                }
+            });
+        }
+    };
+
+    // --- FONCTION : TRANSFORMER EN FACTURE ---
+    window.transformerEnFacture = async function() {
+        if(confirm("Confirmez-vous la transformation de ce Devis en Facture définitive ?")) {
+            document.getElementById('doc_type').value = "FACTURE";
+            document.getElementById('doc_date').valueAsDate = new Date(); // Date du jour
+            // Déclenche la sauvegarde
+            document.getElementById('btn-save').click();
+        }
+    };
+
+    // --- AFFICHAGE DU BOUTON TRANSFORMER ---
+    function updateTransformButton() {
+        const type = document.getElementById('doc_type').value;
+        const btn = document.getElementById('btn-transform');
+        if(type === 'DEVIS') {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+    // Écouteur sur le select Type pour cacher/montrer le bouton
+    document.getElementById('doc_type').addEventListener('change', updateTransformButton);
+
+
+    // --- LOGIQUE COMPTABILITÉ (STATS & LISTE) ---
     window.chargerListeFactures = async function() {
         const tbody = document.getElementById('list-body');
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Chargement...</td></tr>';
@@ -212,19 +285,12 @@
             const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
             const querySnapshot = await getDocs(q);
             
-            // Variables Stats
-            let totalCA = 0;
-            let countFactures = 0;
-            let countDevisRecents = 0;
+            let totalCA = 0, countFactures = 0, countDevisRecents = 0;
             const currentYear = new Date().getFullYear();
-            const dateLimite = new Date();
-            dateLimite.setMonth(dateLimite.getMonth() - 3); // Il y a 3 mois
+            const dateLimite = new Date(); dateLimite.setMonth(dateLimite.getMonth() - 3);
 
             tbody.innerHTML = "";
-            if(querySnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Aucun document.</td></tr>';
-                return;
-            }
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
 
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
@@ -232,19 +298,13 @@
                 const totalDoc = data.info?.total || 0;
                 const typeDoc = data.info?.type || 'DEVIS';
 
-                // Calcul Stats
                 if (typeDoc === "FACTURE") {
-                    if (dateDoc.getFullYear() === currentYear) {
-                        totalCA += totalDoc;
-                    }
+                    if (dateDoc.getFullYear() === currentYear) totalCA += totalDoc;
                     countFactures++;
                 } else if (typeDoc === "DEVIS") {
-                    if (dateDoc > dateLimite) {
-                        countDevisRecents++;
-                    }
+                    if (dateDoc > dateLimite) countDevisRecents++;
                 }
 
-                // Remplissage Tableau
                 const typeClass = (typeDoc === "FACTURE") ? "badge-facture" : "badge-devis";
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -256,23 +316,18 @@
                     <td style="text-align:center;">
                         <button class="btn btn-grey" onclick="window.chargerDocument('${docSnap.id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-red" onclick="window.supprimerDocument('${docSnap.id}')" style="margin-left:5px;"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
+                    </td>`;
                 tbody.appendChild(tr);
             });
 
-            // Mise à jour Affichage Stats
             document.getElementById('stat-ca').innerText = totalCA.toFixed(2) + " €";
             document.getElementById('stat-factures').innerText = countFactures;
             document.getElementById('stat-devis').innerText = countDevisRecents;
 
-        } catch(e) {
-            console.error(e);
-            tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Erreur : ${e.message}</td></tr>`;
-        }
+        } catch(e) { console.error(e); tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Erreur : ${e.message}</td></tr>`; }
     };
 
-    // --- NAVIGATION ---
+    // --- NAVIGATION & ÉDITION ---
     window.showList = function() {
         document.getElementById('view-editor').classList.add('hidden');
         document.getElementById('view-list').classList.remove('hidden');
@@ -285,12 +340,40 @@
         document.getElementById('client_adresse').value = "";
         document.getElementById('defunt_nom').value = "";
         document.getElementById('doc_date').valueAsDate = new Date();
+        document.getElementById('doc_type').value = "DEVIS";
         document.getElementById('tbody_lignes').innerHTML = "";
         document.getElementById('total_display').innerText = "0.00";
-        window.ajouterSection();
-        window.ajouterLigne("Démarches administratives", 0);
+        updateTransformButton();
         document.getElementById('view-list').classList.add('hidden');
         document.getElementById('view-editor').classList.remove('hidden');
+    };
+
+    window.chargerDocument = async function(id) {
+        try {
+            const docRef = doc(db, "factures_v2", id);
+            const docSnap = await getDoc(docRef);
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('current_doc_id').value = id;
+                document.getElementById('client_nom').value = data.client.nom;
+                document.getElementById('client_adresse').value = data.client.adresse;
+                document.getElementById('defunt_nom').value = data.defunt.nom;
+                document.getElementById('doc_type').value = data.info.type;
+                document.getElementById('doc_date').value = data.info.date;
+                
+                document.getElementById('tbody_lignes').innerHTML = "";
+                if(data.lignes) {
+                    data.lignes.forEach(l => {
+                        if(l.type === 'section') window.ajouterSection(l.text);
+                        else window.ajouterLigne(l.desc, l.prix, l.cat);
+                    });
+                }
+                window.calculTotal();
+                updateTransformButton();
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-editor').classList.remove('hidden');
+            }
+        } catch(e) { alert("Erreur chargement : " + e.message); }
     };
 
     // --- MOTEUR TABLEAU ---
@@ -301,11 +384,7 @@
         const tbody = document.getElementById('tbody_lignes');
         const tr = document.createElement('tr');
         tr.className = "row-section";
-        tr.innerHTML = `
-            <td class="drag-handle"><i class="fas fa-grip-vertical"></i></td>
-            <td colspan="4"><input type="text" class="input-cell input-section" value="${titre}" placeholder="Titre Section"></td>
-            <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>
-        `;
+        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-vertical"></i></td><td colspan="4"><input type="text" class="input-cell input-section" value="${titre}" placeholder="Titre Section"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
         tbody.appendChild(tr);
     };
 
@@ -313,19 +392,7 @@
         const tbody = document.getElementById('tbody_lignes');
         const tr = document.createElement('tr');
         tr.className = "row-item";
-        tr.innerHTML = `
-            <td class="drag-handle"><i class="fas fa-grip-lines"></i></td>
-            <td><input type="text" class="input-cell val-desc" value="${desc}" placeholder="Description..."></td>
-            <td>
-                <select class="input-cell val-type" style="border:none;">
-                    <option value="Courant" ${type==='Courant'?'selected':''}>Courant</option>
-                    <option value="Avance" ${type==='Avance'?'selected':''}>Avance</option>
-                </select>
-            </td>
-            <td>NA</td>
-            <td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()" placeholder="0.00"></td>
-            <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>
-        `;
+        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}" placeholder="Description..."></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()" placeholder="0.00"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
         tbody.appendChild(tr);
         window.calculTotal();
     };
@@ -336,7 +403,6 @@
         document.getElementById('total_display').innerText = total.toFixed(2);
     };
 
-    // --- ACTIONS ---
     window.supprimerDocument = async function(id) {
         if(confirm("Supprimer ce document ?")) {
             await deleteDoc(doc(db, "factures_v2", id));
@@ -344,25 +410,13 @@
         }
     };
 
-    window.chargerDocument = async function(id) {
-        alert("Fonction édition complète à venir. Utilisez 'Créer' pour l'instant.");
-    };
-
     document.getElementById('btn-save').addEventListener('click', async () => {
-        const btn = document.getElementById('btn-save'); btn.innerHTML = '...';
+        const btn = document.getElementById('btn-save'); const id = document.getElementById('current_doc_id').value; btn.innerHTML = '...';
         try {
             const lignes = [];
             document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
-                if(tr.classList.contains('row-section')) {
-                    lignes.push({ type: 'section', text: tr.querySelector('input').value });
-                } else {
-                    lignes.push({
-                        type: 'item',
-                        desc: tr.querySelector('.val-desc').value,
-                        cat: tr.querySelector('.val-type').value,
-                        prix: parseFloat(tr.querySelector('.val-prix').value) || 0
-                    });
-                }
+                if(tr.classList.contains('row-section')) lignes.push({ type: 'section', text: tr.querySelector('input').value });
+                else lignes.push({ type: 'item', desc: tr.querySelector('.val-desc').value, cat: tr.querySelector('.val-type').value, prix: parseFloat(tr.querySelector('.val-prix').value) || 0 });
             });
             const docData = {
                 client: { nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value },
@@ -371,9 +425,9 @@
                 lignes: lignes,
                 date_creation: new Date().toISOString()
             };
-            await addDoc(collection(db, "factures_v2"), docData);
-            alert("✅ Enregistré !");
-            window.showList();
+            if(id) await updateDoc(doc(db, "factures_v2", id), docData);
+            else await addDoc(collection(db, "factures_v2"), docData);
+            alert("✅ Enregistré !"); window.showList();
         } catch(e) { alert("Erreur : " + e.message); }
         btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     });
@@ -390,15 +444,13 @@
         doc.text("Concerne : " + document.getElementById('defunt_nom').value, 100, 42);
         const rows = [];
         document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
-            if(tr.classList.contains('row-section')) {
-                rows.push([{content: tr.querySelector('input').value.toUpperCase(), colSpan: 3, styles: {fillColor: [255, 247, 237], fontStyle: 'bold', textColor: [194, 65, 12]}}]);
-            } else {
-                rows.push([tr.querySelector('.val-desc').value, tr.querySelector('.val-type').value, tr.querySelector('.val-prix').value + ' €']);
-            }
+            if(tr.classList.contains('row-section')) rows.push([{content: tr.querySelector('input').value.toUpperCase(), colSpan: 3, styles: {fillColor: [255, 247, 237], fontStyle: 'bold', textColor: [194, 65, 12]}}]);
+            else rows.push([tr.querySelector('.val-desc').value, tr.querySelector('.val-type').value, tr.querySelector('.val-prix').value + ' €']);
         });
         doc.autoTable({ startY: 70, head: [['Désignation', 'Type', 'Prix TTC']], body: rows, theme: 'grid', styles: { fontSize: 10, cellPadding: 3 } });
+        const finalY = doc.lastAutoTable.finalY + 10;
         doc.setFontSize(12); doc.setFont("helvetica", "bold");
-        doc.text("TOTAL TTC : " + document.getElementById('total_display').innerText + " €", 190, doc.lastAutoTable.finalY + 10, {align:'right'});
+        doc.text("TOTAL TTC : " + document.getElementById('total_display').innerText + " €", 190, finalY, {align:'right'});
         doc.save("Facture.pdf");
     });
 
