@@ -201,13 +201,50 @@
                                 <div style="margin-top:10px;">
                                     <input type="checkbox" id="check_vol2"> <label for="check_vol2">Ajouter Vol 2 (Correspondance)</label>
                                 </div>
-                                <div id="bloc_vol2" class="form-grid hidden" style="margin-top:10px;">
-                                    <div><label>N° Vol 2</label><input id="vol2_num"></div>
-                                    <div><label>Départ</label><input id="vol2_dep_aero"></div>
-                                    <div><label>Arrivée</label><input id="vol2_arr_aero"></div>
-                                    <div><label>Date Dép.</label><input id="vol2_dep_time"></div>
-                                    <div><label>Date Arr.</label><input id="vol2_arr_time"></div>
-                                </div>
+                                <div class="card specific-block hidden" id="bloc_rapatriement" style="border-left: 4px solid #ef4444;">
+    <h3><i class="fas fa-plane"></i> Détails Rapatriement</h3>
+    <div class="form-grid">
+        <div><label>Pays Destination</label><input id="rap_pays"></div>
+        <div><label>Ville Destination</label><input id="rap_ville"></div>
+        
+        <div class="span-2" style="background:#f1f5f9; padding:10px; border-radius:5px;">
+            <label style="font-weight:bold; color:#1e3a8a;">✈️ Transport Aérien</label>
+            <div class="form-grid">
+                <div><label>N° LTA (Lettre Transport)</label><input id="rap_lta"></div>
+                <div><label>N° Vol 1</label><input id="vol1_num"></div>
+                <div><label>Départ (Aéroport)</label><input id="vol1_dep_aero"></div>
+                <div><label>Arrivée (Aéroport)</label><input id="vol1_arr_aero"></div>
+                <div><label>Date/Heure Dép.</label><input id="vol1_dep_time"></div>
+                <div><label>Date/Heure Arr.</label><input id="vol1_arr_time"></div>
+            </div>
+
+            <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #cbd5e1;">
+                <input type="checkbox" id="check_vol2" onchange="window.toggleVol2()"> 
+                <label for="check_vol2" style="font-weight:bold; color:#ef4444; cursor:pointer;">
+                    <i class="fas fa-plus-circle"></i> Ajouter un 2ème Vol (Correspondance)
+                </label>
+            </div>
+
+            <div id="bloc_vol2" class="form-grid hidden" style="margin-top:10px; background:white; padding:10px; border:1px solid #e2e8f0;">
+                <div><label>N° Vol 2</label><input id="vol2_num"></div>
+                <div><label>Départ</label><input id="vol2_dep_aero"></div>
+                <div><label>Arrivée</label><input id="vol2_arr_aero"></div>
+                <div><label>Date Dép.</label><input id="vol2_dep_time"></div>
+                <div><label>Date Arr.</label><input id="vol2_arr_time"></div>
+            </div>
+        </div>
+
+        <div class="span-2" style="background:#f1f5f9; padding:10px; border-radius:5px;">
+            <label style="font-weight:bold; color:#1e3a8a;">🚛 Transport Routier</label>
+            <div class="form-grid">
+                <div><label>Véhicule</label><input id="rap_immat" value="DA-081-ZQ"></div>
+                <div><label>Date Départ</label><input id="rap_date_dep_route"></div>
+                <div><label>Ville Départ</label><input id="rap_ville_dep"></div>
+                <div><label>Ville Arrivée</label><input id="rap_ville_arr"></div>
+            </div>
+        </div>
+    </div>
+</div>
                             </div>
 
                             <div class="span-2" style="background:#f1f5f9; padding:10px; border-radius:5px;">
