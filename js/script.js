@@ -1,5 +1,5 @@
-/* Fichier : js/script.js - VERSION V7.1 (CORRECTION MODIFICATION & IMPORT) */
-import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail, getDoc } from "./config.js";
+/* Fichier : js/script.js - VERSION V7.2 (IMPORT ET MODIF ROBUSTES) */
+import { auth, db, collection, addDoc, getDocs, getDoc, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail } from "./config.js";
 
 // ==========================================================================
 // 1. INITIALISATION
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             document.getElementById('login-screen').classList.add('hidden');
             window.chargerBaseClients(); 
-            chargerClientsFacturation(); // Charge la liste déroulante Import
+            chargerClientsFacturation(); // Lancement du chargement de l'import
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
@@ -105,7 +105,7 @@ window.toggleVol2 = function() {
 
 window.viderFormulaire = function() {
     if(confirm("Vider le formulaire pour un NOUVEAU dossier ?")) {
-        document.getElementById('dossier_id').value = ""; // On vide l'ID pour créer un nouveau
+        document.getElementById('dossier_id').value = ""; 
         document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
         document.getElementById('prestation').selectedIndex = 0;
         window.toggleSections();
@@ -114,26 +114,30 @@ window.viderFormulaire = function() {
 };
 
 // ==========================================================================
-// 3. LOGIQUE DONNÉES (CRUD COMPLET)
+// 3. LOGIQUE DONNÉES (CORRECTIFS IMPORT & MODIF)
 // ==========================================================================
 
-// --- A. IMPORT DEPUIS FACTURATION ---
+// --- A. IMPORT DEPUIS FACTURATION (CORRIGÉ) ---
 let clientsCache = [];
 async function chargerClientsFacturation() {
     const select = document.getElementById('select-import-client');
     if(!select) return;
     try {
+        // On charge la collection factures_v2
         const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
         const snap = await getDocs(q);
+        
         select.innerHTML = '<option value="">-- Choisir un client facturé --</option>';
         clientsCache = [];
+        
         snap.forEach(doc => {
             const data = doc.data();
             if(data.client) {
                 const opt = document.createElement('option');
                 opt.value = doc.id; 
+                // Affichage propre dans la liste
                 const nomClient = data.client.nom || "Client sans nom";
-                const nomDefunt = data.defunt && data.defunt.nom ? data.defunt.nom : "Défunt inconnu";
+                const nomDefunt = (data.defunt && data.defunt.nom) ? data.defunt.nom : "Défunt inconnu";
                 opt.textContent = `${nomClient} (Défunt: ${nomDefunt})`;
                 select.appendChild(opt);
                 clientsCache.push({ id: doc.id, data: data });
@@ -151,25 +155,24 @@ function importerClient() {
         const d = dossier.data;
         // Remplissage Mandant
         if(d.client) {
-            document.getElementById('soussigne').value = d.client.nom || '';
-            document.getElementById('demeurant').value = d.client.adresse || '';
+            if(document.getElementById('soussigne')) document.getElementById('soussigne').value = d.client.nom || '';
+            if(document.getElementById('demeurant')) document.getElementById('demeurant').value = d.client.adresse || '';
         }
         // Remplissage Défunt
         if(d.defunt) {
-            document.getElementById('nom').value = d.defunt.nom || '';
+            if(document.getElementById('nom')) document.getElementById('nom').value = d.defunt.nom || '';
         }
-        alert("✅ Données importées depuis la facture !");
+        alert("✅ Données importées ! Complétez le reste du dossier.");
     }
 }
 
 // --- B. SAUVEGARDE (ADD ou UPDATE) ---
 async function sauvegarderEnBase() {
     const btn = document.getElementById('btn-save-bdd');
-    const dossierId = document.getElementById('dossier_id').value; // Récupère l'ID caché
+    const dossierId = document.getElementById('dossier_id').value; 
     btn.innerHTML = '...';
 
     try {
-        // Construction de l'objet de données (récupère TOUS les champs)
         const dossierData = {
             defunt: { 
                 nom: getVal('nom'), prenom: getVal('prenom'), nom_jeune_fille: getVal('nom_jeune_fille'),
@@ -188,11 +191,11 @@ async function sauvegarderEnBase() {
                 police: { nom: getVal('p_nom_grade'), comm: getVal('p_commissariat') },
                 famille: { temoin: getVal('f_nom_prenom'), lien: getVal('f_lien') }
             },
-            details_op: { // Champs spécifiques (Inhumation/Crémation/Rapa)
+            details_op: {
                 cimetiere: getVal('cimetiere_nom'), concession: getVal('num_concession'),
                 crematorium: getVal('crematorium_nom'), dest_cendres: getVal('destination_cendres'),
                 rapa_pays: getVal('rap_pays'), rapa_ville: getVal('rap_ville'), rapa_lta: getVal('rap_lta'),
-                vol1: getVal('vol1_num'), vol2: getVal('vol2_num') // Et tous les autres si besoin
+                vol1: getVal('vol1_num'), vol2: getVal('vol2_num') 
             },
             date_modification: new Date().toISOString()
         };
@@ -200,42 +203,40 @@ async function sauvegarderEnBase() {
         if (dossierId) {
             // MODE MODIFICATION
             await updateDoc(doc(db, "dossiers_admin", dossierId), dossierData);
-            alert("✅ Dossier mis à jour avec succès !");
+            alert("✅ Dossier mis à jour !");
         } else {
             // MODE CRÉATION
-            dossierData.date_creation = new Date().toISOString(); // On ajoute la date de création seulement au début
+            dossierData.date_creation = new Date().toISOString(); 
             await addDoc(collection(db, "dossiers_admin"), dossierData);
-            alert("✅ Nouveau dossier créé avec succès !");
+            alert("✅ Dossier créé !");
         }
 
         btn.innerHTML = 'OK';
         setTimeout(() => { 
             btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; 
-            window.showSection('base'); // Retour à la liste
+            window.showSection('base'); 
         }, 1000);
 
     } catch(e) { 
         alert("Erreur Sauvegarde : " + e.message); 
-        console.error(e);
         btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; 
     }
 }
 
-// --- C. CHARGER UN DOSSIER POUR MODIFICATION ---
+// --- C. CHARGER UN DOSSIER (LE CRAYON) ---
 window.chargerDossier = async function(id) {
     try {
         const docRef = doc(db, "dossiers_admin", id);
-        const docSnap = await getDoc(docRef);
+        const docSnap = await getDoc(docRef); // C'est ici que ça bloquait avant
 
         if (docSnap.exists()) {
             const data = docSnap.data();
             
-            // 1. Ouvrir la vue Admin
             window.showSection('admin');
-            document.getElementById('dossier_id').value = id; // IMPORTANT : Stocke l'ID pour la modif
+            document.getElementById('dossier_id').value = id;
             document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
 
-            // 2. Remplir les champs (Mapping inverse)
+            // Remplissage des champs
             if(data.defunt) {
                 setVal('nom', data.defunt.nom); setVal('prenom', data.defunt.prenom); setVal('nom_jeune_fille', data.defunt.nom_jeune_fille);
                 setVal('date_deces', data.defunt.date_deces); setVal('lieu_deces', data.defunt.lieu_deces); setVal('heure_deces', data.defunt.heure_deces);
@@ -268,7 +269,6 @@ window.chargerDossier = async function(id) {
                 setVal('vol2_num', data.details_op.vol2);
             }
 
-            // Rafraîchir l'affichage (Masquer/Afficher les blocs)
             window.toggleSections();
             window.togglePolice();
             if(document.getElementById('vol2_num').value) {
@@ -284,15 +284,11 @@ window.chargerDossier = async function(id) {
     }
 };
 
-// Helper pour remplir les champs en sécurité
-function setVal(id, val) {
-    const el = document.getElementById(id);
-    if(el) el.value = val || "";
-}
+function setVal(id, val) { const el = document.getElementById(id); if(el) el.value = val || ""; }
 
 // --- D. LISTE ET SUPPRESSION ---
 window.supprimerDossier = async function(id) {
-    if(confirm("⚠️ Supprimer définitivement ce dossier ? Action irréversible.")) {
+    if(confirm("⚠️ Supprimer définitivement ce dossier ?")) {
         try {
             await deleteDoc(doc(db, "dossiers_admin", id));
             alert("🗑️ Dossier supprimé.");
@@ -314,7 +310,6 @@ window.chargerBaseClients = async function() {
             const data = docSnap.data();
             const op = data.technique ? data.technique.type_operation : "Inhumation";
             
-            // Notez l'appel à chargerDossier(id) sur le bouton Edit
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${new Date(data.date_creation).toLocaleDateString()}</td>
