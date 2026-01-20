@@ -1,7 +1,87 @@
-/* Fichier : js/script.js - VERSION EXPERTE (PDF COMPLETS + SUPPRESSION) */
-// On importe deleteDoc et doc pour que le bouton poubelle marche
-import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, doc } from "./config.js";
+/* Fichier : js/script.js (DÉBUT SEULEMENT - LE RESTE NE CHANGE PAS) */
+import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, doc, sendPasswordResetEmail } from "./config.js";
 
+// ==========================================================================
+// 1. INITIALISATION & NAVIGATION
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    chargerLogoBase64(); 
+    const loader = document.getElementById('app-loader');
+    
+    // Vérification de l'utilisateur
+    onAuthStateChanged(auth, (user) => {
+        if(loader) loader.style.display = 'none';
+        if (user) {
+            // Si déjà connecté, on cache l'écran de login
+            document.getElementById('login-screen').classList.add('hidden');
+            window.chargerBaseClients(); 
+            chargerClientsFacturation(); 
+        } else {
+            // Si pas connecté, on AFFICHE l'écran de login
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+    });
+
+    // Connexion Classique
+    if(document.getElementById('btn-login')) {
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass); 
+            } catch(e) { alert("Erreur connexion : " + e.message); }
+        });
+    }
+
+    // Mot de passe oublié (NOUVEAU)
+    if(document.getElementById('btn-forgot')) {
+        document.getElementById('btn-forgot').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            if(!email) {
+                alert("Veuillez d'abord saisir votre EMAIL dans la case ci-dessus.");
+                return;
+            }
+            if(confirm("Envoyer un lien de réinitialisation à : " + email + " ?")) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert("📧 Email envoyé ! Vérifiez votre boîte mail (et les spams).");
+                } catch(e) {
+                    alert("Erreur : " + e.message);
+                }
+            }
+        });
+    }
+    
+    // Déconnexion (Pour revoir l'écran de login)
+    if(document.getElementById('btn-logout')) {
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            if(confirm("Se déconnecter ?")) {
+                signOut(auth).then(() => {
+                    // Force le rechargement de la page pour réafficher le login
+                    window.location.reload();
+                });
+            }
+        });
+    }
+    
+    // Reste des boutons
+    if(document.getElementById('btn-import')) document.getElementById('btn-import').addEventListener('click', importerClient);
+    if(document.getElementById('btn-save-bdd')) document.getElementById('btn-save-bdd').addEventListener('click', sauvegarderEnBase);
+    
+    const searchInput = document.getElementById('search-client');
+    if(searchInput) {
+        searchInput.addEventListener('keyup', (e) => {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#clients-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
+});
+
+// ... LA SUITE DU CODE (window.showSection, etc.) RESTE IDENTIQUE ...
 // ==========================================================================
 // 1. INITIALISATION & NAVIGATION
 // ==========================================================================
@@ -546,3 +626,4 @@ window.genererDemandeOuverture = function() {
     pdf.text("Demandons l'ouverture de la concession n° " + getVal("num_concession"), 25, y);
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
+
