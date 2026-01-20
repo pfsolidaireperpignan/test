@@ -1,9 +1,9 @@
 /**
  * ====================================================================
- * PF SOLIDAIRE ERP - VERSION 7.5 (PRODUCTION STABLE)
+ * PF SOLIDAIRE ERP - VERSION 7.6 (OUVERTURE SÉPULTURE PERFECTIONNÉE)
  * ====================================================================
- * Fonctionnalités : Auth, CRUD Complet, Import, Vol 2, Copie Mandant.
- * PDF : Mixte (Rapatriement Strict + Anciens modèles).
+ * Base : V7.5 Strict.
+ * Modif unique : Refonte visuelle totale du PDF "Ouverture Sépulture".
  */
 
 import { auth, db, collection, addDoc, getDocs, getDoc, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail } from "./config.js";
@@ -112,7 +112,7 @@ window.toggleVol2 = function() {
     }
 };
 
-// --- NOUVEAU : COPIER MANDANT VERS TEMOIN ---
+// COPIER MANDANT VERS TEMOIN
 window.copierMandant = function() {
     const chk = document.getElementById('copy_mandant');
     if(chk && chk.checked) {
@@ -225,7 +225,7 @@ async function sauvegarderEnBase() {
     } catch(e) { alert("Erreur: " + e.message); btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; }
 }
 
-// --- CHARGER POUR MODIFICATION (LE FIX) ---
+// --- CHARGER POUR MODIFICATION ---
 window.chargerDossier = async function(id) {
     try {
         const docRef = doc(db, "dossiers_admin", id);
@@ -558,29 +558,70 @@ window.genererDemandeFermetureMairie = function() {
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 7. OUVERTURE SÉPULTURE ---
+// --- 7. OUVERTURE SÉPULTURE (VERSION PARFAITE - STYLE ADMINISTRATIF) ---
 window.genererDemandeOuverture = function() {
-    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-    const type = getVal("prestation");
+    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     headerPF(pdf);
-    pdf.setFont("times", "bold"); pdf.setFontSize(14);
-    pdf.text("DEMANDE D'OUVERTURE D'UNE SEPULTURE DE FAMILLE", 105, 40, {align:"center"});
-    let y = 55; 
-    pdf.setFontSize(12);
-    pdf.text("POUR", 25, y);
-    pdf.rect(45, y-4, 8, 8); if(type === "Inhumation") { pdf.text("X", 47, y+2); } pdf.text("INHUMATION", 55, y);
-    pdf.rect(95, y-4, 8, 8); if(type === "Exhumation") { pdf.text("X", 97, y+2); } pdf.text("EXHUMATION", 105, y);
-    pdf.rect(145, y-4, 8, 8); pdf.text("SCELLEMENT D'URNE", 155, y);
-    y += 20; const x = 20;
-    pdf.setFont("times", "normal");
-    pdf.text("Nous soussignons :", x, y); y+=8;
-    pdf.text(`- Nom et Prénom :`, x+10, y); 
-    pdf.setFont("times", "bold"); pdf.text(getVal("soussigne"), x+50, y);
-    pdf.setFont("times", "normal"); pdf.text(`Lien de parenté :`, x+110, y);
-    pdf.setFont("times", "bold"); pdf.text(getVal("lien"), x+145, y); y+=15;
-    pdf.setFont("times", "normal");
-    pdf.text(`Demandons l'ouverture de la concession n° ${getVal("num_concession")} acquise par ${getVal("titulaire_concession")}`, x, y); y+=20;
-    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y);
+
+    // Titre avec fond couleur
+    pdf.setFillColor(230, 235, 240); pdf.rect(10, 35, 190, 12, 'F');
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(0);
+    pdf.text("DEMANDE D'OUVERTURE DE SÉPULTURE DE FAMILLE", 105, 43, { align: "center" });
+
+    let y = 60; const x = 15;
+    pdf.setFontSize(10);
+
+    // Bloc OBJET
+    pdf.setFillColor(245, 245, 245); pdf.rect(x, y-5, 180, 25, 'F'); pdf.setDrawColor(200); pdf.rect(x, y-5, 180, 25);
+    pdf.setFont("helvetica", "bold"); pdf.text("OBJET DE L'OPÉRATION :", x+5, y);
+    
+    const type = getVal("prestation");
+    const mark = (t) => type === t ? "■" : "□"; // Case pleine si sélectionné, vide sinon
+
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`${mark("Inhumation")} Pour INHUMATION`, x+50, y);
+    pdf.text(`${mark("Exhumation")} Pour EXHUMATION`, x+100, y);
+    pdf.text(`□ Pour SCELLEMENT D'URNE`, x+50, y+10); // Option statique si pas dans le select
+
+    y += 35;
+
+    // Bloc DEMANDEUR
+    pdf.setFont("helvetica", "bold"); pdf.text("JE SOUSSIGNÉ(E) (Le Demandeur) :", x, y); y+=5;
+    pdf.setLineWidth(0.5); pdf.rect(x, y, 180, 35);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`Nom et Prénom : ${getVal("soussigne").toUpperCase()}`, x+5, y+8);
+    pdf.text(`Demeurant à : ${getVal("demeurant")}`, x+5, y+16);
+    pdf.text(`Agissant en qualité de : ${getVal("lien")}`, x+5, y+24);
+    
+    y += 45;
+
+    // Bloc DETAILS CONCESSION
+    pdf.setFont("helvetica", "bold"); pdf.text("DEMANDE L'AUTORISATION D'OUVRIR LA SÉPULTURE SUIVANTE :", x, y); y+=5;
+    pdf.rect(x, y, 180, 35);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`Située au Cimetière de : ${getVal("cimetiere_nom")}`, x+5, y+8);
+    pdf.text(`Numéro de Concession : ${getVal("num_concession")}`, x+5, y+16);
+    pdf.text(`Titulaire de la Concession : ${getVal("titulaire_concession")}`, x+5, y+24);
+
+    y += 45;
+    
+    // Texte Légal Important (Remis en place)
+    pdf.setFontSize(9);
+    const legalTxt = "La présente déclaration dont j'assure la pleine et entière responsabilité m'engage à garantir la ville contre toute réclamation qui pourrait survenir suite à l'opération qui en fait l'objet.\nEnfin, conformément à la réglementation en vigueur, je m'engage à fournir la preuve de la qualité du ou des ayants droits et déposer au service Réglementation funéraire de la ville, la copie des documents prouvant cette qualité.";
+    const splitLegal = pdf.splitTextToSize(legalTxt, 180);
+    pdf.text(splitLegal, x, y);
+
+    y += 30;
+
+    // Signatures
+    pdf.setFontSize(11);
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 130, y);
+    y += 15;
+    
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Signature du Demandeur", 30, y);
+    pdf.text("Cachet PF SOLIDAIRE", 140, y);
+
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
 
