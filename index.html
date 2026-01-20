@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP v7.4</title>
+    <title>PF Solidaire - ERP v7.7 (Civilité)</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -14,16 +14,11 @@
     
     <datalist id="villes_list">
         <option value="Perpignan"><option value="Thuir"><option value="Toulouse"><option value="Montpellier"><option value="Paris"><option value="Marseille"><option value="Lyon">
-        <option value="Casablanca"><option value="Rabat"><option value="Tanger"><option value="Fès"><option value="Marrakech"><option value="Oujda"><option value="Nador"><option value="Agadir">
+        <option value="Casablanca"><option value="Rabat"><option value="Tanger"><option value="Fès"><option value="Marrakech"><option value="Oujda"><option value="Nador">
         <option value="Alger"><option value="Oran"><option value="Constantine"><option value="Annaba"><option value="Tlemcen"><option value="Béjaïa">
     </datalist>
-
     <datalist id="liens_list">
-        <option value="Fils"><option value="Fille"><option value="Époux"><option value="Épouse">
-        <option value="Père"><option value="Mère"><option value="Frère"><option value="Sœur">
-        <option value="Petit-fils"><option value="Petite-fille"><option value="Neveu"><option value="Nièce">
-        <option value="Cousin"><option value="Cousine"><option value="Gendre"><option value="Belle-fille">
-        <option value="Ami(e)"><option value="Exécuteur Testamentaire">
+        <option value="Fils"><option value="Fille"><option value="Époux"><option value="Épouse"><option value="Père"><option value="Mère"><option value="Frère"><option value="Sœur">
     </datalist>
 
     <div id="app-loader" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; justify-content:center; align-items:center;">
@@ -34,11 +29,9 @@
         <div class="card" style="width:100%; max-width:400px; text-align:center; padding:40px;">
             <i class="fas fa-dove" style="font-size:4rem; color:#3b82f6; margin-bottom:20px;"></i>
             <h2 style="margin-bottom:10px;">PF SOLIDAIRE</h2>
-            <p style="color:#64748b; margin-bottom:20px;">Portail ERP</p>
             <input type="email" id="login-email" placeholder="Email" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
             <input type="password" id="login-password" placeholder="Mot de passe" style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ccc; border-radius:5px;">
             <button id="btn-login" class="btn btn-purple" style="width:100%; padding:12px;">Se connecter</button>
-            <p id="btn-forgot" style="margin-top:15px; color:#3b82f6; cursor:pointer; text-decoration:underline;">Mot de passe oublié ?</p>
         </div>
     </div>
 
@@ -126,7 +119,13 @@
                     <div class="card" style="border-left: 5px solid #3b82f6;">
                         <h3 style="color:#1e3a8a;"><i class="fas fa-user-tie"></i> IDENTITÉ MANDANT (Client)</h3>
                         <div class="form-grid">
-                            <div class="span-2"><label>Nom & Prénom</label><input id="soussigne" placeholder="Ex: M. DUPONT Jean"></div>
+                            <div class="span-2">
+                                <label>Civilité & Nom Prénom</label>
+                                <div style="display:flex; gap:10px;">
+                                    <select id="civilite_mandant" style="width:80px;"><option>M.</option><option>Mme</option></select>
+                                    <input id="soussigne" placeholder="Nom et Prénom" style="flex:1;">
+                                </div>
+                            </div>
                             <div><label>Lien de parenté</label><input id="lien" placeholder="Sélectionnez..." list="liens_list"></div>
                             <div class="span-2"><label>Adresse Complète</label><input id="demeurant" placeholder="Adresse complète" list="villes_list"></div>
                         </div>
@@ -135,19 +134,29 @@
                     <div class="card" style="border-left: 5px solid #334155;">
                         <h3 style="color:#334155;"><i class="fas fa-user-slash"></i> IDENTITÉ DÉFUNT</h3>
                         <div class="form-grid">
-                            <div><label>Nom</label><input id="nom" style="font-weight:bold;"></div>
+                            <div>
+                                <label>Civilité & Nom</label>
+                                <div style="display:flex; gap:10px;">
+                                    <select id="civilite_defunt" style="width:80px;"><option>M.</option><option>Mme</option></select>
+                                    <input id="nom" style="font-weight:bold; flex:1;" placeholder="NOM">
+                                </div>
+                            </div>
                             <div><label>Prénom</label><input id="prenom" style="font-weight:bold;"></div>
                             <div><label>Nom de Jeune Fille</label><input id="nom_jeune_fille"></div>
+                            
                             <div><label>Date Décès</label><input type="date" id="date_deces"></div>
-                            <div><label>Lieu Décès</label><input id="lieu_deces" placeholder="Ville..." list="villes_list"></div>
+                            <div><label>Lieu Décès</label><input id="lieu_deces" list="villes_list"></div>
                             <div><label>Heure Décès</label><input type="time" id="heure_deces"></div>
+                            
                             <div><label>Date Naissance</label><input type="date" id="date_naiss"></div>
-                            <div><label>Lieu Naissance</label><input id="lieu_naiss" placeholder="Ville..." list="villes_list"></div>
+                            <div><label>Lieu Naissance</label><input id="lieu_naiss" list="villes_list"></div>
                             <div><label>Nationalité</label><input id="nationalite" value="Française"></div>
-                            <div class="span-2"><label>Domicile Défunt</label><input id="adresse_fr" placeholder="Adresse complète..." list="villes_list"></div>
+                            
+                            <div class="span-2"><label>Domicile Défunt</label><input id="adresse_fr" list="villes_list"></div>
+                            
                             <div class="span-2" style="margin-top:10px; padding-top:10px; border-top:1px dashed #cbd5e1;"><small style="color:#64748b; font-weight:bold;">FILIATION & SITUATION</small></div>
-                            <div><label>Père</label><input id="pere" placeholder="Prénom Nom"></div>
-                            <div><label>Mère</label><input id="mere" placeholder="Prénom Nom"></div>
+                            <div><label>Père</label><input id="pere"></div>
+                            <div><label>Mère</label><input id="mere"></div>
                             <div><label>Situation</label><select id="matrimoniale"><option>Marié(e)</option><option>Veuf(ve)</option><option>Célibataire</option><option>Divorcé(e)</option></select></div>
                             <div><label>Conjoint(e)</label><input id="conjoint"></div>
                             <div><label>Profession</label><select id="prof_type"><option>Retraité(e)</option><option>Active</option><option>Sans profession</option></select></div>
@@ -175,12 +184,10 @@
                             <div id="famille_fields" class="span-2 form-grid" style="background:#f0f9ff; padding:10px; border:1px solid #bae6fd;">
                                 <div class="span-2" style="margin-bottom:5px;">
                                     <input type="checkbox" id="copy_mandant" onchange="window.copierMandant()">
-                                    <label for="copy_mandant" style="font-weight:bold; color:#0284c7; cursor:pointer;">
-                                        <i class="fas fa-copy"></i> C'est le Mandant (Copier auto)
-                                    </label>
+                                    <label for="copy_mandant" style="font-weight:bold; color:#0284c7; cursor:pointer;"><i class="fas fa-copy"></i> C'est le Mandant (Copier auto)</label>
                                 </div>
                                 <div><label>Nom & Prénom Témoin</label><input id="f_nom_prenom"></div>
-                                <div><label>Lien avec Défunt</label><input id="f_lien" placeholder="Sélectionnez..." list="liens_list"></div>
+                                <div><label>Lien avec Défunt</label><input id="f_lien" list="liens_list"></div>
                             </div>
 
                             <div class="span-2" style="background:#f0fdf4; padding:10px; margin-top:10px;">
@@ -205,7 +212,7 @@
                     <div class="card specific-block" id="bloc_inhumation">
                         <h3>Détails Inhumation</h3>
                         <div class="form-grid">
-                            <div><label>Cimetière</label><input id="cimetiere_nom" placeholder="Nom + Ville" list="villes_list"></div>
+                            <div><label>Cimetière</label><input id="cimetiere_nom" list="villes_list"></div>
                             <div><label>Concession N°</label><input id="num_concession"></div>
                             <div><label>Titulaire</label><input id="titulaire_concession"></div>
                             <div><label>Type</label><select id="type_sepulture"><option>Caveau</option><option>Pleine Terre</option></select></div>
@@ -240,7 +247,7 @@
                                     <div><label>Arr. (Date/H)</label><input id="vol1_arr_time"></div>
                                 </div>
                                 <div style="margin-top:10px;">
-                                    <input type="checkbox" id="check_vol2" onchange="window.toggleVol2()"> <label for="check_vol2" style="font-weight:bold; color:red;">Ajouter Vol 2 (Correspondance)</label>
+                                    <input type="checkbox" id="check_vol2" onchange="window.toggleVol2()"> <label for="check_vol2" style="font-weight:bold; color:red;">Ajouter Vol 2</label>
                                 </div>
                                 <div id="bloc_vol2" class="form-grid hidden" style="margin-top:10px; background:white; padding:5px;">
                                     <div><label>N° Vol 2</label><input id="vol2_num"></div>
