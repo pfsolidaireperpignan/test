@@ -1,8 +1,8 @@
-/* Fichier : js/script.js - VERSION FUSION COMPLETE (AUTH + DATA + PDF EXPERTS) */
+/* Fichier : js/script.js - VERSION FUSION (PDF MIXTES) */
 import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, doc, sendPasswordResetEmail } from "./config.js";
 
 // ==========================================================================
-// 1. INITIALISATION (AUTH & PASSWORD RESET)
+// 1. INITIALISATION & AUTHENTIFICATION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     chargerLogoBase64(); 
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Login
     if(document.getElementById('btn-login')) {
         document.getElementById('btn-login').addEventListener('click', async () => {
             try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } 
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('btn-forgot')) {
         document.getElementById('btn-forgot').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
-            if(!email) return alert("Saisissez votre email d'abord.");
+            if(!email) return alert("Veuillez saisir l'email d'abord.");
             if(confirm("Envoyer un lien de réinitialisation à : " + email + " ?")) {
                 try { await sendPasswordResetEmail(auth, email); alert("📧 Email envoyé !"); } 
                 catch(e) { alert("Erreur : " + e.message); }
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. INTERFACE
+// 2. INTERFACE (UI)
 // ==========================================================================
 window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
@@ -113,7 +114,7 @@ window.viderFormulaire = function() {
 };
 
 // ==========================================================================
-// 3. LOGIQUE DONNÉES
+// 3. LOGIQUE DONNÉES (DATABASE)
 // ==========================================================================
 let clientsCache = [];
 async function chargerClientsFacturation() {
@@ -207,7 +208,7 @@ window.chargerBaseClients = async function() {
 };
 
 // ==========================================================================
-// 4. MOTEUR PDF (VOS FONCTIONS EXPERTES RESTAURÉES)
+// 4. MOTEUR PDF & UTILS
 // ==========================================================================
 let logoBase64 = null;
 function chargerLogoBase64() {
@@ -231,7 +232,41 @@ function headerPF(pdf, y=20) {
 function getVal(id) { const el=document.getElementById(id); return el?el.value:""; }
 function formatDate(d) { return d?d.split("-").reverse().join("/"): "................."; }
 
-// --- RAPATRIEMENT (STRICT + VOL 2) ---
+// ==========================================================================
+// 5. FONCTIONS PDF (LISTE MIXTE)
+// ==========================================================================
+
+// 1. POUVOIR (VERSION AMÉLIORÉE - AVEC LOGO)
+window.genererPouvoir = function() {
+    if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
+    let typePresta = document.getElementById('prestation').value.toUpperCase();
+    if(typePresta === "RAPATRIEMENT") typePresta += ` vers ${getVal("rap_pays").toUpperCase()}`;
+    pdf.setFillColor(241,245,249); pdf.rect(20,45,170,12,'F');
+    pdf.setFontSize(16); pdf.setTextColor(185,28,28); pdf.setFont("helvetica","bold"); pdf.text("POUVOIR",105,53,{align:"center"});
+    let y=75; const x=25; pdf.setFontSize(10); pdf.setTextColor(0); pdf.setFont("helvetica","normal");
+    pdf.text(`Je soussigné(e) : ${getVal("soussigne")}`,x,y); y+=8;
+    pdf.text(`Demeurant à : ${getVal("demeurant")}`,x,y); y+=8;
+    pdf.text(`Agissant en qualité de : ${getVal("lien")}`,x,y); y+=15;
+    pdf.text("Ayant qualité pour pourvoir aux funérailles de :",x,y); y+=8;
+    pdf.setDrawColor(200); pdf.setFillColor(250); pdf.rect(x-5,y-5,170,40,'FD');
+    pdf.setFont("helvetica","bold"); pdf.text(`${getVal("nom")} ${getVal("prenom")}`,x,y+2); y+=8;
+    pdf.setFont("helvetica","normal");
+    pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))} à ${getVal("lieu_naiss")}`,x,y); y+=6;
+    pdf.text(`Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`,x,y); y+=6;
+    pdf.text(`Domicile : ${getVal("adresse_fr")}`,x,y); y+=12;
+    pdf.setFont("helvetica","bold"); pdf.setTextColor(185,28,28); pdf.text(`POUR : ${typePresta}`,105,y,{align:"center"}); y+=15;
+    pdf.setTextColor(0); pdf.setFont("helvetica","bold");
+    pdf.text("Donne mandat aux PF SOLIDAIRE PERPIGNAN pour :",x,y); y+=8;
+    pdf.setFont("helvetica","normal");
+    pdf.text("- Effectuer toutes les démarches administratives.",x+5,y); y+=6;
+    pdf.text("- Signer toute demande d'autorisation nécessaire.",x+5,y); y+=6;
+    if(typePresta.includes("RAPATRIEMENT")) { pdf.text("- Accomplir les formalités consulaires.",x+5,y); y+=6; }
+    y = 240; pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`,x,y);
+    pdf.setFont("helvetica","bold"); pdf.text("Signature du Mandant",150,y,{align:"center"});
+    pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
+};
+
+// 2. RAPATRIEMENT (VERSION PRÉFECTURE - STRICT SANS LOGO - AVEC VOL 2)
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
@@ -276,7 +311,6 @@ window.genererDemandeRapatriement = function() {
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie aérienne :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
     pdf.text(`- Numéro de LTA : ${getVal("rap_lta")}`, x+20, y); y+=6;
-    
     if(getVal("vol1_num")) {
         pdf.setFont("helvetica", "bold");
         pdf.text(`- Vol 1 : ${getVal("vol1_num")}`, x+20, y); y+=5;
@@ -284,7 +318,6 @@ window.genererDemandeRapatriement = function() {
         pdf.text(`  Départ : ${getVal("vol1_dep_aero")} le ${getVal("vol1_dep_time")}`, x+25, y); y+=5;
         pdf.text(`  Arrivée : ${getVal("vol1_arr_aero")} le ${getVal("vol1_arr_time")}`, x+25, y); y+=8;
     }
-    
     const chk = document.getElementById('check_vol2');
     if(chk && chk.checked && getVal("vol2_num")) {
         pdf.setFont("helvetica", "bold");
@@ -293,7 +326,6 @@ window.genererDemandeRapatriement = function() {
         pdf.text(`  Départ : ${getVal("vol2_dep_aero")} le ${getVal("vol2_dep_time")}`, x+25, y); y+=5;
         pdf.text(`  Arrivée : ${getVal("vol2_arr_aero")} le ${getVal("vol2_arr_time")}`, x+25, y); y+=8;
     }
-    
     y+=5;
     pdf.text(`Lieu d'inhumation (Ville – Pays) : ${getVal("rap_ville")} / ${getVal("rap_pays")}`, x, y); y+=20;
     pdf.setFont("helvetica", "bold");
@@ -302,82 +334,145 @@ window.genererDemandeRapatriement = function() {
     pdf.save(`Demande_Rapatriement_Prefecture_${getVal("nom")}.pdf`);
 };
 
-// --- AUTRES DOCUMENTS (VOTRE LISTE COMPLETE) ---
-window.genererPouvoir = function() {
-    if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
-    pdf.setFontSize(16); pdf.setTextColor(185,28,28); pdf.setFont("helvetica","bold"); pdf.text("POUVOIR",105,53,{align:"center"});
-    let y=75; const x=25; pdf.setFontSize(10); pdf.setTextColor(0); pdf.setFont("helvetica","normal");
-    pdf.text(`Je soussigné(e) : ${getVal("soussigne")}`,x,y); y+=8;
-    pdf.text(`Demeurant à : ${getVal("demeurant")}`,x,y); y+=8;
-    pdf.text(`Agissant en qualité de : ${getVal("lien")}`,x,y); y+=15;
-    pdf.text("Ayant qualité pour pourvoir aux funérailles de :",x,y); y+=8;
-    pdf.setDrawColor(200); pdf.setFillColor(250); pdf.rect(x-5,y-5,170,40,'FD');
-    pdf.setFont("helvetica","bold"); pdf.text(`${getVal("nom")} ${getVal("prenom")}`,x,y+2); y+=8;
-    pdf.setFont("helvetica","normal");
-    pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))} à ${getVal("lieu_naiss")}`,x,y); y+=6;
-    pdf.text(`Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`,x,y); y+=6;
-    pdf.text(`Domicile : ${getVal("adresse_fr")}`,x,y); y+=12;
-    pdf.setFont("helvetica","bold"); pdf.setTextColor(185,28,28); pdf.text(`POUR : ${document.getElementById('prestation').value}`,105,y,{align:"center"}); y+=15;
-    pdf.setTextColor(0); pdf.setFont("helvetica","bold");
-    pdf.text("Donne mandat aux PF SOLIDAIRE PERPIGNAN pour :",x,y); y+=8;
-    pdf.setFont("helvetica","normal");
-    pdf.text("- Effectuer toutes les démarches administratives.",x+5,y); y+=6;
-    pdf.text("- Signer toute demande d'autorisation nécessaire.",x+5,y); y+=6;
-    y = 240; pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`,x,y);
-    pdf.setFont("helvetica","bold"); pdf.text("Signature du Mandant",150,y,{align:"center"});
-    pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
-};
+// --- AUTRES DOCUMENTS (VOTRE VERSION ANCIENNE RESTAURÉE) ---
 
+// 3. DECLARATION DECES
 window.genererDeclaration = function() {
-    const {jsPDF}=window.jspdf; const pdf=new jsPDF(); 
-    pdf.setFont("times","bold"); pdf.setFontSize(16); pdf.text("DECLARATION DE DECES",105,30,{align:"center"});
-    let y=60; 
-    pdf.setFontSize(11); pdf.setFont("times","normal");
-    pdf.text(`Nom : ${getVal("nom")}`,20,y); y+=10;
-    pdf.text(`Prénom : ${getVal("prenom")}`,20,y); y+=10;
-    pdf.text(`Date de décès : ${formatDate(getVal("date_deces"))}`,20,y);
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF(); const fontMain = "times";
+    pdf.setFont(fontMain, "bold"); pdf.setFontSize(16);
+    pdf.text("DECLARATION DE DECES", 105, 30, { align: "center" });
+    pdf.setLineWidth(0.5); pdf.line(75, 31, 135, 31);
+    pdf.setFontSize(11);
+    pdf.text("Dans tous les cas à remettre obligatoirement complété et signé", 105, 38, { align: "center" });
+    pdf.line(55, 39, 155, 39);
+    let y = 60; const margin = 20;
+    const drawLine = (label, val, yPos) => {
+        pdf.setFont(fontMain, "bold"); pdf.text(label, margin, yPos);
+        const startDots = margin + pdf.getTextWidth(label) + 2;
+        let curX = startDots; pdf.setFont(fontMain, "normal");
+        while(curX < 190) { pdf.text(".", curX, yPos); curX += 2; }
+        if(val) {
+            pdf.setFont(fontMain, "bold"); pdf.setFillColor(255, 255, 255);
+            pdf.rect(startDots, yPos - 4, pdf.getTextWidth(val)+5, 5, 'F');
+            pdf.text(val.toUpperCase(), startDots + 2, yPos);
+        }
+    };
+    drawLine("NOM : ", getVal("nom"), y); y+=14;
+    drawLine("Prénoms : ", getVal("prenom"), y); y+=14;
+    drawLine("Né(e) le : ", formatDate(getVal("date_naiss")), y); y+=14;
+    pdf.setFont(fontMain, "bold"); pdf.text("DATE ET LIEU DU DECES LE", margin, y);
+    pdf.setFont(fontMain, "normal"); pdf.text(formatDate(getVal("date_deces")), margin+70, y);
+    pdf.setFont(fontMain, "bold"); pdf.text("A", 120, y); pdf.text(getVal("lieu_deces").toUpperCase(), 130, y); y += 18;
+    drawLine("DOMICILIE(E) : ", getVal("adresse_fr"), y); y+=14;
+    drawLine("FILS de :", getVal("pere"), y); y+=14;
+    drawLine("Et de :", getVal("mere"), y); y+=14;
+    drawLine("Situation : ", getVal("matrimoniale"), y); y+=25;
+    pdf.setFont(fontMain, "bold"); pdf.text("SIGNATURE POMPES FUNEBRES", 105, y, { align: "center" });
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
 
+// 4. INHUMATION
 window.genererDemandeInhumation = function() {
-    if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); headerPF(pdf);
-    pdf.text("DEMANDE D'INHUMATION",105,47,{align:"center"});
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(11);
-    pdf.text(`Je soussigné M. CHERKAOUI, sollicite l'inhumation de ${getVal("nom")}`,20,70);
+    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
+    pdf.setFillColor(230, 240, 230); pdf.rect(20, 40, 170, 10, 'F');
+    pdf.setFontSize(14); pdf.setFont("helvetica", "bold"); pdf.setTextColor(0);
+    pdf.text("DEMANDE D'INHUMATION", 105, 47, { align: "center" });
+    let y = 70; const x = 25;
+    pdf.setFontSize(11); pdf.text("Monsieur le Maire,", x, y); y+=10;
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Je soussigné M. CHERKAOUI Mustapha, dirigeant des PF Solidaire,", x, y); y+=6;
+    pdf.text("Sollicite l'autorisation d'inhumer le défunt :", x, y); y+=12;
+    pdf.setFont("helvetica", "bold"); pdf.text(`${getVal("nom").toUpperCase()} ${getVal("prenom")}`, x+10, y); y+=6;
+    pdf.setFont("helvetica", "normal"); pdf.text(`Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`, x+10, y); y+=15;
+    pdf.text("Lieu d'inhumation :", x, y); y+=6;
+    pdf.setFont("helvetica", "bold"); pdf.text(`Cimetière : ${getVal("cimetiere_nom")}`, x+10, y); y+=6;
+    pdf.text(`Le : ${formatDate(getVal("date_inhumation"))} à ${getVal("heure_inhumation")}`, x+10, y); y+=6;
+    pdf.text(`Concession : ${getVal("num_concession")} (${getVal("type_sepulture")})`, x+10, y); y+=20;
+    pdf.setFont("helvetica", "normal"); pdf.text("Veuillez agréer, Monsieur le Maire, mes salutations distinguées.", x, y); y+=20;
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 130, y);
     pdf.save(`Demande_Inhumation_${getVal("nom")}.pdf`);
 };
 
+// 5. CREMATION
 window.genererDemandeCremation = function() {
-    const {jsPDF}=window.jspdf; const pdf=new jsPDF(); headerPF(pdf);
-    pdf.text("DEMANDE DE CREMATION",105,47,{align:"center"});
-    pdf.text(`Pour : ${getVal("nom")}`,20,70);
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
+    pdf.setFont("times", "bold"); pdf.setFontSize(12);
+    pdf.text(getVal("soussigne"), 20, 45); 
+    pdf.setFont("times", "normal"); pdf.text(getVal("demeurant"), 20, 51);
+    pdf.setFont("times", "bold"); pdf.setFontSize(14);
+    pdf.text("Monsieur le Maire", 150, 60, {align:"center"});
+    pdf.setFontSize(12); pdf.text("OBJET : DEMANDE D'AUTORISATION DE CREMATION", 20, 80);
+    let y = 100;
+    pdf.setFont("times", "normal");
+    const txt = `Monsieur le Maire,\n\nJe soussigné(e) ${getVal("soussigne")}, agissant en qualité de ${getVal("lien")} du défunt(e), sollicite l'autorisation de procéder à la crémation de :\n\n${getVal("nom").toUpperCase()} ${getVal("prenom")}\nNé(e) le ${formatDate(getVal("date_naiss"))} et décédé(e) le ${formatDate(getVal("date_deces"))}.\n\nLa crémation aura lieu le ${formatDate(getVal("date_cremation"))} au ${getVal("crematorium_nom")}.\nDestination des cendres : ${getVal("destination_cendres")}.\n\nJe certifie que le défunt n'était pas porteur d'un stimulateur cardiaque.`;
+    const splitTxt = pdf.splitTextToSize(txt, 170); pdf.text(splitTxt, 20, y);
+    y += (splitTxt.length * 7) + 20;
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y);
+    pdf.setFont("times", "bold"); pdf.text("Signature", 120, y+8);
     pdf.save(`Demande_Cremation_${getVal("nom")}.pdf`);
 };
 
+// 6. FERMETURE MAIRIE
 window.genererDemandeFermetureMairie = function() {
-    const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
-    pdf.text("DEMANDE FERMETURE CERCUEIL",105,47,{align:"center"});
-    pdf.text(`Pour : ${getVal("nom")}`,20,70);
-    pdf.save(`Demande_Fermeture_Mairie_${getVal("nom")}.pdf`);
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+    pdf.setDrawColor(26, 90, 143); pdf.setLineWidth(1.5); pdf.rect(10, 10, 190, 277);
+    headerPF(pdf);
+    pdf.setFont("helvetica", "bold"); pdf.setTextColor(26, 90, 143); pdf.setFontSize(16);
+    pdf.text("DEMANDE D'AUTORISATION DE FERMETURE", 105, 45, { align: "center" });
+    pdf.text("DE CERCUEIL", 105, 53, { align: "center" });
+    let y = 80; const x = 25;
+    pdf.setTextColor(0); pdf.setFontSize(11); pdf.setFont("helvetica", "bold");
+    pdf.text("Je soussigné :", x, y); y+=10;
+    pdf.setFont("helvetica", "normal");
+    pdf.text("• Nom et Prénom : M. CHERKAOUI Mustapha", x+10, y); y+=8;
+    pdf.text("• Qualité : Dirigeant PF Solidaire Perpignan", x+10, y); y+=8;
+    pdf.text("• Adresse : 32 Bd Léon Jean Grégory, Thuir", x+10, y); y+=15;
+    pdf.setFont("helvetica", "bold");
+    pdf.text("A l'honneur de solliciter votre autorisation de fermeture du cercueil de :", x, y); y+=15;
+    pdf.setFillColor(245, 245, 245); pdf.rect(x-5, y-5, 170, 35, 'F');
+    pdf.text("• Nom et Prénom : " + getVal("nom").toUpperCase() + " " + getVal("prenom"), x+10, y); y+=10;
+    pdf.text("• Né(e) le : " + formatDate(getVal("date_naiss")) + " à " + getVal("lieu_naiss"), x+10, y); y+=10;
+    pdf.text("• Décédé(e) le : " + formatDate(getVal("date_deces")) + " à " + getVal("lieu_deces"), x+10, y); y+=20;
+    pdf.text("Et ce,", x, y); y+=10;
+    pdf.setFont("helvetica", "normal");
+    pdf.text("• Le : " + formatDate(getVal("date_fermeture")), x+10, y); y+=10;
+    pdf.text("• A (Lieu) : " + getVal("lieu_fermeture"), x+10, y); y+=30;
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, x, y);
+    pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-window.genererFermeture = function() {
-    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
-    pdf.text("PV FERMETURE CERCUEIL",105,47,{align:"center"});
-    pdf.text(`Défunt : ${getVal("nom")}`,20,70);
-    pdf.save(`PV_Fermeture_Police_${getVal("nom")}.pdf`);
-};
-
-window.genererTransport = function() {
-    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
-    pdf.text("DECLARATION TRANSPORT",105,47,{align:"center"});
-    pdf.text(`Défunt : ${getVal("nom")}`,20,70);
-    pdf.save(`Transport_${getVal("nom")}.pdf`);
-};
-
+// 7. OUVERTURE SEPULTURE
 window.genererDemandeOuverture = function() {
-    const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
-    pdf.text("DEMANDE OUVERTURE SEPULTURE",105,47,{align:"center"});
-    pdf.text(`Pour : ${getVal("nom")}`,20,70);
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+    const type = getVal("prestation");
+    headerPF(pdf);
+    pdf.setFont("times", "bold"); pdf.setFontSize(14);
+    pdf.text("DEMANDE D'OUVERTURE D'UNE SEPULTURE DE FAMILLE", 105, 40, {align:"center"});
+    let y = 60; 
+    pdf.setFontSize(12);
+    pdf.text("POUR : " + type.toUpperCase(), 25, y);
+    y += 20; const x = 20;
+    pdf.setFont("times", "normal");
+    pdf.text("Nous soussignons :", x, y); y+=8;
+    pdf.text(`- Nom et Prénom :`, x+10, y); 
+    pdf.setFont("times", "bold"); pdf.text(getVal("soussigne"), x+50, y);
+    pdf.setFont("times", "normal"); pdf.text(`Lien de parenté :`, x+110, y);
+    pdf.setFont("times", "bold"); pdf.text(getVal("lien"), x+145, y); y+=15;
+    pdf.setFont("times", "normal");
+    pdf.text(`Demandons l'ouverture de la concession n° ${getVal("num_concession")} acquise par ${getVal("titulaire_concession")}`, x, y); y+=20;
+    pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y);
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
+
+// 8. PV FERMETURE (TECHNIQUE)
+window.genererFermeture = function() {
+    if(!logoBase64) chargerLogoBase64();
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+    ajouterFiligrane(pdf);
+    headerPF(pdf);
+    pdf.setFillColor(52, 73, 94); pdf.rect(0, 35, 210, 15, 'F');
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.setTextColor(255, 255, 255);
+    pdf.text("DECLARATION DE FERMETURE ET DE SCELLEMENT DE CERCUEIL", 105, 45, { align: "center" });
+    pdf.setTextColor(0); pdf.setFontSize(10);
+    let y = 65; const x = 2
