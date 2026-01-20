@@ -28,7 +28,22 @@ document.addEventListener('DOMContentLoaded', () => {
             catch(e) { alert("Erreur : " + e.message); }
         });
     }
-    
+    // Gestion Mot de passe oublié
+    if(document.getElementById('btn-forgot')) {
+        document.getElementById('btn-forgot').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            if(!email) return alert("Veuillez d'abord entrer votre EMAIL dans la case.");
+            
+            if(confirm("Envoyer un lien de réinitialisation à : " + email + " ?")) {
+                try { 
+                    await sendPasswordResetEmail(auth, email); 
+                    alert("📧 Email envoyé ! Vérifiez votre boîte de réception (et spams)."); 
+                } 
+                catch(e) { alert("Erreur : " + e.message); }
+            }
+        });
+    }
     if(document.getElementById('btn-import')) document.getElementById('btn-import').addEventListener('click', importerClient);
     if(document.getElementById('btn-save-bdd')) document.getElementById('btn-save-bdd').addEventListener('click', sauvegarderEnBase);
     if(document.getElementById('btn-logout')) document.getElementById('btn-logout').addEventListener('click', () => { if(confirm("Se déconnecter ?")) signOut(auth).then(() => window.location.reload()); });
