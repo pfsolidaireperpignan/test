@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V8.8</title>
+    <title>PF Solidaire - Facturation & Paiements V8.9</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* --- STYLE GLOBAL --- */
+        /* STYLES GLOBAUX */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
@@ -46,11 +46,19 @@
         .drag-handle { cursor: grab; color: #cbd5e1; text-align: center; } .drag-handle:hover { color: #f59e0b; }
         .input-cell { border: 1px solid transparent; width: 100%; padding: 8px; margin: 0; background:transparent; } .input-cell:focus { border: 1px solid #3b82f6; background: #eff6ff; outline: none; border-radius:4px; }
         .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; } .input-section { font-weight: bold; color: #c2410c; text-transform: uppercase; }
-        .total-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 15px; text-align: right; font-size: 1.4rem; font-weight: bold; margin-top: 10px; border-radius: 8px; }
+        
+        /* ZONE PAIEMENT */
+        .payment-box { background: #ecfccb; padding: 15px; border-radius: 8px; border: 1px solid #a3e635; margin-top: 20px; }
+        .payment-list { margin-top: 10px; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        .payment-item { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 5px 0; }
+        .financial-summary { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: right; }
+        .total-line { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 5px; }
+        .final-line { font-size: 1.4rem; font-weight: bold; color: #b91c1c; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px; }
 
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; } .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
+        .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; }
+        .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
     </style>
 </head>
 <body>
@@ -59,26 +67,20 @@
     <div id="modal-choix" class="modal hidden">
         <div class="modal-content">
             <h3 style="color:#1e293b; margin-top:0;">CHOISIR UN MODÈLE</h3>
-            <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">Pour pré-remplir le devis automatiquement</p>
             <button class="modal-btn" onclick="window.loadTemplate('Inhumation')"><i class="fas fa-church"></i> INHUMATION</button>
             <button class="modal-btn" onclick="window.loadTemplate('Cremation')"><i class="fas fa-fire"></i> CRÉMATION</button>
             <button class="modal-btn" onclick="window.loadTemplate('Rapatriement')"><i class="fas fa-plane"></i> RAPATRIEMENT</button>
-            <button class="modal-btn" onclick="window.loadTemplate('Transport')"><i class="fas fa-ambulance"></i> TRANSPORT SIMPLE</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Transport')"><i class="fas fa-ambulance"></i> TRANSPORT</button>
             <button class="modal-btn" onclick="window.loadTemplate('Exhumation')"><i class="fas fa-box-open"></i> EXHUMATION</button>
-            <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:10px;">
-                <button class="btn btn-grey" style="width:100%; justify-content:center;" onclick="window.loadTemplate('Vide')">Devis Vierge</button>
-            </div>
-            <div style="margin-top:10px;"><a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444; font-size:0.8rem;">Annuler</a></div>
+            <div style="margin-top:10px;"><a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444;">Annuler</a></div>
         </div>
     </div>
 
     <div id="view-list">
         <div class="dashboard-header">
-            <div><h1 style="margin:0; font-size:1.5rem;">Gestion Facturation</h1><p style="margin:5px 0 0 0; color:#64748b;">Comptabilité & Devis</p></div>
+            <div><h1 style="margin:0;">Gestion Facturation</h1><p style="margin:5px 0 0 0; color:#64748b;">Comptabilité & Devis</p></div>
             <div style="display:flex; align-items:center; gap:20px;">
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="🔍 Rechercher client, n°...">
-                </div>
+                <div class="search-box"><input type="text" id="search-input" placeholder="🔍 Rechercher client, n°..."></div>
                 <a href="index.html" class="btn btn-grey"><i class="fas fa-home"></i> Accueil</a>
                 <button class="btn btn-blue" onclick="document.getElementById('modal-choix').classList.remove('hidden')"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
             </div>
@@ -89,8 +91,8 @@
             <div class="stat-card card-devis"><div class="stat-info"><h3>Devis (3 mois)</h3><p id="stat-devis">0</p></div><i class="fas fa-file-contract stat-icon"></i></div>
         </div>
         <table class="compta-table">
-            <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:center;">Actions</th></tr></thead>
-            <tbody id="list-body"><tr><td colspan="7" style="text-align:center; padding:30px;">Chargement...</td></tr></tbody>
+            <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:right;">Reste à Payer</th><th style="text-align:center;">Actions</th></tr></thead>
+            <tbody id="list-body"><tr><td colspan="8" style="text-align:center; padding:30px;">Chargement...</td></tr></tbody>
         </table>
     </div>
 
@@ -129,7 +131,7 @@
         </div>
 
         <div style="background:white; padding:10px; display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0; border:1px solid #e2e8f0;">
-            <div style="font-weight:bold; color:#64748b;">DÉTAIL (Drag & Drop actif)</div>
+            <div style="font-weight:bold; color:#64748b;">DÉTAIL DES PRESTATIONS</div>
             <div>
                 <button class="btn btn-orange" onclick="window.ajouterSection()"><i class="fas fa-heading"></i> SECTION</button>
                 <button class="btn btn-blue" onclick="window.ajouterLigne()"><i class="fas fa-plus"></i> LIGNE</button>
@@ -140,13 +142,41 @@
             <thead><tr><th style="width: 30px;"></th><th style="width: 50%;">DÉSIGNATION</th><th style="width: 15%;">CATÉGORIE</th><th style="width: 10%;">TVA</th><th style="width: 15%; text-align:right;">PRIX TTC</th><th style="width: 5%;"></th></tr></thead>
             <tbody id="tbody_lignes"></tbody>
         </table>
-        <div class="total-box">TOTAL TTC : <span id="total_display">0.00</span> €</div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            
+            <div class="payment-box">
+                <span class="label-section" style="color:#166534;">AJOUTER UN RÈGLEMENT</span>
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <input type="date" id="pay_date" class="input-clean" style="margin:0;">
+                    <select id="pay_mode" class="input-clean" style="margin:0;">
+                        <option value="Espèces">Espèces</option>
+                        <option value="Chèque">Chèque</option>
+                        <option value="Virement">Virement</option>
+                    </select>
+                    <input type="number" id="pay_amount" class="input-clean" placeholder="Montant €" style="margin:0;">
+                    <button class="btn btn-green" onclick="window.ajouterPaiement()">+</button>
+                </div>
+                <div id="liste_paiements" class="payment-list">
+                    <small style="color:#888;">Aucun paiement enregistré.</small>
+                </div>
+            </div>
+
+            <div class="financial-summary">
+                <div class="total-line"><span>TOTAL TTC :</span> <strong id="total_general">0.00 €</strong></div>
+                <div class="total-line" style="color:#166534;"><span>DÉJÀ RÉGLÉ :</span> <strong id="total_paye">0.00 €</strong></div>
+                <div class="total-line final-line"><span>RESTE À PAYER :</span> <span id="reste_a_payer">0.00 €</span></div>
+            </div>
+        </div>
+
     </div>
 
 <script type="module">
     import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "./js/config.js";
 
     let logoBase64 = null;
+    let paiements = []; // Liste locale des paiements
+
     function chargerLogoBase64() {
         const img = document.getElementById('logo-source');
         if (img && img.naturalWidth > 0) {
@@ -156,30 +186,61 @@
     }
     setTimeout(chargerLogoBase64, 1000);
 
-    // --- RECHERCHE CLIENT ---
-    const searchInput = document.getElementById('search-input');
-    searchInput.addEventListener('keyup', (e) => {
+    // --- RECHERCHE ---
+    document.getElementById('search-input').addEventListener('keyup', (e) => {
         const term = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('#list-body tr');
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(term) ? '' : 'none';
+        document.querySelectorAll('#list-body tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
         });
     });
 
-    // --- GÉNÉRATION NUMÉRO AUTOMATIQUE ---
+    // --- GESTION PAIEMENTS ---
+    window.ajouterPaiement = function() {
+        const date = document.getElementById('pay_date').value;
+        const mode = document.getElementById('pay_mode').value;
+        const montant = parseFloat(document.getElementById('pay_amount').value);
+
+        if(!date || isNaN(montant) || montant <= 0) return alert("Veuillez remplir correctement le paiement.");
+
+        paiements.push({ date, mode, montant });
+        document.getElementById('pay_amount').value = "";
+        window.renderPaiements();
+        window.calculTotal();
+    };
+
+    window.supprimerPaiement = function(index) {
+        paiements.splice(index, 1);
+        window.renderPaiements();
+        window.calculTotal();
+    };
+
+    window.renderPaiements = function() {
+        const div = document.getElementById('liste_paiements');
+        if(paiements.length === 0) {
+            div.innerHTML = '<small style="color:#888;">Aucun paiement enregistré.</small>';
+            return;
+        }
+        div.innerHTML = '';
+        paiements.forEach((p, index) => {
+            const d = new Date(p.date).toLocaleDateString();
+            div.innerHTML += `
+                <div class="payment-item">
+                    <span>${d} - ${p.mode}</span>
+                    <strong>${p.montant.toFixed(2)} € <i class="fas fa-trash" style="color:red; cursor:pointer; margin-left:10px;" onclick="window.supprimerPaiement(${index})"></i></strong>
+                </div>`;
+        });
+    };
+
     async function genererNumero(type) {
-        // Logique simple : On compte les docs et on ajoute 1. (Idéalement on cherche le dernier ID).
-        // Pour faire simple et robuste sans backend complexe :
         const q = query(collection(db, "factures_v2"));
         const snap = await getDocs(q);
         const count = snap.size + 1; 
         const year = new Date().getFullYear();
         const prefix = (type === 'DEVIS') ? 'D' : 'F';
-        // Format : D-2026-001
         return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
     }
 
+    // --- MODÈLES (V8.8) ---
     const MODELES = {
         "Inhumation": [
             { type: 'section', text: '1. PRÉPARATION / ORGANISATION' },
@@ -194,44 +255,27 @@
             { desc: 'Cercueil Inhumation Standard', cat: 'Courant', prix: 650 },
             { desc: 'Plaque identité gravée', cat: 'Courant', prix: 15 },
             { desc: 'Capiton satin', cat: 'Courant', prix: 80 },
-            { desc: 'Emblème religieux', cat: 'Optionnel', prix: 50 },
-            { type: 'section', text: '4. INHUMATION & CIMETIÈRE' },
+            { type: 'section', text: '4. CIMETIÈRE' },
             { desc: 'Creusement et comblement de fosse', cat: 'Courant', prix: 650 },
             { type: 'section', text: '5. CÉRÉMONIE' },
             { desc: 'Personnel porteur (x4)', cat: 'Courant', prix: 600 },
             { desc: 'Frais de culte', cat: 'Avance', prix: 200 }
         ],
         "Rapatriement": [
-            { type: 'section', text: '1. PRÉPARATION / ORGANISATION' },
+            { type: 'section', text: '1. ORGANISATION' },
             { desc: 'Démarches administratives', cat: 'Courant', prix: 350 },
-            { desc: 'Préparation défunt + Linceul', cat: 'Courant', prix: 160 },
-            { desc: 'Séjour chambre funéraire', cat: 'Courant', prix: 250 },
-            { type: 'section', text: '2. CERCUEIL & SOINS' },
-            { desc: 'Cercueil Hermétique (Zinc+Bois)', cat: 'Courant', prix: 1200 },
-            { desc: 'Soins de conservation (Obligatoire)', cat: 'Courant', prix: 350 },
-            { type: 'section', text: '3. TRANSPORT & FRET' },
+            { desc: 'Soins de conservation', cat: 'Courant', prix: 350 },
+            { desc: 'Cercueil Hermétique (Export)', cat: 'Courant', prix: 1200 },
+            { type: 'section', text: '2. TRANSPORT' },
             { desc: 'Transport vers Aéroport', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de Fret Aérien (Est.)', cat: 'Avance', prix: 1320 },
+            { desc: 'Frais de Fret Aérien', cat: 'Avance', prix: 1320 },
             { desc: 'Ambulance Arrivée', cat: 'Optionnel', prix: 250 }
-        ],
-        "Cremation": [
-            { type: 'section', text: '1. DÉMARCHES' },
-            { desc: 'Démarches administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de crématorium', cat: 'Avance', prix: 750 },
-            { type: 'section', text: '2. CERCUEIL' },
-            { desc: 'Cercueil Crémation', cat: 'Courant', prix: 650 },
-            { desc: 'Urne Cinéraire', cat: 'Optionnel', prix: 150 }
-        ],
-        "Exhumation": [{ type: 'section', text: '1. TECHNIQUE' }, { desc: 'Demande ouverture', cat: 'Courant', prix: 150 }, { desc: 'Ouverture fosse', cat: 'Courant', prix: 600 }],
-        "Transport": [{ type: 'section', text: '1. TRANSPORT' }, { desc: 'Transport AVANT MEB', cat: 'Courant', prix: 300 }]
+        ]
     };
 
     window.loadTemplate = async function(type) {
         document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument();
-        // Génération numéro
-        const num = await genererNumero('DEVIS');
-        document.getElementById('doc_numero').value = num;
-        
+        const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num;
         if (MODELES[type]) {
             document.getElementById('tbody_lignes').innerHTML = "";
             MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); });
@@ -240,10 +284,9 @@
     };
 
     window.transformerEnFacture = async function() {
-        if(confirm("Transformer en FACTURE ? Le numéro sera mis à jour.")) {
+        if(confirm("Transformer en FACTURE ?")) {
             document.getElementById('doc_type').value = "FACTURE"; 
             document.getElementById('doc_date').valueAsDate = new Date();
-            // Génération nouveau numéro facture
             const num = await genererNumero('FACTURE');
             document.getElementById('doc_numero').value = num;
             document.getElementById('btn-save').click();
@@ -257,34 +300,45 @@
     document.getElementById('doc_type').addEventListener('change', updateTransformButton);
 
     window.chargerListeFactures = async function() {
-        const tbody = document.getElementById('list-body'); tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Chargement...</td></tr>';
+        const tbody = document.getElementById('list-body'); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
         try {
             const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc")); const querySnapshot = await getDocs(q);
             let totalCA = 0, countFactures = 0, countDevisRecents = 0; const currentYear = new Date().getFullYear(); const dateLimite = new Date(); dateLimite.setMonth(dateLimite.getMonth() - 3);
-            tbody.innerHTML = ""; if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
+            tbody.innerHTML = ""; if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data(); const dateDoc = new Date(data.date_creation); const totalDoc = data.info?.total || 0; const typeDoc = data.info?.type || 'DEVIS';
-                const numeroDoc = data.info?.numero || '-';
+                const data = docSnap.data(); const dateDoc = new Date(data.date_creation); const totalDoc = data.info?.total || 0; 
+                // Calcul Reste à payer pour la liste
+                const paye = data.paiements ? data.paiements.reduce((sum, p) => sum + p.montant, 0) : 0;
+                const reste = totalDoc - paye;
+                const resteColor = reste > 0 ? "red" : "green";
+
+                const typeDoc = data.info?.type || 'DEVIS'; const numeroDoc = data.info?.numero || '-';
                 if (typeDoc === "FACTURE") { if (dateDoc.getFullYear() === currentYear) totalCA += totalDoc; countFactures++; } else if (typeDoc === "DEVIS") { if (dateDoc > dateLimite) countDevisRecents++; }
                 const typeClass = (typeDoc === "FACTURE") ? "badge-facture" : "badge-devis";
                 const nomClient = (data.client?.civility||"") + " " + (data.client?.nom || '-');
+                
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><strong>${numeroDoc}</strong></td><td>${dateDoc.toLocaleDateString()}</td><td><span class="badge ${typeClass}">${typeDoc}</span></td><td><strong>${nomClient}</strong></td><td>${data.defunt?.nom || '-'}</td><td style="text-align:right; font-weight:bold;">${totalDoc.toFixed(2)} €</td><td style="text-align:center;"><button class="btn btn-grey" onclick="window.chargerDocument('${docSnap.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-red" onclick="window.supprimerDocument('${docSnap.id}')" style="margin-left:5px;"><i class="fas fa-trash"></i></button></td>`;
+                tr.innerHTML = `<td><strong>${numeroDoc}</strong></td><td>${dateDoc.toLocaleDateString()}</td><td><span class="badge ${typeClass}">${typeDoc}</span></td><td><strong>${nomClient}</strong></td><td>${data.defunt?.nom || '-'}</td><td style="text-align:right; font-weight:bold;">${totalDoc.toFixed(2)} €</td><td style="text-align:right; font-weight:bold; color:${resteColor};">${reste.toFixed(2)} €</td><td style="text-align:center;"><button class="btn btn-grey" onclick="window.chargerDocument('${docSnap.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-red" onclick="window.supprimerDocument('${docSnap.id}')" style="margin-left:5px;"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
             document.getElementById('stat-ca').innerText = totalCA.toFixed(2) + " €"; document.getElementById('stat-factures').innerText = countFactures; document.getElementById('stat-devis').innerText = countDevisRecents;
-        } catch(e) { console.error(e); tbody.innerHTML = `<tr><td colspan="7" style="color:red;">Erreur : ${e.message}</td></tr>`; }
+        } catch(e) { console.error(e); tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Erreur : ${e.message}</td></tr>`; }
     };
 
     window.showList = function() { document.getElementById('view-editor').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); window.chargerListeFactures(); };
     window.nouveauDocument = function() {
-        document.getElementById('current_doc_id').value = ""; document.getElementById('doc_numero').value = "Auto"; document.getElementById('client_nom').value = ""; document.getElementById('client_adresse').value = ""; document.getElementById('defunt_nom').value = ""; document.getElementById('doc_date').valueAsDate = new Date(); document.getElementById('doc_type').value = "DEVIS"; document.getElementById('tbody_lignes').innerHTML = ""; document.getElementById('total_display').innerText = "0.00"; updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
+        document.getElementById('current_doc_id').value = ""; document.getElementById('doc_numero').value = "Auto"; document.getElementById('client_nom').value = ""; document.getElementById('client_adresse').value = ""; document.getElementById('defunt_nom').value = ""; document.getElementById('doc_date').valueAsDate = new Date(); document.getElementById('doc_type').value = "DEVIS"; document.getElementById('tbody_lignes').innerHTML = ""; 
+        document.getElementById('pay_date').valueAsDate = new Date();
+        paiements = []; window.renderPaiements();
+        window.calculTotal(); updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
     };
 
     window.chargerDocument = async function(id) {
-        try { const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef); if(docSnap.exists()) { const data = docSnap.data(); document.getElementById('current_doc_id').value = id; 
-        document.getElementById('doc_numero').value = data.info.numero || ""; // Chargement numéro
-        document.getElementById('client_civility').value = data.client.civility||"M."; document.getElementById('client_nom').value = data.client.nom; document.getElementById('client_adresse').value = data.client.adresse; document.getElementById('defunt_civility').value = data.defunt.civility||"M."; document.getElementById('defunt_nom').value = data.defunt.nom; document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date; document.getElementById('tbody_lignes').innerHTML = ""; if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); } window.calculTotal(); updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden'); } } catch(e) { alert("Erreur : " + e.message); }
+        try { const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef); if(docSnap.exists()) { const data = docSnap.data(); document.getElementById('current_doc_id').value = id; document.getElementById('doc_numero').value = data.info.numero || ""; document.getElementById('client_civility').value = data.client.civility||"M."; document.getElementById('client_nom').value = data.client.nom; document.getElementById('client_adresse').value = data.client.adresse; document.getElementById('defunt_civility').value = data.defunt.civility||"M."; document.getElementById('defunt_nom').value = data.defunt.nom; document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date; document.getElementById('tbody_lignes').innerHTML = ""; if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); } 
+        // Charger Paiements
+        paiements = data.paiements || [];
+        window.renderPaiements();
+        window.calculTotal(); updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden'); } } catch(e) { alert("Erreur : " + e.message); }
     };
 
     const el = document.getElementById('tbody_lignes'); Sortable.create(el, { handle: '.drag-handle', animation: 150, onEnd: function () { window.calculTotal(); } });
@@ -301,7 +355,18 @@
         tbody.appendChild(tr); window.calculTotal();
     };
 
-    window.calculTotal = function() { let total = 0; document.querySelectorAll('.val-prix').forEach(input => { total += parseFloat(input.value) || 0; }); document.getElementById('total_display').innerText = total.toFixed(2); };
+    window.calculTotal = function() { 
+        let total = 0; document.querySelectorAll('.val-prix').forEach(input => { total += parseFloat(input.value) || 0; }); 
+        document.getElementById('total_general').innerText = total.toFixed(2) + " €";
+        
+        let totalPaye = paiements.reduce((sum, p) => sum + p.montant, 0);
+        document.getElementById('total_paye').innerText = totalPaye.toFixed(2) + " €";
+        
+        let reste = total - totalPaye;
+        document.getElementById('reste_a_payer').innerText = reste.toFixed(2) + " €";
+        document.getElementById('total_display').innerText = total.toFixed(2); // Hidden use
+    };
+
     window.supprimerDocument = async function(id) { if(confirm("Supprimer ?")) { await deleteDoc(doc(db, "factures_v2", id)); window.chargerListeFactures(); } };
 
     document.getElementById('btn-save').addEventListener('click', async () => {
@@ -315,25 +380,21 @@
             const docData = { 
                 client: { civility: document.getElementById('client_civility').value, nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value }, 
                 defunt: { civility: document.getElementById('defunt_civility').value, nom: document.getElementById('defunt_nom').value }, 
-                info: { 
-                    type: document.getElementById('doc_type').value, 
-                    date: document.getElementById('doc_date').value, 
-                    numero: document.getElementById('doc_numero').value, // SAUVEGARDE NUMERO
-                    total: parseFloat(document.getElementById('total_display').innerText) 
-                }, 
-                lignes: lignes, date_creation: new Date().toISOString() 
+                info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, numero: document.getElementById('doc_numero').value, total: parseFloat(document.getElementById('total_display').innerText) }, 
+                lignes: lignes, 
+                paiements: paiements, // Sauvegarde des paiements
+                date_creation: new Date().toISOString() 
             };
             if(id) await updateDoc(doc(db, "factures_v2", id), docData); else await addDoc(collection(db, "factures_v2"), docData);
             alert("✅ Enregistré !"); window.showList();
         } catch(e) { alert("Erreur : " + e.message); } btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     });
 
-    // --- GÉNÉRATION PDF COMPACT (OPTIMISÉ 1 PAGE) ---
+    // --- PDF PAIEMENT FINAL ---
     document.getElementById('btn-pdf').addEventListener('click', () => {
         if(!logoBase64) chargerLogoBase64();
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         
-        // EN-TÊTE COMPACT (Y=10)
         if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 30, 30); } catch(e){} }
         doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(34, 155, 76);
         doc.text("POMPES FUNEBRES", 15, 45); doc.text("SOLIDAIRE PERPIGNAN", 15, 50);
@@ -341,33 +402,27 @@
         doc.text("32 boulevard Léon Jean Grégory Thuir", 15, 55);
         doc.text("Tél : 07.55.18.27.77", 15, 59);
 
-        // CADRE CLIENT (Plus petit)
         doc.setFillColor(245, 245, 245); doc.roundedRect(110, 15, 85, 35, 2, 2, 'F');
         doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica","bold");
         doc.text(`${document.getElementById('client_civility').value} ${document.getElementById('client_nom').value}`, 115, 22);
         doc.setFont("helvetica","normal"); doc.setFontSize(9);
         doc.text(doc.splitTextToSize(document.getElementById('client_adresse').value, 80), 115, 28);
 
-        // TITRE & NUMÉRO (Bien visible)
         let y = 70; 
         doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(34, 155, 76);
-        const typeDoc = document.getElementById('doc_type').value;
-        const numDoc = document.getElementById('doc_numero').value;
+        const typeDoc = document.getElementById('doc_type').value; const numDoc = document.getElementById('doc_numero').value;
         doc.text(`${typeDoc} N° ${numDoc}`, 15, y);
         doc.setTextColor(0); doc.setFont("helvetica","normal");
         doc.text(`du ${document.getElementById('doc_date').value.split('-').reverse().join('/')}`, 80, y);
         doc.setFont("helvetica","bold");
-        doc.text(`DÉFUNT : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 120, y); 
-        y += 8;
+        doc.text(`DÉFUNT : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 120, y); y += 8;
 
-        // TABLEAU COMPACT (Padding réduit, Font taille 9)
         const rows = [];
         document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
             if(tr.classList.contains('row-section')) {
                 rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 4, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold', fontSize: 9 } }]);
             } else {
-                const desc = tr.querySelector('.val-desc').value;
-                const type = tr.querySelector('.val-type').value;
+                const desc = tr.querySelector('.val-desc').value; const type = tr.querySelector('.val-type').value;
                 const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €';
                 let colCourant = "", colOption = "";
                 if(type === 'Optionnel') colOption = prix; else colCourant = prix;
@@ -376,22 +431,47 @@
         });
 
         doc.autoTable({
-            startY: y,
-            head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']],
+            startY: y, head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']],
             body: rows, theme: 'grid',
             headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 9, halign: 'center', valign: 'middle', cellPadding: 2 },
-            styles: { fontSize: 9, cellPadding: 1.5, valign: 'middle' }, // CellPadding réduit pour gagner de la place
+            styles: { fontSize: 9, cellPadding: 1.5, valign: 'middle' },
             columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 10, halign: 'center' }, 2: { cellWidth: 35, halign: 'right' }, 3: { cellWidth: 35, halign: 'right' } }
         });
 
-        const finalY = doc.lastAutoTable.finalY + 8;
-        doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(140, finalY-5, 55, 10);
-        doc.setFontSize(11); doc.setFont("helvetica", "bold");
-        doc.text("Total TTC", 145, finalY+2);
-        doc.text(document.getElementById('total_display').innerText + " €", 190, finalY+2, {align:'right'});
+        const finalY = doc.lastAutoTable.finalY + 10;
         
+        // TABLEAU RECAPITULATIF FINANCIER
+        const total = parseFloat(document.getElementById('total_display').innerText);
+        const dejaRegle = paiements.reduce((sum, p) => sum + p.montant, 0);
+        const reste = total - dejaRegle;
+
+        // On dessine un petit tableau manuel pour les totaux
+        let currentY = finalY;
+        doc.setFontSize(10);
+        doc.text("TOTAL TTC :", 130, currentY); doc.text(total.toFixed(2) + " €", 190, currentY, {align:'right'}); currentY+=6;
+        
+        // Liste paiements (petit texte)
+        if(paiements.length > 0) {
+            doc.setFontSize(8); doc.setTextColor(100);
+            paiements.forEach(p => {
+                doc.text(`Reçu le ${new Date(p.date).toLocaleDateString()} (${p.mode}) : -${p.montant.toFixed(2)} €`, 130, currentY);
+                currentY+=4;
+            });
+            currentY+=2;
+        }
+        
+        doc.setFontSize(10); doc.setTextColor(0);
+        doc.text("DÉJÀ RÉGLÉ :", 130, currentY); doc.text(dejaRegle.toFixed(2) + " €", 190, currentY, {align:'right'}); currentY+=8;
+        
+        doc.setFontSize(12); doc.setFont("helvetica", "bold");
+        doc.setDrawColor(185, 28, 28); doc.setLineWidth(0.5); doc.rect(125, currentY-6, 70, 10);
+        doc.setTextColor(185, 28, 28); // Rouge
+        doc.text("RESTE À PAYER :", 128, currentY); 
+        doc.text(reste.toFixed(2) + " €", 192, currentY, {align:'right'});
+
+        // MENTIONS
         doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(100);
-        doc.text("TVA non applicable, art 293 B du CGI. Paiement 100% à réception.", 15, finalY+2);
+        doc.text("TVA non applicable, art 293 B du CGI.", 15, finalY+5);
 
         doc.save(`${typeDoc}_${numDoc}.pdf`);
     });
