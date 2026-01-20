@@ -1,8 +1,8 @@
-/* Fichier : js/script.js - VERSION FUSION (PDF MIXTES : NOUVEAU RAPA/POUVOIR + ANCIENS AUTRES) */
-import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, doc, sendPasswordResetEmail } from "./config.js";
+/* Fichier : js/script.js - VERSION V7.1 (CORRECTION MODIFICATION & IMPORT) */
+import { auth, db, collection, addDoc, getDocs, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail, getDoc } from "./config.js";
 
 // ==========================================================================
-// 1. INITIALISATION & AUTHENTIFICATION
+// 1. INITIALISATION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
     chargerLogoBase64(); 
@@ -13,13 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             document.getElementById('login-screen').classList.add('hidden');
             window.chargerBaseClients(); 
-            chargerClientsFacturation(); 
+            chargerClientsFacturation(); // Charge la liste déroulante Import
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
     });
 
-    // Login
     if(document.getElementById('btn-login')) {
         document.getElementById('btn-login').addEventListener('click', async () => {
             try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } 
@@ -27,12 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mot de passe oublié
     if(document.getElementById('btn-forgot')) {
         document.getElementById('btn-forgot').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
-            if(!email) return alert("Veuillez saisir l'email d'abord.");
-            if(confirm("Envoyer un lien de réinitialisation à : " + email + " ?")) {
+            if(!email) return alert("Email requis.");
+            if(confirm("Réinitialiser le mot de passe ?")) {
                 try { await sendPasswordResetEmail(auth, email); alert("📧 Email envoyé !"); } 
                 catch(e) { alert("Erreur : " + e.message); }
             }
@@ -48,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Recherche
     const searchInput = document.getElementById('search-client');
     if(searchInput) {
         searchInput.addEventListener('keyup', (e) => {
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. INTERFACE (UI)
+// 2. INTERFACE
 // ==========================================================================
 window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
@@ -74,6 +71,7 @@ window.showSection = function(id) {
 window.toggleSections = function() {
     const type = document.getElementById('prestation').value;
     document.querySelectorAll('.specific-block').forEach(el => el.classList.add('hidden'));
+    
     document.getElementById('btn_inhumation').classList.add('hidden');
     document.getElementById('btn_cremation').classList.add('hidden');
     document.getElementById('btn_rapatriement').classList.add('hidden');
@@ -106,16 +104,20 @@ window.toggleVol2 = function() {
 };
 
 window.viderFormulaire = function() {
-    if(confirm("Annuler le dossier ?")) {
+    if(confirm("Vider le formulaire pour un NOUVEAU dossier ?")) {
+        document.getElementById('dossier_id').value = ""; // On vide l'ID pour créer un nouveau
         document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
         document.getElementById('prestation').selectedIndex = 0;
         window.toggleSections();
+        document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     }
 };
 
 // ==========================================================================
-// 3. LOGIQUE DONNÉES (DATABASE)
+// 3. LOGIQUE DONNÉES (CRUD COMPLET)
 // ==========================================================================
+
+// --- A. IMPORT DEPUIS FACTURATION ---
 let clientsCache = [];
 async function chargerClientsFacturation() {
     const select = document.getElementById('select-import-client');
@@ -130,48 +132,167 @@ async function chargerClientsFacturation() {
             if(data.client) {
                 const opt = document.createElement('option');
                 opt.value = doc.id; 
-                opt.textContent = `${data.client.nom} | ${data.defunt ? data.defunt.nom : '?'}`;
+                const nomClient = data.client.nom || "Client sans nom";
+                const nomDefunt = data.defunt && data.defunt.nom ? data.defunt.nom : "Défunt inconnu";
+                opt.textContent = `${nomClient} (Défunt: ${nomDefunt})`;
                 select.appendChild(opt);
                 clientsCache.push({ id: doc.id, data: data });
             }
         });
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Erreur chargement factures:", e); }
 }
 
 function importerClient() {
     const id = document.getElementById('select-import-client').value;
+    if(!id) return alert("Veuillez sélectionner un client dans la liste.");
+    
     const dossier = clientsCache.find(c => c.id === id);
     if(dossier) {
         const d = dossier.data;
+        // Remplissage Mandant
         if(d.client) {
-            if(document.getElementById('soussigne')) document.getElementById('soussigne').value = d.client.nom || '';
-            if(document.getElementById('demeurant')) document.getElementById('demeurant').value = d.client.adresse || '';
+            document.getElementById('soussigne').value = d.client.nom || '';
+            document.getElementById('demeurant').value = d.client.adresse || '';
         }
+        // Remplissage Défunt
         if(d.defunt) {
-            if(document.getElementById('nom')) document.getElementById('nom').value = d.defunt.nom || '';
+            document.getElementById('nom').value = d.defunt.nom || '';
         }
-        alert("✅ Données importées.");
+        alert("✅ Données importées depuis la facture !");
     }
 }
 
+// --- B. SAUVEGARDE (ADD ou UPDATE) ---
 async function sauvegarderEnBase() {
     const btn = document.getElementById('btn-save-bdd');
+    const dossierId = document.getElementById('dossier_id').value; // Récupère l'ID caché
     btn.innerHTML = '...';
+
     try {
-        const dossier = {
-            defunt: { nom: getVal('nom'), prenom: getVal('prenom'), date_deces: getVal('date_deces') },
-            mandant: { nom: getVal('soussigne') },
-            technique: { type_operation: document.getElementById('prestation').value },
-            date_creation: new Date().toISOString()
+        // Construction de l'objet de données (récupère TOUS les champs)
+        const dossierData = {
+            defunt: { 
+                nom: getVal('nom'), prenom: getVal('prenom'), nom_jeune_fille: getVal('nom_jeune_fille'),
+                date_deces: getVal('date_deces'), lieu_deces: getVal('lieu_deces'), heure_deces: getVal('heure_deces'),
+                date_naiss: getVal('date_naiss'), lieu_naiss: getVal('lieu_naiss'), nationalite: getVal('nationalite'),
+                adresse: getVal('adresse_fr'), pere: getVal('pere'), mere: getVal('mere'),
+                situation: getVal('matrimoniale'), conjoint: getVal('conjoint'), profession: getVal('prof_type')
+            },
+            mandant: { 
+                nom: getVal('soussigne'), lien: getVal('lien'), adresse: getVal('demeurant') 
+            },
+            technique: { 
+                type_operation: document.getElementById('prestation').value,
+                mise_biere: getVal('lieu_mise_biere'), date_fermeture: getVal('date_fermeture'),
+                vehicule: getVal('immatriculation'), presence: document.getElementById('type_presence_select').value,
+                police: { nom: getVal('p_nom_grade'), comm: getVal('p_commissariat') },
+                famille: { temoin: getVal('f_nom_prenom'), lien: getVal('f_lien') }
+            },
+            details_op: { // Champs spécifiques (Inhumation/Crémation/Rapa)
+                cimetiere: getVal('cimetiere_nom'), concession: getVal('num_concession'),
+                crematorium: getVal('crematorium_nom'), dest_cendres: getVal('destination_cendres'),
+                rapa_pays: getVal('rap_pays'), rapa_ville: getVal('rap_ville'), rapa_lta: getVal('rap_lta'),
+                vol1: getVal('vol1_num'), vol2: getVal('vol2_num') // Et tous les autres si besoin
+            },
+            date_modification: new Date().toISOString()
         };
-        await addDoc(collection(db, "dossiers_admin"), dossier);
+
+        if (dossierId) {
+            // MODE MODIFICATION
+            await updateDoc(doc(db, "dossiers_admin", dossierId), dossierData);
+            alert("✅ Dossier mis à jour avec succès !");
+        } else {
+            // MODE CRÉATION
+            dossierData.date_creation = new Date().toISOString(); // On ajoute la date de création seulement au début
+            await addDoc(collection(db, "dossiers_admin"), dossierData);
+            alert("✅ Nouveau dossier créé avec succès !");
+        }
+
         btn.innerHTML = 'OK';
-        setTimeout(() => { btn.innerHTML = 'ENREGISTRER'; window.showSection('base'); }, 1000);
-    } catch(e) { alert("Erreur: " + e.message); btn.innerHTML = 'ENREGISTRER'; }
+        setTimeout(() => { 
+            btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; 
+            window.showSection('base'); // Retour à la liste
+        }, 1000);
+
+    } catch(e) { 
+        alert("Erreur Sauvegarde : " + e.message); 
+        console.error(e);
+        btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER'; 
+    }
 }
 
+// --- C. CHARGER UN DOSSIER POUR MODIFICATION ---
+window.chargerDossier = async function(id) {
+    try {
+        const docRef = doc(db, "dossiers_admin", id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // 1. Ouvrir la vue Admin
+            window.showSection('admin');
+            document.getElementById('dossier_id').value = id; // IMPORTANT : Stocke l'ID pour la modif
+            document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
+
+            // 2. Remplir les champs (Mapping inverse)
+            if(data.defunt) {
+                setVal('nom', data.defunt.nom); setVal('prenom', data.defunt.prenom); setVal('nom_jeune_fille', data.defunt.nom_jeune_fille);
+                setVal('date_deces', data.defunt.date_deces); setVal('lieu_deces', data.defunt.lieu_deces); setVal('heure_deces', data.defunt.heure_deces);
+                setVal('date_naiss', data.defunt.date_naiss); setVal('lieu_naiss', data.defunt.lieu_naiss); setVal('nationalite', data.defunt.nationalite);
+                setVal('adresse_fr', data.defunt.adresse); setVal('pere', data.defunt.pere); setVal('mere', data.defunt.mere);
+                setVal('conjoint', data.defunt.conjoint);
+                if(data.defunt.situation) document.getElementById('matrimoniale').value = data.defunt.situation;
+            }
+            
+            if(data.mandant) {
+                setVal('soussigne', data.mandant.nom); setVal('lien', data.mandant.lien); setVal('demeurant', data.mandant.adresse);
+            }
+
+            if(data.technique) {
+                document.getElementById('prestation').value = data.technique.type_operation || "Inhumation";
+                setVal('lieu_mise_biere', data.technique.mise_biere);
+                setVal('date_fermeture', data.technique.date_fermeture);
+                setVal('immatriculation', data.technique.vehicule);
+                document.getElementById('type_presence_select').value = data.technique.presence || "famille";
+            }
+
+            if(data.details_op) {
+                setVal('cimetiere_nom', data.details_op.cimetiere);
+                setVal('num_concession', data.details_op.concession);
+                setVal('crematorium_nom', data.details_op.crematorium);
+                setVal('rap_pays', data.details_op.rapa_pays);
+                setVal('rap_ville', data.details_op.rapa_ville);
+                setVal('rap_lta', data.details_op.rapa_lta);
+                setVal('vol1_num', data.details_op.vol1);
+                setVal('vol2_num', data.details_op.vol2);
+            }
+
+            // Rafraîchir l'affichage (Masquer/Afficher les blocs)
+            window.toggleSections();
+            window.togglePolice();
+            if(document.getElementById('vol2_num').value) {
+                document.getElementById('check_vol2').checked = true;
+                window.toggleVol2();
+            }
+
+        } else {
+            alert("Erreur : Dossier introuvable.");
+        }
+    } catch (e) {
+        alert("Erreur Chargement : " + e.message);
+    }
+};
+
+// Helper pour remplir les champs en sécurité
+function setVal(id, val) {
+    const el = document.getElementById(id);
+    if(el) el.value = val || "";
+}
+
+// --- D. LISTE ET SUPPRESSION ---
 window.supprimerDossier = async function(id) {
-    if(confirm("⚠️ Supprimer définitivement ce dossier ?")) {
+    if(confirm("⚠️ Supprimer définitivement ce dossier ? Action irréversible.")) {
         try {
             await deleteDoc(doc(db, "dossiers_admin", id));
             alert("🗑️ Dossier supprimé.");
@@ -192,6 +313,8 @@ window.chargerBaseClients = async function() {
         snap.forEach(docSnap => {
             const data = docSnap.data();
             const op = data.technique ? data.technique.type_operation : "Inhumation";
+            
+            // Notez l'appel à chargerDossier(id) sur le bouton Edit
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${new Date(data.date_creation).toLocaleDateString()}</td>
@@ -199,8 +322,8 @@ window.chargerBaseClients = async function() {
                 <td>${data.mandant?.nom || '-'}</td>
                 <td><span class="badge">${op}</span></td>
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="window.showSection('admin')"><i class="fas fa-edit" style="color:#3b82f6;"></i></button>
-                    <button class="btn-icon" onclick="window.supprimerDossier('${docSnap.id}')" style="margin-left:10px;"><i class="fas fa-trash" style="color:#ef4444;"></i></button>
+                    <button class="btn-icon" onclick="window.chargerDossier('${docSnap.id}')" title="Modifier"><i class="fas fa-edit" style="color:#3b82f6;"></i></button>
+                    <button class="btn-icon" onclick="window.supprimerDossier('${docSnap.id}')" title="Supprimer" style="margin-left:10px;"><i class="fas fa-trash" style="color:#ef4444;"></i></button>
                 </td>`;
             tbody.appendChild(tr);
         });
@@ -231,7 +354,6 @@ function headerPF(pdf, y=20) {
 }
 function getVal(id) { 
     const el=document.getElementById(id); 
-    // Mappage spécial pour les radios "profession" ou autre
     if(id === "profession_autre") return document.getElementById('profession_autre') ? document.getElementById('profession_autre').value : "";
     return el?el.value:""; 
 }
@@ -241,7 +363,7 @@ function formatDate(d) { return d?d.split("-").reverse().join("/"): "...........
 // 5. FONCTIONS PDF
 // ==========================================================================
 
-// --- 1. POUVOIR (VOTRE VERSION VALIDÉE AVEC LOGO) ---
+// --- 1. POUVOIR ---
 window.genererPouvoir = function() {
     if(!logoBase64) chargerLogoBase64(); const {jsPDF}=window.jspdf; const pdf=new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
     let typePresta = document.getElementById('prestation').value.toUpperCase();
@@ -271,7 +393,7 @@ window.genererPouvoir = function() {
     pdf.save(`Pouvoir_${getVal("nom")}.pdf`);
 };
 
-// --- 2. RAPATRIEMENT (VOTRE VERSION "PERFECT" SANS LOGO + VOL 2) ---
+// --- 2. RAPATRIEMENT (STRICT + VOL 2) ---
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
@@ -336,14 +458,13 @@ window.genererDemandeRapatriement = function() {
     
     y+=5;
     pdf.text(`Lieu d'inhumation (Ville – Pays) : ${getVal("rap_ville")} / ${getVal("rap_pays")}`, x, y); y+=20;
-    
     pdf.setFont("helvetica", "bold");
     pdf.text(`Fait à : ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, 120, y); y+=10;
     pdf.text("Signature et cachet :", 120, y);
     pdf.save(`Demande_Rapatriement_Prefecture_${getVal("nom")}.pdf`);
 };
 
-// --- 3. DÉCLARATION DÉCÈS (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 3. DÉCLARATION DÉCÈS ---
 window.genererDeclaration = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); const fontMain = "times";
     pdf.setFont(fontMain, "bold"); pdf.setFontSize(16);
@@ -394,7 +515,7 @@ window.genererDeclaration = function() {
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
 
-// --- 4. DEMANDE INHUMATION (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 4. DEMANDE INHUMATION ---
 window.genererDemandeInhumation = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
     pdf.setFillColor(230, 240, 230); pdf.rect(20, 40, 170, 10, 'F');
@@ -416,7 +537,7 @@ window.genererDemandeInhumation = function() {
     pdf.save(`Demande_Inhumation_${getVal("nom")}.pdf`);
 };
 
-// --- 5. DEMANDE CRÉMATION (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 5. DEMANDE CRÉMATION ---
 window.genererDemandeCremation = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
     pdf.setFont("times", "bold"); pdf.setFontSize(12);
@@ -435,7 +556,7 @@ window.genererDemandeCremation = function() {
     pdf.save(`Demande_Cremation_${getVal("nom")}.pdf`);
 };
 
-// --- 6. FERMETURE MAIRIE (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 6. FERMETURE MAIRIE ---
 window.genererDemandeFermetureMairie = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(26, 90, 143); pdf.setLineWidth(1.5); pdf.rect(10, 10, 190, 277);
@@ -465,7 +586,7 @@ window.genererDemandeFermetureMairie = function() {
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 7. OUVERTURE SÉPULTURE (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 7. OUVERTURE SÉPULTURE ---
 window.genererDemandeOuverture = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     const type = getVal("prestation");
@@ -491,7 +612,7 @@ window.genererDemandeOuverture = function() {
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
 
-// --- 8. PV FERMETURE POLICE (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 8. PV FERMETURE (TECHNIQUE) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
     pdf.setFillColor(52, 73, 94); pdf.rect(0, 35, 210, 15, 'F');
@@ -513,7 +634,6 @@ window.genererFermeture = function() {
     pdf.setFont("helvetica", "normal");
     pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
     pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
-    
     const isPolice = document.querySelector('input[name="type_presence"][value="police"]').checked;
     pdf.setFont("helvetica", "bold"); pdf.text("EN PRÉSENCE DE :", x, y); y+=10;
     pdf.rect(x, y, 170, 30);
@@ -536,7 +656,7 @@ window.genererFermeture = function() {
     pdf.save(`PV_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 9. TRANSPORT (VOTRE VERSION ANCIENNE RESTAURÉE) ---
+// --- 9. TRANSPORT ---
 window.genererTransport = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277);
