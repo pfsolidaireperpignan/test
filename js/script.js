@@ -639,15 +639,15 @@ window.genererDemandeOuverture = function() {
 
 // --- 8. PV FERMETURE (TECHNIQUE) ---
 // --- 8. PV FERMETURE (TITRE CORRIGÉ : MISE EN BIERE + FERMETURE) ---
+// --- 8. PV FERMETURE (CORRECTION : LIEU MISE EN BIERE) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64(); 
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); 
     ajouterFiligrane(pdf); headerPF(pdf);
 
-    // Titre (Mis à jour selon votre demande)
+    // Titre
     pdf.setFillColor(52, 73, 94); pdf.rect(0, 35, 210, 15, 'F');
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(255, 255, 255);
-    // Titre sur deux lignes si nécessaire ou ajusté
     pdf.text("DÉCLARATION DE MISE EN BIÈRE, DE FERMETURE", 105, 41, { align: "center" });
     pdf.text("ET DE SCELLEMENT DE CERCUEIL", 105, 47, { align: "center" });
     
@@ -662,14 +662,15 @@ window.genererFermeture = function() {
     pdf.text("Habilitation : 23-66-0205", x+5, y+15); 
     
     y += 30;
-    // Le texte certifie bien les 3 actions
     pdf.text("Je, soussigné M. CHERKAOUI Mustapha, certifie avoir procédé à la mise en bière,", x, y);
     pdf.text("à la fermeture et au scellement du cercueil.", x, y+5); 
     y+=15;
     
     pdf.setFont("helvetica", "bold");
     pdf.text(`DATE : ${formatDate(getVal("date_fermeture"))}`, x, y);
-    pdf.text(`LIEU : ${getVal("lieu_fermeture")}`, x+80, y); 
+    
+    // --- CORRECTION ICI : ON PREND 'lieu_mise_biere' ---
+    pdf.text(`LIEU : ${getVal("lieu_mise_biere")}`, x+80, y); 
     
     y+=15;
 
@@ -682,7 +683,7 @@ window.genererFermeture = function() {
     
     y+=40;
 
-    // Récupération correcte du Select (Police/Famille)
+    // Selecteur Police/Famille
     const typePresence = document.getElementById('type_presence_select').value;
     const isPolice = (typePresence === 'police'); 
 
@@ -690,13 +691,11 @@ window.genererFermeture = function() {
     pdf.setDrawColor(0); pdf.rect(x, y, 170, 30);
     
     if(isPolice) {
-        // Affichage Police
         pdf.text("AUTORITÉ DE POLICE (Absence de famille)", x+5, y+6);
         pdf.setFont("helvetica", "normal");
         pdf.text(`Nom & Grade : ${getVal("p_nom_grade")}`, x+5, y+14);
         pdf.text(`Commissariat : ${getVal("p_commissariat")}`, x+5, y+22);
     } else {
-        // Affichage Famille
         pdf.text("LA FAMILLE (Témoin)", x+5, y+6);
         pdf.setFont("helvetica", "normal");
         pdf.text(`Nom : ${getVal("f_nom_prenom")}`, x+5, y+14);
