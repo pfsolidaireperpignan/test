@@ -559,6 +559,7 @@ window.genererDemandeFermetureMairie = function() {
 };
 
 // --- 7. OUVERTURE SÉPULTURE (VERSION PARFAITE - STYLE ADMINISTRATIF) ---
+// --- 7. OUVERTURE SÉPULTURE (CORRECTIF VISUEL : CASES DESSINÉES) ---
 window.genererDemandeOuverture = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     headerPF(pdf);
@@ -576,36 +577,47 @@ window.genererDemandeOuverture = function() {
     pdf.setFont("helvetica", "bold"); pdf.text("OBJET DE L'OPÉRATION :", x+5, y);
     
     const type = getVal("prestation");
-    const mark = (t) => type === t ? "■" : "□"; // Case pleine si sélectionné, vide sinon
 
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`${mark("Inhumation")} Pour INHUMATION`, x+50, y);
-    pdf.text(`${mark("Exhumation")} Pour EXHUMATION`, x+100, y);
-    pdf.text(`□ Pour SCELLEMENT D'URNE`, x+50, y+10); // Option statique si pas dans le select
+    // --- DESSIN DES CASES À COCHER (METHODE FIABLE) ---
+    pdf.setDrawColor(0); pdf.setFillColor(255); 
+
+    // Option 1 : Inhumation
+    pdf.rect(x+55, y-3, 4, 4); // Le carré
+    if(type === "Inhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+55.8, y); } // La croix
+    pdf.setFont("helvetica", "normal"); pdf.text("Pour INHUMATION", x+62, y);
+
+    // Option 2 : Exhumation
+    pdf.rect(x+110, y-3, 4, 4); // Le carré
+    if(type === "Exhumation") { pdf.setFont("helvetica", "bold"); pdf.text("X", x+110.8, y); } // La croix
+    pdf.setFont("helvetica", "normal"); pdf.text("Pour EXHUMATION", x+117, y);
+
+    // Option 3 : Scellement (Statique pour l'instant)
+    pdf.rect(x+55, y+7, 4, 4); // Le carré vide
+    pdf.text("Pour SCELLEMENT D'URNE", x+62, y+10);
 
     y += 35;
 
     // Bloc DEMANDEUR
     pdf.setFont("helvetica", "bold"); pdf.text("JE SOUSSIGNÉ(E) (Le Demandeur) :", x, y); y+=5;
-    pdf.setLineWidth(0.5); pdf.rect(x, y, 180, 35);
+    pdf.setLineWidth(0.5); pdf.setDrawColor(150); pdf.rect(x, y, 180, 30);
     pdf.setFont("helvetica", "normal");
     pdf.text(`Nom et Prénom : ${getVal("soussigne").toUpperCase()}`, x+5, y+8);
     pdf.text(`Demeurant à : ${getVal("demeurant")}`, x+5, y+16);
     pdf.text(`Agissant en qualité de : ${getVal("lien")}`, x+5, y+24);
     
-    y += 45;
+    y += 40;
 
     // Bloc DETAILS CONCESSION
     pdf.setFont("helvetica", "bold"); pdf.text("DEMANDE L'AUTORISATION D'OUVRIR LA SÉPULTURE SUIVANTE :", x, y); y+=5;
-    pdf.rect(x, y, 180, 35);
+    pdf.rect(x, y, 180, 30);
     pdf.setFont("helvetica", "normal");
     pdf.text(`Située au Cimetière de : ${getVal("cimetiere_nom")}`, x+5, y+8);
     pdf.text(`Numéro de Concession : ${getVal("num_concession")}`, x+5, y+16);
     pdf.text(`Titulaire de la Concession : ${getVal("titulaire_concession")}`, x+5, y+24);
 
-    y += 45;
+    y += 40;
     
-    // Texte Légal Important (Remis en place)
+    // Texte Légal
     pdf.setFontSize(9);
     const legalTxt = "La présente déclaration dont j'assure la pleine et entière responsabilité m'engage à garantir la ville contre toute réclamation qui pourrait survenir suite à l'opération qui en fait l'objet.\nEnfin, conformément à la réglementation en vigueur, je m'engage à fournir la preuve de la qualité du ou des ayants droits et déposer au service Réglementation funéraire de la ville, la copie des documents prouvant cette qualité.";
     const splitLegal = pdf.splitTextToSize(legalTxt, 180);
