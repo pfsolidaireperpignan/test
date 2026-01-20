@@ -1,9 +1,9 @@
-/* Fichier : js/config.js (AVEC RESET PASSWORD) */
+/* Fichier : js/config.js (CORRIGÉ - AVEC getDoc) */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// AJOUT DE 'getDoc' DANS LA LIGNE CI-DESSOUS :
+import { getFirestore, collection, addDoc, getDocs, getDoc, query, orderBy, limit, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// VOS CLÉS (Ne changez rien ici si c'est déjà bon chez vous)
 const firebaseConfig = {
     apiKey: "AIzaSyDmsIkTjW2IFkIks5BUAnxLLnc7pnj2e0w",
     authDomain: "pf-solidaire.firebaseapp.com",
@@ -19,13 +19,14 @@ try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    console.log("Firebase connecté (Config)");
+    console.log("Firebase connecté OK");
 } catch (e) {
     console.error("Erreur Config :", e);
 }
 
 export { 
-    auth, db, collection, addDoc, getDocs, query, orderBy, limit, 
-    doc, updateDoc, deleteDoc, 
-    onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail // <--- AJOUTÉ ICI
+    auth, db, collection, addDoc, getDocs, 
+    getDoc, // <--- C'EST L'AJOUT CRUCIAL QUI MANQUAIT
+    query, orderBy, limit, doc, updateDoc, deleteDoc, 
+    onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail 
 };
