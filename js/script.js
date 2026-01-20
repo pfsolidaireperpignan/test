@@ -638,47 +638,80 @@ window.genererDemandeOuverture = function() {
 };
 
 // --- 8. PV FERMETURE (TECHNIQUE) ---
+// --- 8. PV FERMETURE (TITRE CORRIGÉ : MISE EN BIERE + FERMETURE) ---
 window.genererFermeture = function() {
-    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); ajouterFiligrane(pdf); headerPF(pdf);
+    if(!logoBase64) chargerLogoBase64(); 
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF(); 
+    ajouterFiligrane(pdf); headerPF(pdf);
+
+    // Titre (Mis à jour selon votre demande)
     pdf.setFillColor(52, 73, 94); pdf.rect(0, 35, 210, 15, 'F');
-    pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.setTextColor(255, 255, 255);
-    pdf.text("DECLARATION DE FERMETURE ET DE SCELLEMENT DE CERCUEIL", 105, 45, { align: "center" });
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(255, 255, 255);
+    // Titre sur deux lignes si nécessaire ou ajusté
+    pdf.text("DÉCLARATION DE MISE EN BIÈRE, DE FERMETURE", 105, 41, { align: "center" });
+    pdf.text("ET DE SCELLEMENT DE CERCUEIL", 105, 47, { align: "center" });
+    
     pdf.setTextColor(0); pdf.setFontSize(10);
     let y = 65; const x = 20;
+
+    // Bloc Opérateur
     pdf.setDrawColor(200); pdf.setLineWidth(0.5); pdf.rect(x, y, 170, 20);
     pdf.setFont("helvetica", "bold"); pdf.text("L'OPÉRATEUR FUNÉRAIRE", x+5, y+5);
     pdf.setFont("helvetica", "normal");
     pdf.text("PF SOLIDAIRE PERPIGNAN - 32 Bd Léon Jean Grégory, Thuir", x+5, y+10);
-    pdf.text("Habilitation : 23-66-0205", x+5, y+15); y += 30;
-    pdf.text("Je, soussigné M. CHERKAOUI Mustapha, certifie avoir procédé à la Mise en bière, fermeture et au scellement du cercueil.", x, y); y+=10;
+    pdf.text("Habilitation : 23-66-0205", x+5, y+15); 
+    
+    y += 30;
+    // Le texte certifie bien les 3 actions
+    pdf.text("Je, soussigné M. CHERKAOUI Mustapha, certifie avoir procédé à la mise en bière,", x, y);
+    pdf.text("à la fermeture et au scellement du cercueil.", x, y+5); 
+    y+=15;
+    
     pdf.setFont("helvetica", "bold");
     pdf.text(`DATE : ${formatDate(getVal("date_fermeture"))}`, x, y);
-    pdf.text(`LIEU : ${getVal("lieu_fermeture")}`, x+80, y); y+=15;
+    pdf.text(`LIEU : ${getVal("lieu_fermeture")}`, x+80, y); 
+    
+    y+=15;
+
+    // Bloc Défunt
     pdf.setFillColor(240, 240, 240); pdf.rect(x, y, 170, 30, 'F');
     pdf.setFont("helvetica", "bold"); pdf.text("IDENTITÉ DU DÉFUNT(E)", x+5, y+6);
     pdf.setFont("helvetica", "normal");
     pdf.text(`Nom : ${getVal("nom").toUpperCase()}`, x+5, y+14); pdf.text(`Prénom : ${getVal("prenom")}`, x+80, y+14);
-    pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); y+=40;
-    const isPolice = document.querySelector('input[name="type_presence"][value="police"]').checked;
+    pdf.text(`Né(e) le : ${formatDate(getVal("date_naiss"))}`, x+5, y+22); pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))}`, x+80, y+22); 
+    
+    y+=40;
+
+    // Récupération correcte du Select (Police/Famille)
+    const typePresence = document.getElementById('type_presence_select').value;
+    const isPolice = (typePresence === 'police'); 
+
     pdf.setFont("helvetica", "bold"); pdf.text("EN PRÉSENCE DE :", x, y); y+=10;
-    pdf.rect(x, y, 170, 30);
+    pdf.setDrawColor(0); pdf.rect(x, y, 170, 30);
+    
     if(isPolice) {
+        // Affichage Police
         pdf.text("AUTORITÉ DE POLICE (Absence de famille)", x+5, y+6);
         pdf.setFont("helvetica", "normal");
         pdf.text(`Nom & Grade : ${getVal("p_nom_grade")}`, x+5, y+14);
         pdf.text(`Commissariat : ${getVal("p_commissariat")}`, x+5, y+22);
     } else {
-        pdf.text("LA FAMILLE", x+5, y+6);
+        // Affichage Famille
+        pdf.text("LA FAMILLE (Témoin)", x+5, y+6);
         pdf.setFont("helvetica", "normal");
         pdf.text(`Nom : ${getVal("f_nom_prenom")}`, x+5, y+14);
         pdf.text(`Lien de parenté : ${getVal("f_lien")}`, x+80, y+14);
-        pdf.text(`Domicile : ${getVal("f_adresse")}`, x+5, y+22);
     }
-    y+=45; pdf.line(20, y, 190, y); y+=10;
+
+    y+=45; 
+    pdf.line(20, y, 190, y); 
+    y+=10;
+    
     pdf.setFont("helvetica", "bold");
     pdf.text("Signature Opérateur", 40, y);
     pdf.text(isPolice ? "Signature Police" : "Signature Famille", 140, y);
-    pdf.save(`PV_Fermeture_${getVal("nom")}.pdf`);
+
+    pdf.save(`PV_Mise_En_Biere_Fermeture_${getVal("nom")}.pdf`);
 };
 
 // --- 9. TRANSPORT ---
