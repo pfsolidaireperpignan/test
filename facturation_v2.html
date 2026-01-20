@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation Pro V8.4</title>
+    <title>PF Solidaire - Facturation (Design Exact)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* --- STYLE IDENTIQUE V8.3 (Design Validé) --- */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
@@ -66,6 +65,7 @@
     </style>
 </head>
 <body>
+    <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
 
     <div id="modal-choix" class="modal hidden">
         <div class="modal-content">
@@ -79,9 +79,7 @@
             <div style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:10px;">
                 <button class="btn btn-grey" style="width:100%; justify-content:center;" onclick="window.loadTemplate('Vide')">Devis Vierge</button>
             </div>
-            <div style="margin-top:10px;">
-                <a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444; font-size:0.8rem;">Annuler</a>
-            </div>
+            <div style="margin-top:10px;"><a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444; font-size:0.8rem;">Annuler</a></div>
         </div>
     </div>
 
@@ -124,7 +122,6 @@
                 </div>
                 <input type="text" class="input-clean" id="client_adresse" placeholder="Adresse complète..." style="margin-top:10px;">
             </div>
-            
             <div class="box">
                 <span class="label-section">CONCERNE LE DÉFUNT</span>
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -147,7 +144,7 @@
         </div>
 
         <table class="facture-table">
-            <thead><tr><th style="width: 30px;"></th><th style="width: 50%;">DÉSIGNATION</th><th style="width: 15%;">TYPE</th><th style="width: 10%;">TVA</th><th style="width: 15%; text-align:right;">PRIX TTC</th><th style="width: 5%;"></th></tr></thead>
+            <thead><tr><th style="width: 30px;"></th><th style="width: 50%;">DÉSIGNATION</th><th style="width: 15%;">CATÉGORIE</th><th style="width: 10%;">TVA</th><th style="width: 15%; text-align:right;">PRIX TTC</th><th style="width: 5%;"></th></tr></thead>
             <tbody id="tbody_lignes"></tbody>
         </table>
         <div class="total-box">TOTAL TTC : <span id="total_display">0.00</span> €</div>
@@ -157,67 +154,62 @@
 <script type="module">
     import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "./js/config.js";
 
-    // --- MODÈLES (V8.3 EXACTS) ---
+    // --- LOGO ENGINE ---
+    let logoBase64 = null;
+    function chargerLogoBase64() {
+        const img = document.getElementById('logo-source');
+        if (img && img.naturalWidth > 0) {
+            const c = document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight;
+            c.getContext("2d").drawImage(img,0,0); try{logoBase64=c.toDataURL("image/png");}catch(e){}
+        }
+    }
+    // Chargement auto
+    setTimeout(chargerLogoBase64, 1000);
+
     const MODELES = {
         "Inhumation": [
             { type: 'section', text: '1. PRÉPARATION / ORGANISATION DES OBSÈQUES' },
             { desc: 'Démarches et formalités administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Préparation du défunt (toilette rituelle) + Linceul + Produits', cat: 'Courant', prix: 150 },
-            { desc: 'Frais de séjour chambre funéraire (Forfait 3 jours)', cat: 'Courant', prix: 250 },
+            { desc: 'Préparation du défunt (toilette rituelle)', cat: 'Courant', prix: 150 },
+            { desc: 'Frais de séjour chambre funéraire (3j)', cat: 'Courant', prix: 250 },
             { desc: 'Vacation de police', cat: 'Avance', prix: 25 },
-            { type: 'section', text: '2. TRANSPORT AVANT MISE EN BIÈRE (SANS CERCUEIL)' },
-            { desc: 'Mise à disposition d\'un corbillard pour transport', cat: 'Courant', prix: 150 },
+            { type: 'section', text: '2. TRANSPORT AVANT MISE EN BIÈRE' },
+            { desc: 'Mise à disposition corbillard (Transport)', cat: 'Courant', prix: 150 },
             { desc: 'Housse mortuaire', cat: 'Courant', prix: 35 },
             { type: 'section', text: '3. CERCUEIL ET ACCESSOIRES' },
-            { desc: 'Cercueil Inhumation (Standard) avec poignées et finitions', cat: 'Courant', prix: 650 },
-            { desc: 'Plaque d\'identité gravée', cat: 'Courant', prix: 15 },
-            { desc: 'Capiton satin blanc', cat: 'Courant', prix: 80 },
-            { type: 'section', text: '4. TRANSPORT APRÈS MISE EN BIÈRE (AVEC CERCUEIL)' },
-            { desc: 'Corbillard avec chauffeur-porteur (Cérémonie)', cat: 'Courant', prix: 150 },
-            { type: 'section', text: '5. INHUMATION & CIMETIÈRE' },
+            { desc: 'Cercueil Inhumation Standard', cat: 'Courant', prix: 650 },
+            { desc: 'Plaque identité gravée', cat: 'Courant', prix: 15 },
+            { desc: 'Capiton satin', cat: 'Courant', prix: 80 },
+            { desc: 'Emblème religieux', cat: 'Optionnel', prix: 50 },
+            { type: 'section', text: '4. INHUMATION & CIMETIÈRE' },
             { desc: 'Creusement et comblement de fosse', cat: 'Courant', prix: 650 },
-            { desc: 'Ouverture de caveau (Si existant)', cat: 'Courant', prix: 0 },
-            { type: 'section', text: '6. PERSONNEL & CÉRÉMONIE' },
-            { desc: 'Personnel porteur (Service Départ/Arrivée)', cat: 'Courant', prix: 140 },
-            { desc: 'Maître de cérémonie', cat: 'Courant', prix: 190 },
+            { type: 'section', text: '5. CÉRÉMONIE' },
+            { desc: 'Personnel porteur (x4)', cat: 'Courant', prix: 600 },
             { desc: 'Frais de culte', cat: 'Avance', prix: 200 }
         ],
         "Rapatriement": [
             { type: 'section', text: '1. PRÉPARATION / ORGANISATION' },
-            { desc: 'Démarches administratives (Préfecture, Consulat)', cat: 'Courant', prix: 350 },
-            { desc: 'Préparation du défunt (Toilette rituelle)', cat: 'Courant', prix: 160 },
+            { desc: 'Démarches administratives (Préfecture/Consulat)', cat: 'Courant', prix: 350 },
+            { desc: 'Préparation défunt + Linceul', cat: 'Courant', prix: 160 },
             { desc: 'Séjour chambre funéraire', cat: 'Courant', prix: 250 },
-            { type: 'section', text: '2. SOINS & CERCUEIL' },
-            { desc: 'Cercueil Hermétique (Zinc + Bois) pour Export', cat: 'Courant', prix: 1200 },
+            { type: 'section', text: '2. CERCUEIL & SOINS' },
+            { desc: 'Cercueil Hermétique (Zinc+Bois) Export', cat: 'Courant', prix: 1200 },
             { desc: 'Soins de conservation (Obligatoire)', cat: 'Courant', prix: 350 },
-            { desc: 'Plaque d\'identité', cat: 'Courant', prix: 15 },
             { type: 'section', text: '3. TRANSPORT & FRET' },
-            { desc: 'Transport vers Aéroport (France)', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de Fret Aérien (Estimation Compagnie)', cat: 'Avance', prix: 1320 },
-            { desc: 'Ambulance arrivée (Vers lieu d\'inhumation Maroc/Algérie)', cat: 'Courant', prix: 250 }
+            { desc: 'Transport vers Aéroport', cat: 'Courant', prix: 250 },
+            { desc: 'Frais de Fret Aérien (Est.)', cat: 'Avance', prix: 1320 },
+            { desc: 'Ambulance Arrivée (Lieu Inhumation)', cat: 'Optionnel', prix: 250 }
         ],
         "Cremation": [
             { type: 'section', text: '1. DÉMARCHES' },
             { desc: 'Démarches administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de crémation (Crématorium de Perpignan)', cat: 'Avance', prix: 650.68 },
-            { type: 'section', text: '2. TRANSPORT & CERCUEIL' },
-            { desc: 'Transport Après Mise en Bière (Crématorium)', cat: 'Courant', prix: 350 },
+            { desc: 'Frais de crématorium', cat: 'Avance', prix: 750 },
+            { type: 'section', text: '2. CERCUEIL' },
             { desc: 'Cercueil Crémation', cat: 'Courant', prix: 650 },
-            { desc: 'Urne Cinéraire Métal', cat: 'Courant', prix: 60 }
+            { desc: 'Urne Cinéraire', cat: 'Optionnel', prix: 150 }
         ],
-        "Transport": [
-            { type: 'section', text: '1. TRANSPORT DE CORPS' },
-            { desc: 'Transport AVANT mise en bière (Véhicule agréé)', cat: 'Courant', prix: 300 },
-            { desc: 'Housse mortuaire', cat: 'Courant', prix: 40 },
-            { desc: 'Transport APRÈS mise en bière (Longue distance)', cat: 'Courant', prix: 0 }
-        ],
-        "Exhumation": [
-            { type: 'section', text: '1. TECHNIQUE' },
-            { desc: 'Demande d\'ouverture de sépulture', cat: 'Courant', prix: 150 },
-            { desc: 'Ouverture de fosse / Caveau', cat: 'Courant', prix: 600 },
-            { desc: 'Exhumation et réduction de corps', cat: 'Courant', prix: 450 },
-            { desc: 'Reliquaire (Boîte à ossements)', cat: 'Courant', prix: 120 }
-        ]
+        "Exhumation": [{ type: 'section', text: '1. TECHNIQUE' }, { desc: 'Demande ouverture', cat: 'Courant', prix: 150 }, { desc: 'Ouverture fosse', cat: 'Courant', prix: 600 }],
+        "Transport": [{ type: 'section', text: '1. TRANSPORT' }, { desc: 'Transport AVANT MEB', cat: 'Courant', prix: 300 }]
     };
 
     window.loadTemplate = function(type) {
@@ -229,7 +221,7 @@
     };
 
     window.transformerEnFacture = async function() {
-        if(confirm("Passer ce DEVIS en FACTURE ?")) {
+        if(confirm("Transformer en FACTURE ?")) {
             document.getElementById('doc_type').value = "FACTURE"; document.getElementById('doc_date').valueAsDate = new Date();
             document.getElementById('btn-save').click();
         }
@@ -242,20 +234,16 @@
     document.getElementById('doc_type').addEventListener('change', updateTransformButton);
 
     window.chargerListeFactures = async function() {
-        const tbody = document.getElementById('list-body');
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Chargement...</td></tr>';
+        const tbody = document.getElementById('list-body'); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Chargement...</td></tr>';
         try {
-            const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
-            const querySnapshot = await getDocs(q);
-            let totalCA = 0, countFactures = 0, countDevisRecents = 0;
-            const currentYear = new Date().getFullYear(); const dateLimite = new Date(); dateLimite.setMonth(dateLimite.getMonth() - 3);
-            tbody.innerHTML = "";
-            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
+            const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc")); const querySnapshot = await getDocs(q);
+            let totalCA = 0, countFactures = 0, countDevisRecents = 0; const currentYear = new Date().getFullYear(); const dateLimite = new Date(); dateLimite.setMonth(dateLimite.getMonth() - 3);
+            tbody.innerHTML = ""; if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data(); const dateDoc = new Date(data.date_creation); const totalDoc = data.info?.total || 0; const typeDoc = data.info?.type || 'DEVIS';
                 if (typeDoc === "FACTURE") { if (dateDoc.getFullYear() === currentYear) totalCA += totalDoc; countFactures++; } else if (typeDoc === "DEVIS") { if (dateDoc > dateLimite) countDevisRecents++; }
                 const typeClass = (typeDoc === "FACTURE") ? "badge-facture" : "badge-devis";
-                const nomClient = (data.client?.civility ? data.client.civility + " " : "") + (data.client?.nom || '-');
+                const nomClient = (data.client?.civility||"") + " " + (data.client?.nom || '-');
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${dateDoc.toLocaleDateString()}</td><td><span class="badge ${typeClass}">${typeDoc}</span></td><td><strong>${nomClient}</strong></td><td>${data.defunt?.nom || '-'}</td><td style="text-align:right; font-weight:bold;">${totalDoc.toFixed(2)} €</td><td style="text-align:center;"><button class="btn btn-grey" onclick="window.chargerDocument('${docSnap.id}')"><i class="fas fa-edit"></i></button><button class="btn btn-red" onclick="window.supprimerDocument('${docSnap.id}')" style="margin-left:5px;"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
@@ -265,35 +253,12 @@
     };
 
     window.showList = function() { document.getElementById('view-editor').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); window.chargerListeFactures(); };
-    
     window.nouveauDocument = function() {
-        document.getElementById('current_doc_id').value = "";
-        document.getElementById('client_civility').value = "M."; document.getElementById('client_nom').value = "";
-        document.getElementById('client_adresse').value = "";
-        document.getElementById('defunt_civility').value = "M."; document.getElementById('defunt_nom').value = "";
-        document.getElementById('doc_date').valueAsDate = new Date(); document.getElementById('doc_type').value = "DEVIS";
-        document.getElementById('tbody_lignes').innerHTML = ""; document.getElementById('total_display').innerText = "0.00";
-        updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
+        document.getElementById('current_doc_id').value = ""; document.getElementById('client_nom').value = ""; document.getElementById('client_adresse').value = ""; document.getElementById('defunt_nom').value = ""; document.getElementById('doc_date').valueAsDate = new Date(); document.getElementById('doc_type').value = "DEVIS"; document.getElementById('tbody_lignes').innerHTML = ""; document.getElementById('total_display').innerText = "0.00"; updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
     };
 
     window.chargerDocument = async function(id) {
-        try {
-            const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef);
-            if(docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('current_doc_id').value = id;
-                document.getElementById('client_civility').value = data.client.civility || "M.";
-                document.getElementById('client_nom').value = data.client.nom;
-                document.getElementById('client_adresse').value = data.client.adresse;
-                document.getElementById('defunt_civility').value = data.defunt.civility || "M.";
-                document.getElementById('defunt_nom').value = data.defunt.nom;
-                document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date;
-                document.getElementById('tbody_lignes').innerHTML = "";
-                if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); }
-                window.calculTotal(); updateTransformButton();
-                document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
-            }
-        } catch(e) { alert("Erreur : " + e.message); }
+        try { const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef); if(docSnap.exists()) { const data = docSnap.data(); document.getElementById('current_doc_id').value = id; document.getElementById('client_civility').value = data.client.civility||"M."; document.getElementById('client_nom').value = data.client.nom; document.getElementById('client_adresse').value = data.client.adresse; document.getElementById('defunt_civility').value = data.defunt.civility||"M."; document.getElementById('defunt_nom').value = data.defunt.nom; document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date; document.getElementById('tbody_lignes').innerHTML = ""; if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); } window.calculTotal(); updateTransformButton(); document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden'); } } catch(e) { alert("Erreur : " + e.message); }
     };
 
     const el = document.getElementById('tbody_lignes'); Sortable.create(el, { handle: '.drag-handle', animation: 150, onEnd: function () { window.calculTotal(); } });
@@ -306,7 +271,7 @@
 
     window.ajouterLigne = function(desc="", prix=0, type="Courant") {
         const tbody = document.getElementById('tbody_lignes'); const tr = document.createElement('tr'); tr.className = "row-item";
-        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}" placeholder="Description..."></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()" placeholder="0.00"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
+        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}" placeholder="Description..."></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Optionnel" ${type==='Optionnel'?'selected':''}>Optionnel</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()" placeholder="0.00"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
         tbody.appendChild(tr); window.calculTotal();
     };
 
@@ -321,52 +286,105 @@
                 if(tr.classList.contains('row-section')) lignes.push({ type: 'section', text: tr.querySelector('input').value });
                 else lignes.push({ type: 'item', desc: tr.querySelector('.val-desc').value, cat: tr.querySelector('.val-type').value, prix: parseFloat(tr.querySelector('.val-prix').value) || 0 });
             });
-            const docData = {
-                client: { 
-                    civility: document.getElementById('client_civility').value,
-                    nom: document.getElementById('client_nom').value, 
-                    adresse: document.getElementById('client_adresse').value 
-                },
-                defunt: { 
-                    civility: document.getElementById('defunt_civility').value,
-                    nom: document.getElementById('defunt_nom').value 
-                },
-                info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, total: parseFloat(document.getElementById('total_display').innerText) },
-                lignes: lignes,
-                date_creation: new Date().toISOString()
-            };
+            const docData = { client: { civility: document.getElementById('client_civility').value, nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value }, defunt: { civility: document.getElementById('defunt_civility').value, nom: document.getElementById('defunt_nom').value }, info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, total: parseFloat(document.getElementById('total_display').innerText) }, lignes: lignes, date_creation: new Date().toISOString() };
             if(id) await updateDoc(doc(db, "factures_v2", id), docData); else await addDoc(collection(db, "factures_v2"), docData);
             alert("✅ Enregistré !"); window.showList();
         } catch(e) { alert("Erreur : " + e.message); } btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     });
 
+    // --- GÉNÉRATION PDF (DESIGN EXACT IMAGE) ---
     document.getElementById('btn-pdf').addEventListener('click', () => {
+        if(!logoBase64) chargerLogoBase64();
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(18); doc.setTextColor(34, 197, 94); doc.text("PF SOLIDAIRE", 15, 20);
-        doc.setFontSize(10); doc.setTextColor(100); doc.text("32 boulevard Léon Jean Grégory, Thuir", 15, 26);
-        doc.setFontSize(14); doc.setTextColor(0); doc.text(document.getElementById('doc_type').value, 150, 20, {align:'right'});
-        doc.setFontSize(10); doc.text("Date : " + document.getElementById('doc_date').value, 150, 26, {align:'right'});
-        doc.setFillColor(245,245,245); doc.rect(15, 35, 180, 25, 'F');
-        doc.setFont("helvetica", "bold"); 
-        // Ajout Civilité PDF
-        const civClient = document.getElementById('client_civility').value;
-        const nomClient = document.getElementById('client_nom').value;
-        doc.text("CLIENT : " + civClient + " " + nomClient, 20, 42);
-        doc.setFont("helvetica", "normal"); doc.text(document.getElementById('client_adresse').value, 20, 48);
-        const civDefunt = document.getElementById('defunt_civility').value;
-        const nomDefunt = document.getElementById('defunt_nom').value;
-        doc.text("Concerne : " + civDefunt + " " + nomDefunt, 100, 42);
         
+        // LOGO
+        if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 40, 40); } catch(e){} }
+        
+        // EN-TÊTE GAUCHE
+        doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(34, 155, 76);
+        doc.text("POMPES FUNEBRES", 15, 55);
+        doc.text("SOLIDAIRE PERPIGNAN", 15, 61);
+        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(80);
+        doc.text("32 boulevard Léon Jean Grégory Thuir - FRANCE", 15, 67);
+        doc.text("pfsolidaireperpignan@gmail.com", 15, 72);
+        doc.text("N° SIRET : 53927029800042", 15, 77);
+        doc.text("Tél : 07.55.18.27.77", 15, 82);
+
+        // CADRE CLIENT (DROITE)
+        doc.setFillColor(240, 240, 240); doc.roundedRect(110, 20, 85, 45, 3, 3, 'F');
+        doc.setFontSize(11); doc.setTextColor(0); doc.setFont("helvetica","bold");
+        const clientCiv = document.getElementById('client_civility').value;
+        const clientNom = document.getElementById('client_nom').value;
+        doc.text(`${clientCiv} ${clientNom}`, 115, 30);
+        doc.setFont("helvetica","normal"); doc.setFontSize(10);
+        const splitAdresse = doc.splitTextToSize(document.getElementById('client_adresse').value, 75);
+        doc.text(splitAdresse, 115, 38);
+
+        // TITRE & DÉFUNT
+        let y = 100;
+        doc.setFontSize(12); doc.setFont("helvetica","bold");
+        const typeDoc = document.getElementById('doc_type').value;
+        const dateDoc = document.getElementById('doc_date').value.split('-').reverse().join('/');
+        const defuntCiv = document.getElementById('defunt_civility').value;
+        const defuntNom = document.getElementById('defunt_nom').value;
+        
+        doc.setTextColor(34, 155, 76); // Vert titre
+        doc.text(`${typeDoc} du ${dateDoc}`, 20, y);
+        
+        doc.setTextColor(0); // Noir
+        doc.text(`CONCERNE : ${defuntCiv} ${defuntNom}`, 110, y);
+        y += 10;
+
+        // TABLEAU (LOGIQUE 3 COLONNES)
         const rows = [];
         document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
-            if(tr.classList.contains('row-section')) rows.push([{content: tr.querySelector('input').value.toUpperCase(), colSpan: 3, styles: {fillColor: [255, 247, 237], fontStyle: 'bold', textColor: [194, 65, 12]}}]);
-            else rows.push([tr.querySelector('.val-desc').value, tr.querySelector('.val-type').value, tr.querySelector('.val-prix').value + ' €']);
+            if(tr.classList.contains('row-section')) {
+                // Section Orange
+                rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 5, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold' } }]);
+            } else {
+                const desc = tr.querySelector('.val-desc').value;
+                const type = tr.querySelector('.val-type').value;
+                const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €';
+                
+                // Répartition Colonnes
+                let colCourant = "", colOption = "", colAvance = "";
+                if(type === 'Courant') colCourant = prix;
+                else if(type === 'Optionnel') colOption = prix;
+                else if(type === 'Avance') colAvance = prix;
+
+                rows.push([desc, 'NA', colCourant, colOption, colAvance]);
+            }
         });
-        doc.autoTable({ startY: 70, head: [['Désignation', 'Type', 'Prix TTC']], body: rows, theme: 'grid', styles: { fontSize: 10, cellPadding: 3 } });
+
+        doc.autoTable({
+            startY: y,
+            head: [['DÉSIGNATION', 'TVA', 'PRIX TTC\nPRESTATIONS\nCOURANTES', 'PRIX TTC\nPRESTATIONS\nOPTIONNELLES', 'FRAIS AVANCES\nPOUR LE COMPTE\nDE LA FAMILLE']],
+            body: rows,
+            theme: 'grid',
+            headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 8, halign: 'center', valign: 'middle' },
+            styles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
+            columnStyles: {
+                0: { cellWidth: 'auto' }, 
+                1: { cellWidth: 10, halign: 'center' },
+                2: { cellWidth: 25, halign: 'right' },
+                3: { cellWidth: 30, halign: 'right' },
+                4: { cellWidth: 25, halign: 'right' }
+            }
+        });
+
+        // TOTAL
         const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(140, finalY-5, 55, 12);
         doc.setFontSize(12); doc.setFont("helvetica", "bold");
-        doc.text("TOTAL TTC : " + document.getElementById('total_display').innerText + " €", 190, finalY, {align:'right'});
-        doc.save("Facture.pdf");
+        doc.text("Total (TTC)", 145, finalY+3);
+        doc.text(document.getElementById('total_display').innerText + " €", 190, finalY+3, {align:'right'});
+
+        // NB
+        doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100);
+        doc.text("NB : (NA) TVA non applicable, art 293 B du CGI.", 15, finalY+5);
+        doc.text("Conditions de paiement : 100% à réception.", 15, finalY+10);
+
+        doc.save(`${typeDoc}_${defuntNom}.pdf`);
     });
 
     window.chargerListeFactures(); window.calculTotal = calculTotal;
