@@ -3,25 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation (Design Exact)</title>
+    <title>PF Solidaire - Facturation V8.6 (PDF Final)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
+        /* --- STYLES INCHANGÉS (V8.4/V8.5) --- */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
         .btn:hover { opacity: 0.9; }
-        
-        .btn-blue { background: #3b82f6; color: white; }
-        .btn-green { background: #22c55e; color: white; }
-        .btn-orange { background: #f97316; color: white; }
-        .btn-red { background: #fee2e2; color: #ef4444; }
-        .btn-grey { background: #e2e8f0; color: #475569; }
-        .btn-purple { background: #8b5cf6; color: white; }
-
+        .btn-blue { background: #3b82f6; color: white; } .btn-green { background: #22c55e; color: white; } .btn-orange { background: #f97316; color: white; } .btn-red { background: #fee2e2; color: #ef4444; } .btn-grey { background: #e2e8f0; color: #475569; } .btn-purple { background: #8b5cf6; color: white; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #ccc; }
         .stat-info h3 { margin: 0; font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
@@ -30,7 +24,6 @@
         .card-ca { border-color: #22c55e; } .card-ca .stat-icon { color: #22c55e; }
         .card-fact { border-color: #3b82f6; } .card-fact .stat-icon { color: #3b82f6; }
         .card-devis { border-color: #f59e0b; } .card-devis .stat-icon { color: #f59e0b; }
-
         .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
         .compta-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse; }
         .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
@@ -38,14 +31,12 @@
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
         .badge-devis { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
         .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-
         .editor-container { max-width: 1200px; margin: 0 auto; }
         .top-bar-editor { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 4px solid #f59e0b; }
         .grid-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
         .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .label-section { color: #3b82f6; font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; display: block; text-transform: uppercase; }
         .input-clean { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
-        
         .facture-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .facture-table th { background: #e2e8f0; padding: 12px; text-align: left; color: #475569; font-size: 0.85rem; text-transform: uppercase; }
         .facture-table td { border-bottom: 1px solid #f1f5f9; padding: 5px; vertical-align: middle; }
@@ -56,7 +47,6 @@
         .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; }
         .input-section { font-weight: bold; color: #c2410c; text-transform: uppercase; }
         .total-box { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 15px; text-align: right; font-size: 1.4rem; font-weight: bold; margin-top: 10px; border-radius: 8px; }
-
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; }
@@ -154,7 +144,6 @@
 <script type="module">
     import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "./js/config.js";
 
-    // --- LOGO ENGINE ---
     let logoBase64 = null;
     function chargerLogoBase64() {
         const img = document.getElementById('logo-source');
@@ -163,7 +152,6 @@
             c.getContext("2d").drawImage(img,0,0); try{logoBase64=c.toDataURL("image/png");}catch(e){}
         }
     }
-    // Chargement auto
     setTimeout(chargerLogoBase64, 1000);
 
     const MODELES = {
@@ -292,84 +280,58 @@
         } catch(e) { alert("Erreur : " + e.message); } btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     });
 
-    // --- GÉNÉRATION PDF (DESIGN EXACT IMAGE) ---
+    // --- GÉNÉRATION PDF (DESIGN FINAL AJUSTÉ - 2 COLONNES PRIX) ---
     document.getElementById('btn-pdf').addEventListener('click', () => {
         if(!logoBase64) chargerLogoBase64();
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         
-        // LOGO
+        // LOGO & EN-TÊTE
         if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 40, 40); } catch(e){} }
-        
-        // EN-TÊTE GAUCHE
         doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(34, 155, 76);
-        doc.text("POMPES FUNEBRES", 15, 55);
-        doc.text("SOLIDAIRE PERPIGNAN", 15, 61);
+        doc.text("POMPES FUNEBRES", 15, 55); doc.text("SOLIDAIRE PERPIGNAN", 15, 61);
         doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(80);
         doc.text("32 boulevard Léon Jean Grégory Thuir - FRANCE", 15, 67);
         doc.text("pfsolidaireperpignan@gmail.com", 15, 72);
-        doc.text("N° SIRET : 53927029800042", 15, 77);
-        doc.text("Tél : 07.55.18.27.77", 15, 82);
+        doc.text("N° SIRET : 53927029800042 | Tél : 07.55.18.27.77", 15, 77);
 
-        // CADRE CLIENT (DROITE)
+        // CADRE CLIENT
         doc.setFillColor(240, 240, 240); doc.roundedRect(110, 20, 85, 45, 3, 3, 'F');
         doc.setFontSize(11); doc.setTextColor(0); doc.setFont("helvetica","bold");
-        const clientCiv = document.getElementById('client_civility').value;
-        const clientNom = document.getElementById('client_nom').value;
-        doc.text(`${clientCiv} ${clientNom}`, 115, 30);
+        doc.text(`${document.getElementById('client_civility').value} ${document.getElementById('client_nom').value}`, 115, 30);
         doc.setFont("helvetica","normal"); doc.setFontSize(10);
-        const splitAdresse = doc.splitTextToSize(document.getElementById('client_adresse').value, 75);
-        doc.text(splitAdresse, 115, 38);
+        doc.text(doc.splitTextToSize(document.getElementById('client_adresse').value, 75), 115, 38);
 
-        // TITRE & DÉFUNT
-        let y = 100;
-        doc.setFontSize(12); doc.setFont("helvetica","bold");
-        const typeDoc = document.getElementById('doc_type').value;
-        const dateDoc = document.getElementById('doc_date').value.split('-').reverse().join('/');
-        const defuntCiv = document.getElementById('defunt_civility').value;
-        const defuntNom = document.getElementById('defunt_nom').value;
-        
-        doc.setTextColor(34, 155, 76); // Vert titre
-        doc.text(`${typeDoc} du ${dateDoc}`, 20, y);
-        
-        doc.setTextColor(0); // Noir
-        doc.text(`CONCERNE : ${defuntCiv} ${defuntNom}`, 110, y);
-        y += 10;
+        // TITRE
+        let y = 100; doc.setFontSize(12); doc.setFont("helvetica","bold");
+        doc.setTextColor(34, 155, 76);
+        doc.text(`${document.getElementById('doc_type').value} du ${document.getElementById('doc_date').value.split('-').reverse().join('/')}`, 20, y);
+        doc.setTextColor(0);
+        doc.text(`CONCERNE : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 110, y); y += 10;
 
-        // TABLEAU (LOGIQUE 3 COLONNES)
+        // TABLEAU (2 COLONNES PRIX : Courant+Avance / Optionnel)
         const rows = [];
         document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
             if(tr.classList.contains('row-section')) {
-                // Section Orange
-                rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 5, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold' } }]);
+                rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 4, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold' } }]);
             } else {
                 const desc = tr.querySelector('.val-desc').value;
                 const type = tr.querySelector('.val-type').value;
                 const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €';
-                
-                // Répartition Colonnes
-                let colCourant = "", colOption = "", colAvance = "";
-                if(type === 'Courant') colCourant = prix;
-                else if(type === 'Optionnel') colOption = prix;
-                else if(type === 'Avance') colAvance = prix;
-
-                rows.push([desc, 'NA', colCourant, colOption, colAvance]);
+                // Logique de fusion Courant + Avance
+                let colCourantAvance = "", colOption = "";
+                if(type === 'Optionnel') colOption = prix;
+                else colCourantAvance = prix; // Courant OU Avance vont ici
+                rows.push([desc, 'NA', colCourantAvance, colOption]);
             }
         });
 
         doc.autoTable({
             startY: y,
-            head: [['DÉSIGNATION', 'TVA', 'PRIX TTC\nPRESTATIONS\nCOURANTES', 'PRIX TTC\nPRESTATIONS\nOPTIONNELLES', 'FRAIS AVANCES\nPOUR LE COMPTE\nDE LA FAMILLE']],
-            body: rows,
-            theme: 'grid',
-            headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 8, halign: 'center', valign: 'middle' },
-            styles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
-            columnStyles: {
-                0: { cellWidth: 'auto' }, 
-                1: { cellWidth: 10, halign: 'center' },
-                2: { cellWidth: 25, halign: 'right' },
-                3: { cellWidth: 30, halign: 'right' },
-                4: { cellWidth: 25, halign: 'right' }
-            }
+            head: [['DÉSIGNATION (Nature des prestations)', 'TVA', 'PRIX TTC\nPRESTATIONS COURANTES\nET FRAIS AVANCÉS', 'PRIX TTC\nPRESTATIONS\nOPTIONNELLES']],
+            body: rows, theme: 'grid',
+            headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 10, halign: 'center', valign: 'middle' },
+            styles: { fontSize: 10, cellPadding: 5, valign: 'middle' },
+            columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 15, halign: 'center' }, 2: { cellWidth: 45, halign: 'right' }, 3: { cellWidth: 45, halign: 'right' } }
         });
 
         // TOTAL
@@ -378,13 +340,10 @@
         doc.setFontSize(12); doc.setFont("helvetica", "bold");
         doc.text("Total (TTC)", 145, finalY+3);
         doc.text(document.getElementById('total_display').innerText + " €", 190, finalY+3, {align:'right'});
-
-        // NB
         doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100);
-        doc.text("NB : (NA) TVA non applicable, art 293 B du CGI.", 15, finalY+5);
-        doc.text("Conditions de paiement : 100% à réception.", 15, finalY+10);
+        doc.text("NB : (NA) TVA non applicable, art 293 B du CGI. Paiement 100% à réception.", 15, finalY+5);
 
-        doc.save(`${typeDoc}_${defuntNom}.pdf`);
+        doc.save(`Document_${document.getElementById('defunt_nom').value}.pdf`);
     });
 
     window.chargerListeFactures(); window.calculTotal = calculTotal;
