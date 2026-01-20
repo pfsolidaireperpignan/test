@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V9.0</title>
+    <title>PF Solidaire - Facturation V9.1</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -245,43 +245,69 @@
         return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
     }
 
-    // --- MODÈLES ---
+    // --- MODÈLES ENRICHIS (V9.1) ---
     const MODELES = {
         "Inhumation": [
-            { type: 'section', text: '1. PRÉPARATION / ORGANISATION' },
+            { type: 'section', text: '1. PRÉPARATION / ORGANISATION DES OBSÈQUES' },
             { desc: 'Démarches et formalités administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Préparation du défunt (toilette rituelle)', cat: 'Courant', prix: 150 },
-            { desc: 'Frais de séjour chambre funéraire (3j)', cat: 'Courant', prix: 250 },
+            { desc: 'Préparation du défunt (toilette rituelle) + Linceul', cat: 'Courant', prix: 150 },
+            { desc: 'Frais de séjour chambre funéraire (Forfait 3 jours)', cat: 'Courant', prix: 250 },
             { desc: 'Vacation de police', cat: 'Avance', prix: 25 },
             { type: 'section', text: '2. TRANSPORT AVANT MISE EN BIÈRE' },
-            { desc: 'Mise à disposition corbillard (Transport)', cat: 'Courant', prix: 150 },
+            { desc: 'Mise à disposition corbillard (Transport corps)', cat: 'Courant', prix: 150 },
             { desc: 'Housse mortuaire', cat: 'Courant', prix: 35 },
             { type: 'section', text: '3. CERCUEIL ET ACCESSOIRES' },
-            { desc: 'Cercueil Inhumation Standard', cat: 'Courant', prix: 650 },
+            { desc: 'Cercueil Inhumation Standard (Chêne clair)', cat: 'Courant', prix: 650 },
             { desc: 'Plaque identité gravée', cat: 'Courant', prix: 15 },
-            { desc: 'Capiton satin', cat: 'Courant', prix: 80 },
-            { type: 'section', text: '4. CIMETIÈRE & CÉRÉMONIE' },
-            { desc: 'Creusement et comblement de fosse', cat: 'Courant', prix: 650 },
-            { desc: 'Personnel porteur (x4)', cat: 'Courant', prix: 600 },
+            { desc: 'Capiton satin blanc', cat: 'Courant', prix: 80 },
+            { desc: 'Emblème religieux', cat: 'Optionnel', prix: 50 },
+            { type: 'section', text: '4. CIMETIÈRE & INHUMATION' },
+            { desc: 'Creusement et comblement de fosse (Terre)', cat: 'Courant', prix: 650 },
+            { desc: 'Ouverture de caveau (Si existant)', cat: 'Optionnel', prix: 0 },
+            { type: 'section', text: '5. CÉRÉMONIE' },
+            { desc: 'Personnel porteur (x4) - Mise en bière & Inhumation', cat: 'Courant', prix: 600 },
+            { desc: 'Maître de cérémonie', cat: 'Optionnel', prix: 190 },
             { desc: 'Frais de culte', cat: 'Avance', prix: 200 }
         ],
         "Rapatriement": [
-            { type: 'section', text: '1. ORGANISATION' },
-            { desc: 'Démarches administratives (Préfecture/Consulat)', cat: 'Courant', prix: 350 },
-            { desc: 'Soins de conservation', cat: 'Courant', prix: 350 },
-            { desc: 'Cercueil Hermétique (Export)', cat: 'Courant', prix: 1200 },
-            { type: 'section', text: '2. TRANSPORT' },
-            { desc: 'Transport vers Aéroport', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de Fret Aérien (Estimation)', cat: 'Avance', prix: 1320 },
-            { desc: 'Ambulance Arrivée', cat: 'Optionnel', prix: 250 }
+            { type: 'section', text: '1. PRÉPARATION / ADMINISTRATIF' },
+            { desc: 'Démarches administratives (Préfecture, Consulat, Douane)', cat: 'Courant', prix: 400 },
+            { desc: 'Préparation du défunt (Toilette rituelle complète)', cat: 'Courant', prix: 160 },
+            { desc: 'Séjour chambre funéraire', cat: 'Courant', prix: 250 },
+            { type: 'section', text: '2. CERCUEIL & SOINS' },
+            { desc: 'Cercueil Hermétique (Zinc + Bois) pour Export - Norme IATA', cat: 'Courant', prix: 1200 },
+            { desc: 'Soins de conservation (Obligatoire pour export)', cat: 'Courant', prix: 350 },
+            { desc: 'Plaque d\'identité', cat: 'Courant', prix: 15 },
+            { type: 'section', text: '3. TRANSPORT' },
+            { desc: 'Transport vers Aéroport (France)', cat: 'Courant', prix: 300 },
+            { desc: 'Frais de Fret Aérien (Estimation Compagnie)', cat: 'Avance', prix: 1500 },
+            { desc: 'Ambulance arrivée (Vers lieu d\'inhumation Maroc/Algérie)', cat: 'Courant', prix: 300 }
         ],
         "Cremation": [
-            { type: 'section', text: '1. DÉMARCHES' },
-            { desc: 'Démarches administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Frais de crématorium', cat: 'Avance', prix: 750 },
-            { type: 'section', text: '2. CERCUEIL' },
-            { desc: 'Cercueil Crémation', cat: 'Courant', prix: 650 },
-            { desc: 'Urne Cinéraire', cat: 'Optionnel', prix: 150 }
+            { type: 'section', text: '1. DÉMARCHES & PRÉPARATION' },
+            { desc: 'Démarches et formalités administratives', cat: 'Courant', prix: 250 },
+            { desc: 'Préparation du défunt', cat: 'Courant', prix: 150 },
+            { desc: 'Frais de crématorium (Taxe)', cat: 'Avance', prix: 750 },
+            { type: 'section', text: '2. CERCUEIL & URNE' },
+            { desc: 'Cercueil Crémation (Pin/Peuplier)', cat: 'Courant', prix: 650 },
+            { desc: 'Plaque d\'identité', cat: 'Courant', prix: 15 },
+            { desc: 'Urne Cinéraire (Standard)', cat: 'Courant', prix: 150 },
+            { type: 'section', text: '3. TRANSPORT' },
+            { desc: 'Transport vers Crématorium', cat: 'Courant', prix: 350 }
+        ],
+        "Exhumation": [
+            { type: 'section', text: '1. ADMINISTRATIF & TECHNIQUE' },
+            { desc: 'Demande d\'ouverture de sépulture (Mairie)', cat: 'Courant', prix: 150 },
+            { desc: 'Ouverture de fosse / Caveau', cat: 'Courant', prix: 600 },
+            { desc: 'Exhumation et réduction de corps', cat: 'Courant', prix: 450 },
+            { desc: 'Reliquaire (Boîte à ossements)', cat: 'Courant', prix: 120 },
+            { desc: 'Fermeture de sépulture', cat: 'Courant', prix: 200 }
+        ],
+        "Transport": [
+            { type: 'section', text: '1. TRANSPORT DE CORPS' },
+            { desc: 'Transport AVANT mise en bière (Véhicule agréé)', cat: 'Courant', prix: 300 },
+            { desc: 'Housse mortuaire', cat: 'Courant', prix: 40 },
+            { desc: 'Transport APRÈS mise en bière (Longue distance)', cat: 'Courant', prix: 0 }
         ]
     };
 
