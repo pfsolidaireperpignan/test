@@ -545,27 +545,41 @@
         doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5);
         doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
         // --- AJOUT DES MENTIONS LÉGALES (CADRE NOIR) ---
-        let footerY = curY + 30; 
-        if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
+        // --- BLOC NB : TVA (Doit apparaître sur TOUS les documents) ---
+        doc.setFontSize(8); 
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38); 
+        doc.text("NB :", 15, curY + 5); 
 
-        doc.setDrawColor(0); doc.setLineWidth(0.5);
-        doc.rect(15, footerY, 180, 40); 
+        doc.setTextColor(0); 
+        doc.setFont("helvetica", "normal");
+        doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5);
+        doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
 
-        doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
-        
-        doc.text("Je soussigné(e),", 20, footerY + 8);
-        doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8);
-        
-        doc.text("Le ........................................", 20, footerY + 16);
-        doc.text("à ........................................", 80, footerY + 16);
-        
-        doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
-        
-        doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-        const disclaimer = "Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.";
-        const splitDisclaimer = doc.splitTextToSize(disclaimer, 170);
-        doc.text(splitDisclaimer, 20, footerY + 32);
+        // --- AJOUT CADRE SIGNATURE (UNIQUEMENT POUR LES DEVIS) ---
+        // La correction est ici : on vérifie si c'est un DEVIS
+        if (typeDoc === 'DEVIS') {
+            let footerY = curY + 30; 
+            if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
 
+            doc.setDrawColor(0); doc.setLineWidth(0.5);
+            doc.rect(15, footerY, 180, 40); 
+
+            doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
+            
+            doc.text("Je soussigné(e),", 20, footerY + 8);
+            doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8);
+            
+            doc.text("Le ........................................", 20, footerY + 16);
+            doc.text("à ........................................", 80, footerY + 16);
+            
+            doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
+            
+            doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+            const disclaimer = "Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.";
+            const splitDisclaimer = doc.splitTextToSize(disclaimer, 170);
+            doc.text(splitDisclaimer, 20, footerY + 32);
+        }
         doc.save(`${typeDoc}_${numDoc}.pdf`);
     });
 
