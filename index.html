@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP V10 (Design & Complet)</title>
+    <title>PF Solidaire - ERP V10.1 (Transport Complet)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -79,7 +79,7 @@
 
     <div id="login-screen" class="hidden" style="position:fixed; inset:0; z-index:9000; display:flex; justify-content:center; align-items:center;">
         <div class="card" style="width:100%; max-width:400px; text-align:center; padding:50px;">
-            <i class="fas fa-dove" style="font-size:4rem; color:var(--primary); margin-bottom:20px;"></i>
+            <img src="Logo.png" alt="Logo" style="width:120px; margin-bottom:20px;">
             <h2 style="margin-bottom:10px; color:var(--dark);">PF SOLIDAIRE</h2>
             <p style="color:var(--gray); margin-bottom:30px;">Espace de gestion sécurisé</p>
             <input type="email" id="login-email" placeholder="Email" style="margin-bottom:15px;">
@@ -92,7 +92,7 @@
     </div>
 
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v10.0</span></div>
+        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v10.1</span></div>
         <ul class="nav-menu">
             <li class="nav-item"><a href="#" onclick="window.showSection('home')" class="nav-link active"><i class="fas fa-home"></i> Accueil</a></li>
             <li class="nav-item"><a href="#" onclick="window.showSection('admin')" class="nav-link"><i class="fas fa-folder-open"></i> Dossier Admin</a></li>
@@ -254,21 +254,31 @@
                                 <div><label>Lien avec Défunt</label><input id="f_lien" list="liens_list"></div>
                             </div>
 
-                            <div class="span-2" style="background:var(--light); padding:15px; margin-top:10px; border-radius:8px;">
-                                <label style="font-weight:bold; color:var(--dark);">Transport de Corps</label>
-                                <div style="margin-bottom:10px;"><input type="radio" name="transport_type" value="avant" checked> Avant MEB <input type="radio" name="transport_type" value="apres"> Après MEB</div>
+                            <div class="span-2" style="background:var(--light); padding:15px; margin-top:10px; border-radius:8px; border-left: 4px solid #f59e0b;">
+                                <label style="font-weight:bold; color:var(--dark);">TRANSPORT AVANT MISE EN BIÈRE</label>
                                 <div class="form-grid">
-                                    <div><label>Lieu Départ</label><input id="lieu_depart_t" list="villes_list"></div>
-                                    <div><label>Lieu Arrivée</label><input id="lieu_arrivee_t" list="villes_list"></div>
-                                    <div><label>Date Dép.</label><input type="date" id="date_depart_t"></div>
-                                    <div><label>Heure Dép.</label><input type="time" id="heure_depart_t"></div>
-                                    <div><label>Date Arr.</label><input type="date" id="date_arrivee_t"></div>
-                                    <div><label>Heure Arr.</label><input type="time" id="heure_arrivee_t"></div>
-                                    <div><label>Fait à (Transport)</label><input id="faita_transport" value="THUIR" list="villes_list"></div>
-                                    <div><label>Date Sign.</label><input type="date" id="dateSignature_transport"></div>
+                                    <div><label>Lieu Départ</label><input id="av_lieu_depart" list="villes_list"></div>
+                                    <div><label>Lieu Arrivée</label><input id="av_lieu_arrivee" list="villes_list"></div>
+                                    <div><label>Date Dép.</label><input type="date" id="av_date_dep"></div>
+                                    <div><label>Heure Dép.</label><input type="time" id="av_heure_dep"></div>
+                                    <div><label>Date Arr.</label><input type="date" id="av_date_arr"></div>
+                                    <div><label>Heure Arr.</label><input type="time" id="av_heure_arr"></div>
                                 </div>
                             </div>
-                            <div><label>Fait à (Général)</label><input id="faita" value="THUIR" list="villes_list"></div>
+
+                            <div class="span-2" style="background:var(--light); padding:15px; margin-top:10px; border-radius:8px; border-left: 4px solid var(--secondary);">
+                                <label style="font-weight:bold; color:var(--dark);">TRANSPORT APRÈS MISE EN BIÈRE</label>
+                                <div class="form-grid">
+                                    <div><label>Lieu Départ</label><input id="ap_lieu_depart" list="villes_list"></div>
+                                    <div><label>Lieu Arrivée</label><input id="ap_lieu_arrivee" list="villes_list"></div>
+                                    <div><label>Date Dép.</label><input type="date" id="ap_date_dep"></div>
+                                    <div><label>Heure Dép.</label><input type="time" id="ap_heure_dep"></div>
+                                    <div><label>Date Arr.</label><input type="date" id="ap_date_arr"></div>
+                                    <div><label>Heure Arr.</label><input type="time" id="ap_heure_arr"></div>
+                                </div>
+                            </div>
+
+                            <div><label>Fait à (Général)</label><input id="faita" value="PERPIGNAN" list="villes_list"></div>
                             <div><label>Date Signature</label><input id="dateSignature" type="date"></div>
                         </div>
                     </div>
@@ -348,7 +358,12 @@
                         <button class="btn btn-purple" onclick="window.genererDeclaration()">Déclaration Décès</button>
                         <button class="btn btn-purple" onclick="window.genererFermeture()">PV Fermeture (Police)</button>
                         <button class="btn btn-purple" onclick="window.genererDemandeFermetureMairie()">Fermeture (Mairie)</button>
-                        <button class="btn btn-purple" onclick="window.genererTransport()">Transport de Corps</button>
+                        
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-purple" style="flex:1; font-size:0.8rem;" onclick="window.genererTransport('avant')">Transport AVANT</button>
+                            <button class="btn btn-purple" style="flex:1; font-size:0.8rem;" onclick="window.genererTransport('apres')">Transport APRÈS</button>
+                        </div>
+
                         <button class="btn btn-blue" id="btn_inhumation" onclick="window.genererDemandeInhumation()">Demande Inhumation</button>
                         <button class="btn btn-blue hidden" id="btn_cremation" onclick="window.genererDemandeCremation()">Demande Crémation</button>
                         <button class="btn btn-red hidden" id="btn_rapatriement" onclick="window.genererDemandeRapatriement()">Rapatriement (Préf)</button>
