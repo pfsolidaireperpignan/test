@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V9.5 (Auto-Data)</title>
+    <title>PF Solidaire - Facturation V10.3 (Mentions Légales)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* STYLES (Identiques V9.2/9.4) */
+        /* STYLES (Identiques V9.5/V10) */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition: all 0.2s; }
@@ -155,7 +155,7 @@
 
     let logoBase64 = null;
     let paiements = [];
-    let dossiersCache = []; // Pour stocker les clients/défunts de la base Admin
+    let dossiersCache = []; 
 
     // --- INIT ---
     function chargerLogoBase64() {
@@ -180,38 +180,23 @@
             snap.forEach(doc => {
                 const data = doc.data();
                 dossiersCache.push(data);
-                
-                // Option pour le Client
                 if(data.mandant && data.mandant.nom) {
-                    const opt = document.createElement('option');
-                    opt.value = data.mandant.nom;
-                    opt.label = "Client enregistré";
-                    dlClients.appendChild(opt);
+                    const opt = document.createElement('option'); opt.value = data.mandant.nom; opt.label = "Client enregistré"; dlClients.appendChild(opt);
                 }
-                // Option pour le Défunt
                 if(data.defunt && data.defunt.nom) {
-                    const opt = document.createElement('option');
-                    opt.value = data.defunt.nom;
-                    opt.label = "Défunt enregistré";
-                    dlDefunts.appendChild(opt);
+                    const opt = document.createElement('option'); opt.value = data.defunt.nom; opt.label = "Défunt enregistré"; dlDefunts.appendChild(opt);
                 }
             });
         } catch(e) { console.error("Erreur chargement suggestions :", e); }
     }
-    // Lancer au démarrage
     chargerSuggestionsClients();
 
-    // --- REMPLISSAGE AUTOMATIQUE CLIENT ---
     window.remplirInfosClient = function() {
         const nomSaisi = document.getElementById('client_nom').value;
         const dossierTrouve = dossiersCache.find(d => d.mandant && d.mandant.nom === nomSaisi);
-        
         if(dossierTrouve) {
-            // Remplir Client
             document.getElementById('client_civility').value = dossierTrouve.mandant.civility || "M.";
             document.getElementById('client_adresse').value = dossierTrouve.mandant.adresse || "";
-            
-            // Remplir Défunt (si vide)
             const defuntNomInput = document.getElementById('defunt_nom');
             if(!defuntNomInput.value && dossierTrouve.defunt) {
                 defuntNomInput.value = dossierTrouve.defunt.nom || "";
@@ -220,12 +205,9 @@
         }
     };
 
-    // --- RECHERCHE & PAIEMENTS ---
     document.getElementById('search-input').addEventListener('keyup', (e) => {
         const term = e.target.value.toLowerCase();
-        document.querySelectorAll('#list-body tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
+        document.querySelectorAll('#list-body tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none'; });
     });
 
     window.ajouterPaiement = function() {
@@ -552,6 +534,28 @@
         doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10);
         doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76);
         doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
+
+        // --- AJOUT DES MENTIONS LÉGALES (CADRE NOIR) ---
+        let footerY = curY + 20; 
+        if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
+
+        doc.setDrawColor(0); doc.setLineWidth(0.5);
+        doc.rect(15, footerY, 180, 40); 
+
+        doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
+        
+        doc.text("Je soussigné(e),", 20, footerY + 8);
+        doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8);
+        
+        doc.text("Le ........................................", 20, footerY + 16);
+        doc.text("à ........................................", 80, footerY + 16);
+        
+        doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
+        
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8);
+        const disclaimer = "Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.";
+        const splitDisclaimer = doc.splitTextToSize(disclaimer, 170);
+        doc.text(splitDisclaimer, 20, footerY + 32);
 
         doc.save(`${typeDoc}_${numDoc}.pdf`);
     });
