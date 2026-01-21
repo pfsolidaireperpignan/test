@@ -1,6 +1,6 @@
 /**
  * ====================================================================
- * PF SOLIDAIRE ERP - LOGIC V10 (FINAL)
+ * PF SOLIDAIRE ERP - LOGIC V10.1 (TRANSPORT AVANT/APRÈS + DESIGN + FIXES)
  * ====================================================================
  */
 
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. LOGIQUE INTERFACE (FORMULAIRES)
+// 2. LOGIQUE INTERFACE
 // ==========================================================================
 window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
@@ -124,6 +124,10 @@ window.viderFormulaire = function() {
         document.getElementById('dossier_id').value = ""; 
         document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
         document.getElementById('prestation').selectedIndex = 0;
+        document.getElementById('faita').value = "PERPIGNAN"; // Reset default
+        document.getElementById('faita_transport').value = "PERPIGNAN";
+        document.getElementById('immatriculation').value = "DA-081-ZQ";
+        document.getElementById('rap_immat').value = "DA-081-ZQ";
         if(document.getElementById('check_vol2')) document.getElementById('check_vol2').checked = false;
         if(document.getElementById('copy_mandant')) document.getElementById('copy_mandant').checked = false;
         window.toggleSections();
@@ -132,7 +136,7 @@ window.viderFormulaire = function() {
 };
 
 // ==========================================================================
-// 3. DONNÉES (CRUD + LIEN FACTURATION)
+// 3. DONNÉES (CRUD AVEC NOUVEAU TRANSPORT)
 // ==========================================================================
 let clientsCache = [];
 async function chargerClientsFacturation() {
@@ -201,7 +205,19 @@ async function sauvegarderEnBase() {
                 mise_biere: getVal('lieu_mise_biere'), date_fermeture: getVal('date_fermeture'),
                 vehicule: getVal('immatriculation'), presence: document.getElementById('type_presence_select').value,
                 police: { nom: getVal('p_nom_grade'), comm: getVal('p_commissariat') },
-                famille: { temoin: getVal('f_nom_prenom'), lien: getVal('f_lien') }
+                famille: { temoin: getVal('f_nom_prenom'), lien: getVal('f_lien') },
+                // NOUVEAU TRANSPORT DOUBLE
+                transport_avant: {
+                    lieu_dep: getVal('av_lieu_depart'), lieu_arr: getVal('av_lieu_arrivee'),
+                    date_dep: getVal('av_date_dep'), heure_dep: getVal('av_heure_dep'),
+                    date_arr: getVal('av_date_arr'), heure_arr: getVal('av_heure_arr')
+                },
+                transport_apres: {
+                    lieu_dep: getVal('ap_lieu_depart'), lieu_arr: getVal('ap_lieu_arrivee'),
+                    date_dep: getVal('ap_date_dep'), heure_dep: getVal('ap_heure_dep'),
+                    date_arr: getVal('ap_date_arr'), heure_arr: getVal('ap_heure_arr')
+                },
+                faita: getVal('faita'), dateSignature: getVal('dateSignature'), faita_transport: getVal('faita_transport'), dateSignature_transport: getVal('dateSignature_transport')
             },
             details_op: {
                 cimetiere: getVal('cimetiere_nom'), concession: getVal('num_concession'), titulaire: getVal('titulaire_concession'),
@@ -262,6 +278,20 @@ window.chargerDossier = async function(id) {
                 setVal('immatriculation', data.technique.vehicule); document.getElementById('type_presence_select').value = data.technique.presence || "famille";
                 if(data.technique.police) { setVal('p_nom_grade', data.technique.police.nom); setVal('p_commissariat', data.technique.police.comm); }
                 if(data.technique.famille) { setVal('f_nom_prenom', data.technique.famille.temoin); setVal('f_lien', data.technique.famille.lien); }
+                
+                // CHARGEMENT TRANSPORT DOUBLE
+                if(data.technique.transport_avant) {
+                    setVal('av_lieu_depart', data.technique.transport_avant.lieu_dep); setVal('av_lieu_arrivee', data.technique.transport_avant.lieu_arr);
+                    setVal('av_date_dep', data.technique.transport_avant.date_dep); setVal('av_heure_dep', data.technique.transport_avant.heure_dep);
+                    setVal('av_date_arr', data.technique.transport_avant.date_arr); setVal('av_heure_arr', data.technique.transport_avant.heure_arr);
+                }
+                if(data.technique.transport_apres) {
+                    setVal('ap_lieu_depart', data.technique.transport_apres.lieu_dep); setVal('ap_lieu_arrivee', data.technique.transport_apres.lieu_arr);
+                    setVal('ap_date_dep', data.technique.transport_apres.date_dep); setVal('ap_heure_dep', data.technique.transport_apres.heure_dep);
+                    setVal('ap_date_arr', data.technique.transport_apres.date_arr); setVal('ap_heure_arr', data.technique.transport_apres.heure_arr);
+                }
+                setVal('faita', data.technique.faita); setVal('dateSignature', data.technique.dateSignature);
+                setVal('faita_transport', data.technique.faita_transport); setVal('dateSignature_transport', data.technique.dateSignature_transport);
             }
             if(data.details_op) {
                 setVal('cimetiere_nom', data.details_op.cimetiere); setVal('num_concession', data.details_op.concession); setVal('titulaire_concession', data.details_op.titulaire);
@@ -336,7 +366,7 @@ window.chargerBaseClients = async function() {
 };
 
 // ==========================================================================
-// 4. MOTEUR PDF (DESIGN COMPLET RESTAURÉ + CIVILITÉ)
+// 4. MOTEUR PDF (DESIGN COMPLET + FIXES V10.1)
 // ==========================================================================
 let logoBase64 = null;
 function chargerLogoBase64() {
@@ -627,7 +657,7 @@ window.genererDemandeOuverture = function() {
     pdf.save(`Ouverture_Sepulture_${getVal("nom")}.pdf`);
 };
 
-// --- 8. PV MISE EN BIERE ---
+// --- 8. PV MISE EN BIERE (CORRECT) ---
 window.genererFermeture = function() {
     if(!logoBase64) chargerLogoBase64(); 
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); 
@@ -675,13 +705,15 @@ window.genererFermeture = function() {
     pdf.save(`PV_Mise_En_Biere_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 9. TRANSPORT ---
-window.genererTransport = function() {
-    if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+// --- 9. TRANSPORT (AVANT ET APRÈS) ---
+window.genererTransport = function(type) {
+    if(!logoBase64) chargerLogoBase64(); 
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF();
+    const prefix = type === 'avant' ? 'av' : 'ap';
+    const labelT = type === 'avant' ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
+
     pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277); headerPF(pdf);
     pdf.setFillColor(200); pdf.rect(10, 35, 190, 15, 'F');
-    const typeT = document.querySelector('input[name="transport_type"]:checked').value;
-    const labelT = typeT === "avant" ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text(`DÉCLARATION DE TRANSPORT DE CORPS`, 105, 42, { align: "center" });
     pdf.setFontSize(12); pdf.text(labelT, 105, 47, { align: "center" });
@@ -697,17 +729,23 @@ window.genererTransport = function() {
     pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))}`, 105, y+21, {align:"center"}); y+=35;
     pdf.setLineWidth(0.5); pdf.rect(x, y, 80, 50); pdf.rect(x+90, y, 80, 50);
     pdf.setFont("helvetica", "bold"); pdf.text("LIEU DE DÉPART", x+5, y+6);
-    pdf.setFont("helvetica", "normal"); pdf.text(getVal("lieu_depart_t"), x+5, y+15);
+    pdf.setFont("helvetica", "normal"); pdf.text(getVal(`${prefix}_lieu_depart`), x+5, y+15);
     pdf.setFont("helvetica", "bold"); pdf.text("Date & Heure :", x+5, y+35);
-    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal("date_depart_t"))} à ${getVal("heure_depart_t")}`, x+5, y+42);
+    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_dep`))} à ${getVal(`${prefix}_heure_dep`)}`, x+5, y+42);
     pdf.setFont("helvetica", "bold"); pdf.text("LIEU D'ARRIVÉE", x+95, y+6);
-    pdf.setFont("helvetica", "normal"); pdf.text(getVal("lieu_arrivee_t"), x+95, y+15);
+    pdf.setFont("helvetica", "normal"); pdf.text(getVal(`${prefix}_lieu_arrivee`), x+95, y+15);
     pdf.setFont("helvetica", "bold"); pdf.text("Date & Heure :", x+95, y+35);
-    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal("date_arrivee_t"))} à ${getVal("heure_arrivee_t")}`, x+95, y+42); y+=60;
+    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_arr`))} à ${getVal(`${prefix}_heure_arr`)}`, x+95, y+42); y+=60;
     pdf.setFillColor(230); pdf.rect(x, y, 170, 10, 'F');
     pdf.setFont("helvetica", "bold");
     pdf.text(`VÉHICULE AGRÉÉ IMMATRICULÉ : ${getVal("immatriculation")}`, 105, y+7, {align:"center"}); y+=30;
-    pdf.text(`Fait à ${getVal("faita_transport")}, le ${formatDate(getVal("dateSignature_transport"))}`, 120, y);
+    
+    // Pour le transport, on peut vouloir distinguer le lieu de signature spécifique
+    // ou garder le général si celui du transport est vide
+    const faita = getVal("faita_transport") || getVal("faita");
+    const dateSign = getVal("dateSignature_transport") || getVal("dateSignature");
+    
+    pdf.text(`Fait à ${faita}, le ${formatDate(dateSign)}`, 120, y);
     pdf.text("Cachet de l'entreprise :", 120, y+10);
-    pdf.save(`Transport_${getVal("nom")}.pdf`);
+    pdf.save(`Transport_${type}_${getVal("nom")}.pdf`);
 };
