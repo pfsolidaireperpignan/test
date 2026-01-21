@@ -534,9 +534,18 @@
         doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10);
         doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76);
         doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
+// --- BLOC NB : TVA & MENTIONS ---
+        doc.setFontSize(8); 
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38); // Rouge pour "NB :"
+        doc.text("NB :", 15, curY + 5); // Juste sous le tableau à gauche
 
+        doc.setTextColor(0); // Retour au noir
+        doc.setFont("helvetica", "normal");
+        doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5);
+        doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
         // --- AJOUT DES MENTIONS LÉGALES (CADRE NOIR) ---
-        let footerY = curY + 20; 
+        let footerY = curY + 30; 
         if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
 
         doc.setDrawColor(0); doc.setLineWidth(0.5);
