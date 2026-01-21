@@ -483,6 +483,7 @@ window.genererDemandeRapatriement = function() {
 };
 
 // --- 3. DÉCLARATION DÉCÈS (AVEC PROFESSION) ---
+// --- 3. DÉCLARATION DÉCÈS (AVEC MENTION CONJOINT) ---
 window.genererDeclaration = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); const fontMain = "times";
     pdf.setFont(fontMain, "bold"); pdf.setFontSize(16);
@@ -493,6 +494,8 @@ window.genererDeclaration = function() {
     pdf.line(55, 39, 155, 39);
     
     let y = 60; const margin = 20;
+    
+    // Fonction utilitaire pour dessiner les lignes pointillées
     const drawLine = (label, val, yPos) => {
         pdf.setFont(fontMain, "bold"); pdf.text(label, margin, yPos);
         const startDots = margin + pdf.getTextWidth(label) + 2;
@@ -500,6 +503,7 @@ window.genererDeclaration = function() {
         while(curX < 190) { pdf.text(".", curX, yPos); curX += 2; }
         if(val) {
             pdf.setFont(fontMain, "bold"); pdf.setFillColor(255, 255, 255);
+            // On calcule la largeur du texte pour "blanchir" le fond des pointillés
             pdf.rect(startDots, yPos - 4, pdf.getTextWidth(val)+5, 5, 'F');
             pdf.text(val.toUpperCase(), startDots + 2, yPos);
         }
@@ -514,21 +518,19 @@ window.genererDeclaration = function() {
     pdf.setFont(fontMain, "normal"); pdf.text(formatDate(getVal("date_deces")), margin+70, y);
     pdf.setFont(fontMain, "bold"); pdf.text("A", 120, y); pdf.text(getVal("lieu_deces").toUpperCase(), 130, y); y += 18;
     
+    // --- GESTION PROFESSION ---
     pdf.text("PROFESSION : ", margin, y); y+=8;
     const prof = getVal("prof_type");
     pdf.setFont(fontMain, "normal");
     
-    // CAS 1 : SANS PROFESSION
     pdf.rect(margin+5, y-4, 5, 5); 
     if(prof === "Sans profession") pdf.text("X", margin+6, y); 
     pdf.text("Sans profession", margin+15, y);
     
-    // CAS 2 : RETRAITÉ
     pdf.rect(margin+60, y-4, 5, 5); 
     if(prof === "Retraité(e)") pdf.text("X", margin+61, y); 
     pdf.text("retraité(e)", margin+70, y);
     
-    // CAS 3 : ACTIF (Affiche le texte saisi)
     if(prof === "Active") {
         const metier = getVal("profession_libelle") || "Active";
         pdf.setFont(fontMain, "bold");
@@ -540,12 +542,28 @@ window.genererDeclaration = function() {
     drawLine("DOMICILIE(E) ", getVal("adresse_fr"), y); y+=14;
     drawLine("FILS OU FILLE de (Père) :", getVal("pere"), y); y+=14;
     drawLine("Et de (Mère) :", getVal("mere"), y); y+=14;
-    drawLine("Situation Matrimoniale : ", getVal("matrimoniale"), y); y+=14;
+
+    // --- NOUVELLE LOGIQUE POUR SITUATION MATRIMONIALE + CONJOINT ---
+    let situation = getVal("matrimoniale");
+    const nomConjoint = getVal("conjoint"); // On récupère le nom saisi
+
+    if (nomConjoint && nomConjoint.trim() !== "") {
+        if (situation.includes("Marié")) {
+            situation = `MARIÉ(E) À ${nomConjoint}`;
+        } else if (situation.includes("Veuf")) {
+            situation = `VEUF(VE) DE ${nomConjoint}`;
+        } else if (situation.includes("Divorcé")) {
+            situation = `DIVORCÉ(E) DE ${nomConjoint}`;
+        }
+    }
+
+    drawLine("Situation Matrimoniale : ", situation, y); y+=14;
+    // ---------------------------------------------------------------
+
     drawLine("NATIONALITE : ", getVal("nationalite"), y); y+=25;
     pdf.setFont(fontMain, "bold"); pdf.text("NOM ET SIGNATURE DES POMPES FUNEBRES", 105, y, { align: "center" });
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
-
 // --- 4. DEMANDE INHUMATION ---
 window.genererDemandeInhumation = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
