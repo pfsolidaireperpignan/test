@@ -749,3 +749,19 @@ window.genererTransport = function(type) {
     pdf.text("Cachet de l'entreprise :", 120, y+10);
     pdf.save(`Transport_${type}_${getVal("nom")}.pdf`);
 };
+// ==========================================================================
+// 5. GESTION DES ONGLETS (UI)
+// ==========================================================================
+window.switchAdminTab = function(tabName) {
+    // 1. Masquer tous les contenus
+    document.getElementById('tab-content-identite').classList.add('hidden');
+    document.getElementById('tab-content-technique').classList.add('hidden');
+    
+    // 2. Désactiver tous les boutons
+    document.getElementById('tab-btn-identite').classList.remove('active');
+    document.getElementById('tab-btn-technique').classList.remove('active');
+    
+    // 3. Activer le bon
+    document.getElementById('tab-content-' + tabName).classList.remove('hidden');
+    document.getElementById('tab-btn-' + tabName).classList.add('active');
+};
