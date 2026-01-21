@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP V10.2 (Onglets & Design)</title>
+    <title>PF Solidaire - ERP V11 (Stocks & Complet)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -54,23 +54,9 @@
 
         /* ONGLETS (TABS) */
         .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 2px; }
-        .tab-btn {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            color: var(--gray);
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
+        .tab-btn { padding: 12px 20px; background: transparent; border: none; border-bottom: 3px solid transparent; font-weight: 600; color: var(--gray); cursor: pointer; font-size: 1rem; transition: all 0.3s; }
         .tab-btn:hover { color: var(--secondary); background: #f8fafc; }
-        .tab-btn.active {
-            color: var(--secondary);
-            border-bottom: 3px solid var(--secondary);
-            background: white;
-        }
+        .tab-btn.active { color: var(--secondary); border-bottom: 3px solid var(--secondary); background: white; }
         .tab-btn i { margin-right: 8px; }
 
         /* TABLEAU */
@@ -79,6 +65,8 @@
         .history-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         .history-table tr:hover td { background: #f8fafc; }
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: #ecfdf5; color: var(--primary-dark); border: 1px solid #a7f3d0; }
+        .stock-alert { color: #ef4444; font-weight: bold; background: #fee2e2; border: 1px solid #fecaca; }
+        .stock-ok { color: #10b981; font-weight: bold; background: #d1fae5; border: 1px solid #a7f3d0; }
 
         /* LOGIN */
         #login-screen { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
@@ -113,11 +101,12 @@
     </div>
 
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v10.2</span></div>
+        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v11.0</span></div>
         <ul class="nav-menu">
             <li class="nav-item"><a href="#" onclick="window.showSection('home')" class="nav-link active"><i class="fas fa-home"></i> Accueil</a></li>
             <li class="nav-item"><a href="#" onclick="window.showSection('admin')" class="nav-link"><i class="fas fa-folder-open"></i> Dossier Admin</a></li>
             <li class="nav-item"><a href="#" onclick="window.showSection('base')" class="nav-link"><i class="fas fa-users"></i> Base Clients</a></li>
+            <li class="nav-item"><a href="#" onclick="window.showSection('stock')" class="nav-link"><i class="fas fa-boxes"></i> Gestion Stock</a></li>
             <li class="nav-item"><a href="facturation_v2.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Facturation</a></li>
             <li class="nav-item" style="margin-top:auto;"><a href="#" id="btn-logout" class="nav-link" style="color:#ef4444;"><i class="fas fa-power-off"></i> Déconnexion</a></li>
         </ul>
@@ -131,10 +120,40 @@
                     <div style="width:60px; height:60px; background:#eff6ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--secondary); font-size:1.8rem;"><i class="fas fa-folder-plus"></i></div>
                     <div><h3 style="margin:0; border:none; padding:0; color:var(--dark);">Nouveau Dossier</h3><div style="color:var(--gray); margin-top:5px;">Créer Inhumation / Crémation</div></div>
                 </div>
-                <div class="card" onclick="window.showSection('base')" style="cursor:pointer; border-left: 5px solid #8b5cf6; display:flex; align-items:center; gap:20px;">
-                    <div style="width:60px; height:60px; background:#f5f3ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#8b5cf6; font-size:1.8rem;"><i class="fas fa-search"></i></div>
-                    <div><h3 style="margin:0; border:none; padding:0; color:var(--dark);">Base Clients</h3><div style="color:var(--gray); margin-top:5px;">Rechercher / Suivre</div></div>
+                <div class="card" onclick="window.showSection('stock')" style="cursor:pointer; border-left: 5px solid var(--primary); display:flex; align-items:center; gap:20px;">
+                    <div style="width:60px; height:60px; background:#ecfdf5; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.8rem;"><i class="fas fa-boxes"></i></div>
+                    <div><h3 style="margin:0; border:none; padding:0; color:var(--dark);">Stocks</h3><div style="color:var(--gray); margin-top:5px;">Consulter les disponibilités</div></div>
                 </div>
+            </div>
+        </div>
+
+        <div id="view-stock" class="hidden">
+            <div class="page-header">
+                <h1>Gestion des Stocks</h1>
+                <button class="btn btn-green" onclick="window.openAjoutStock()"><i class="fas fa-plus"></i> AJOUTER ARTICLE</button>
+            </div>
+
+            <div id="form-stock" class="card hidden" style="border-top: 4px solid var(--primary);">
+                <h3>Nouveau Produit</h3>
+                <div class="form-grid">
+                    <div><label>Nom de l'article</label><input id="st_nom" placeholder="Ex: Cercueil Chêne..."></div>
+                    <div><label>Catégorie</label><select id="st_cat"><option>Cercueil</option><option>Urne</option><option>Capiton</option><option>Accessoire</option></select></div>
+                    <div><label>Quantité Initiale</label><input type="number" id="st_qte" value="1"></div>
+                    <div><label>Prix Achat (€)</label><input type="number" id="st_pa" placeholder="0.00"></div>
+                    <div><label>Prix Vente (€)</label><input type="number" id="st_pv" placeholder="0.00"></div>
+                    <div><label>Fournisseur</label><input id="st_fourn" placeholder="Nom fournisseur"></div>
+                </div>
+                <div style="margin-top:15px; display:flex; gap:10px;">
+                    <button class="btn btn-green" onclick="window.ajouterArticleStock()">VALIDER</button>
+                    <button class="btn btn-red" onclick="document.getElementById('form-stock').classList.add('hidden')">ANNULER</button>
+                </div>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <table class="history-table">
+                    <thead><tr><th>Article</th><th>Catégorie</th><th>Prix Achat</th><th>Prix Vente</th><th>En Stock</th><th>Actions</th></tr></thead>
+                    <tbody id="stock-table-body"></tbody>
+                </table>
             </div>
         </div>
 
@@ -181,17 +200,12 @@
                 <div style="display:flex; flex-direction:column;">
                     
                     <div class="tabs-container">
-                        <button class="tab-btn active" onclick="window.switchAdminTab('identite')" id="tab-btn-identite">
-                            <i class="fas fa-users"></i> 1. IDENTITÉ & FAMILLE
-                        </button>
-                        <button class="tab-btn" onclick="window.switchAdminTab('technique')" id="tab-btn-technique">
-                            <i class="fas fa-cogs"></i> 2. TECHNIQUE & OBSÈQUES
-                        </button>
+                        <button class="tab-btn active" onclick="window.switchAdminTab('identite')" id="tab-btn-identite"><i class="fas fa-users"></i> 1. IDENTITÉ & FAMILLE</button>
+                        <button class="tab-btn" onclick="window.switchAdminTab('technique')" id="tab-btn-technique"><i class="fas fa-cogs"></i> 2. TECHNIQUE & OBSÈQUES</button>
                     </div>
 
                     <div id="tab-content-identite">
                         <input type="hidden" id="dossier_id">
-                        
                         <div class="card" style="border-top: 4px solid var(--secondary);">
                             <h3 style="color:var(--secondary);"><i class="fas fa-user-tie"></i> CLIENT / MANDANT</h3>
                             <div class="form-grid">
@@ -235,7 +249,6 @@
                                 <div><label>Mère (Nom Prénom)</label><input id="mere"></div>
                                 <div><label>Situation Matrimoniale</label><select id="matrimoniale"><option>Marié(e)</option><option>Veuf(ve)</option><option>Célibataire</option><option>Divorcé(e)</option></select></div>
                                 <div><label>Conjoint(e)</label><input id="conjoint"></div>
-                                
                                 <div class="span-2">
                                     <label>Profession</label>
                                     <div style="display:flex; gap:10px;">
@@ -252,7 +265,6 @@
                     </div>
 
                     <div id="tab-content-technique" class="hidden">
-                        
                         <div class="card" style="border-top: 4px solid #f59e0b;">
                             <h3><i class="fas fa-cog"></i> CONFIGURATION OPÉRATION</h3>
                             <select id="prestation" onchange="window.toggleSections()" style="padding:15px; font-weight:bold; font-size:1rem; color:var(--dark); width:100%;">
@@ -275,12 +287,10 @@
                                         <option value="police">Police (Absence famille)</option>
                                     </select>
                                 </div>
-                                
                                 <div id="police_fields" class="span-2 form-grid hidden" style="background:#fef2f2; padding:15px; border-radius:8px; border:1px solid #fecaca;">
                                     <div><label>Nom & Grade</label><input id="p_nom_grade"></div>
                                     <div><label>Commissariat</label><input id="p_commissariat"></div>
                                 </div>
-                                
                                 <div id="famille_fields" class="span-2 form-grid" style="background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0;">
                                     <div class="span-2" style="margin-bottom:5px;">
                                         <input type="checkbox" id="copy_mandant" onchange="window.copierMandant()">
@@ -346,7 +356,6 @@
                             <div class="form-grid">
                                 <div><label>Pays Destination</label><input id="rap_pays" list="villes_list"></div>
                                 <div><label>Ville Destination</label><input id="rap_ville" list="villes_list"></div>
-                                
                                 <div class="span-2" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid var(--border);">
                                     <label style="font-weight:bold; color:var(--dark);"><i class="fas fa-plane-departure"></i> VOL 1 (Principal)</label>
                                     <div class="form-grid">
@@ -362,7 +371,6 @@
                                         <label for="check_vol2" style="font-weight:600; color:#ef4444; display:inline;">Ajouter un Vol de Correspondance (Vol 2)</label>
                                     </div>
                                 </div>
-
                                 <div id="bloc_vol2" class="span-2 form-grid hidden" style="background:#fff1f2; padding:15px; border-radius:8px; border:1px solid #fecaca;">
                                     <div class="span-2"><label style="font-weight:bold;"><i class="fas fa-exchange-alt"></i> VOL 2 (Correspondance)</label></div>
                                     <div><label>N° Vol 2</label><input id="vol2_num"></div>
@@ -372,7 +380,6 @@
                                     <div><label>Dép. (Date Heure)</label><input id="vol2_dep_time"></div>
                                     <div><label>Arr. (Date Heure)</label><input id="vol2_arr_time"></div>
                                 </div>
-
                                 <div class="span-2" style="background:var(--light); padding:15px; border-radius:8px;">
                                     <label style="font-weight:bold;">Transport Routier (Arrivée)</label>
                                     <div class="form-grid">
@@ -385,7 +392,6 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="card" style="height:fit-content; position:sticky; top:20px; border-top: 4px solid var(--primary);">
@@ -395,12 +401,10 @@
                         <button class="btn btn-purple" onclick="window.genererDeclaration()">Déclaration Décès</button>
                         <button class="btn btn-purple" onclick="window.genererFermeture()">PV Fermeture (Police)</button>
                         <button class="btn btn-purple" onclick="window.genererDemandeFermetureMairie()">Fermeture (Mairie)</button>
-                        
                         <div style="display:flex; gap:5px;">
                             <button class="btn btn-purple" style="flex:1; font-size:0.8rem;" onclick="window.genererTransport('avant')">Transport AVANT</button>
                             <button class="btn btn-purple" style="flex:1; font-size:0.8rem;" onclick="window.genererTransport('apres')">Transport APRÈS</button>
                         </div>
-
                         <button class="btn btn-blue" id="btn_inhumation" onclick="window.genererDemandeInhumation()">Demande Inhumation</button>
                         <button class="btn btn-blue hidden" id="btn_cremation" onclick="window.genererDemandeCremation()">Demande Crémation</button>
                         <button class="btn btn-red hidden" id="btn_rapatriement" onclick="window.genererDemandeRapatriement()">Rapatriement (Préf)</button>
