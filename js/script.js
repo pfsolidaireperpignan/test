@@ -393,6 +393,7 @@ window.genererPouvoir = function() {
 };
 
 // --- 2. RAPATRIEMENT ---
+// --- 2. RAPATRIEMENT (AVEC HORAIRES DE VOL) ---
 window.genererDemandeRapatriement = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.setFillColor(240, 240, 240);
@@ -414,17 +415,38 @@ window.genererDemandeRapatriement = function() {
     pdf.text(`Décédé(e) le : ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`, x, y); y+=10;
     
     pdf.setFont("helvetica", "bold"); pdf.text("Moyen de transport :", x+5, y); pdf.line(x+5, y+1, x+45, y+1); y+=10;
+    
+    // SECTION ROUTIÈRE
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie routière :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
     pdf.text(`- Véhicule : ${getVal("rap_immat")}`, x+20, y); y+=5;
     pdf.text(`- Départ le : ${getVal("rap_date_dep_route")}`, x+20, y); y+=5;
     pdf.text(`- Trajet : ${getVal("rap_ville_dep")} -> ${getVal("rap_ville_arr")}`, x+20, y); y+=10;
+    
+    // SECTION AÉRIENNE (MISE À JOUR)
     pdf.setFont("helvetica", "bold");
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie aérienne :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
     pdf.text(`- LTA : ${getVal("rap_lta")}`, x+20, y); y+=6;
-    if(getVal("vol1_num")) { pdf.text(`- Vol 1 : ${getVal("vol1_num")} (${getVal("vol1_dep_aero")} -> ${getVal("vol1_arr_aero")})`, x+20, y); y+=6; }
-    if(document.getElementById('check_vol2').checked && getVal("vol2_num")) { pdf.text(`- Vol 2 : ${getVal("vol2_num")} (${getVal("vol2_dep_aero")} -> ${getVal("vol2_arr_aero")})`, x+20, y); y+=6; }
+    
+    // VOL 1
+    if(getVal("vol1_num")) { 
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`- Vol 1 : ${getVal("vol1_num")} (${getVal("vol1_dep_aero")} -> ${getVal("vol1_arr_aero")})`, x+20, y); y+=5;
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`  Départ : ${getVal("vol1_dep_time")}`, x+25, y); 
+        pdf.text(`  Arrivée : ${getVal("vol1_arr_time")}`, x+90, y); y+=7;
+    }
+    
+    // VOL 2 (Escale)
+    if(document.getElementById('check_vol2').checked && getVal("vol2_num")) { 
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`- Vol 2 : ${getVal("vol2_num")} (${getVal("vol2_dep_aero")} -> ${getVal("vol2_arr_aero")})`, x+20, y); y+=5;
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`  Départ : ${getVal("vol2_dep_time")}`, x+25, y); 
+        pdf.text(`  Arrivée : ${getVal("vol2_arr_time")}`, x+90, y); y+=7;
+    }
+    
     y+=5;
     pdf.text(`Inhumation à : ${getVal("rap_ville")} (${getVal("rap_pays")})`, x, y); y+=20;
     pdf.setFont("helvetica", "bold");
@@ -524,13 +546,14 @@ window.genererDemandeCremation = function() {
 };
 
 // --- 6. FERMETURE MAIRIE ---
+// --- 6. FERMETURE MAIRIE (CORRIGÉ) ---
 window.genererDemandeFermetureMairie = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     pdf.setDrawColor(26, 90, 143); pdf.setLineWidth(1.5); pdf.rect(10, 10, 190, 277);
     headerPF(pdf);
     pdf.setFont("helvetica", "bold"); pdf.setTextColor(26, 90, 143); pdf.setFontSize(16);
-    pdf.text("DEMANDE D'AUTORISATION DE FERMETURE", 105, 45, { align: "center" });
-    pdf.text("DE CERCUEIL", 105, 53, { align: "center" });
+    pdf.text("DEMANDE D'AUTORISATION DE MISE EN BIERE ", 105, 45, { align: "center" });
+    pdf.text("ET DE FERMETURE DE CERCUEIL", 105, 53, { align: "center" });
     let y = 80; const x = 25;
     pdf.setTextColor(0); pdf.setFontSize(11); pdf.setFont("helvetica", "bold");
     pdf.text("Je soussigné :", x, y); y+=10;
@@ -547,12 +570,12 @@ window.genererDemandeFermetureMairie = function() {
     pdf.text("Et ce,", x, y); y+=10;
     pdf.setFont("helvetica", "normal");
     pdf.text("• Le : " + formatDate(getVal("date_fermeture")), x+10, y); y+=10;
-    pdf.text("• A (Lieu) : " + getVal("lieu_fermeture"), x+10, y); y+=30;
+    // CORRECTION ICI : On utilise le lieu de mise en bière
+    pdf.text("• A (Lieu) : " + getVal("lieu_mise_biere"), x+10, y); y+=30;
     pdf.setFont("helvetica", "bold");
     pdf.text(`Fait à ${getVal("faita")}, le ${formatDate(getVal("dateSignature"))}`, x, y);
     pdf.save(`Demande_Fermeture_${getVal("nom")}.pdf`);
 };
-
 // --- 7. OUVERTURE SÉPULTURE (AVEC CASES DESSINÉES) ---
 window.genererDemandeOuverture = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF();
