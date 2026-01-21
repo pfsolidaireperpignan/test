@@ -1,6 +1,6 @@
 /**
  * ====================================================================
- * PF SOLIDAIRE ERP - LOGIC V10.1 (TRANSPORT AVANT/APRÈS + DESIGN + FIXES)
+ * PF SOLIDAIRE ERP - LOGIC V11 (STOCKS + TOUTES FONCTIONS PRÉCÉDENTES)
  * ====================================================================
  */
 
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('login-screen').classList.add('hidden');
             window.chargerBaseClients(); 
             chargerClientsFacturation(); 
+            window.chargerStock(); // Chargement initial du stock
         } else {
             document.getElementById('login-screen').classList.remove('hidden');
         }
@@ -66,14 +67,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================================================
-// 2. LOGIQUE INTERFACE
+// 2. LOGIQUE INTERFACE (NAVIGATION & ONGLETS)
 // ==========================================================================
 window.showSection = function(id) {
+    // Masquer toutes les vues
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-base').classList.add('hidden');
     document.getElementById('view-admin').classList.add('hidden');
+    document.getElementById('view-stock').classList.add('hidden'); // Nouvelle vue stock
+    
+    // Afficher la bonne vue
     document.getElementById('view-' + id).classList.remove('hidden');
+    
+    // Actions spécifiques
     if(id === 'base') window.chargerBaseClients();
+    if(id === 'stock') window.chargerStock();
+};
+
+window.switchAdminTab = function(tabName) {
+    document.getElementById('tab-content-identite').classList.add('hidden');
+    document.getElementById('tab-content-technique').classList.add('hidden');
+    document.getElementById('tab-btn-identite').classList.remove('active');
+    document.getElementById('tab-btn-technique').classList.remove('active');
+    
+    document.getElementById('tab-content-' + tabName).classList.remove('hidden');
+    document.getElementById('tab-btn-' + tabName).classList.add('active');
 };
 
 window.toggleSections = function() {
@@ -124,8 +142,7 @@ window.viderFormulaire = function() {
         document.getElementById('dossier_id').value = ""; 
         document.querySelectorAll('#view-admin input').forEach(i => i.value = '');
         document.getElementById('prestation').selectedIndex = 0;
-        document.getElementById('faita').value = "PERPIGNAN"; // Reset default
-        document.getElementById('faita_transport').value = "PERPIGNAN";
+        document.getElementById('faita').value = "PERPIGNAN"; 
         document.getElementById('immatriculation').value = "DA-081-ZQ";
         document.getElementById('rap_immat').value = "DA-081-ZQ";
         if(document.getElementById('check_vol2')) document.getElementById('check_vol2').checked = false;
@@ -136,7 +153,81 @@ window.viderFormulaire = function() {
 };
 
 // ==========================================================================
-// 3. DONNÉES (CRUD AVEC NOUVEAU TRANSPORT)
+// 3. GESTION DES STOCKS (NOUVEAU MODULE V11)
+// ==========================================================================
+window.openAjoutStock = function() {
+    document.getElementById('form-stock').classList.remove('hidden');
+    document.getElementById('st_nom').value = "";
+    document.getElementById('st_qte').value = "1";
+    document.getElementById('st_pa').value = "";
+    document.getElementById('st_pv').value = "";
+    document.getElementById('st_fourn').value = "";
+};
+
+window.ajouterArticleStock = async function() {
+    const nom = document.getElementById('st_nom').value;
+    const cat = document.getElementById('st_cat').value;
+    const qte = parseInt(document.getElementById('st_qte').value) || 0;
+    const pa = parseFloat(document.getElementById('st_pa').value) || 0;
+    const pv = parseFloat(document.getElementById('st_pv').value) || 0;
+    const fourn = document.getElementById('st_fourn').value;
+
+    if(!nom) return alert("Le nom de l'article est obligatoire.");
+
+    try {
+        await addDoc(collection(db, "stock_articles"), {
+            nom, categorie: cat, qte, prix_achat: pa, prix_vente: pv, fournisseur: fourn,
+            date_ajout: new Date().toISOString()
+        });
+        alert("✅ Article ajouté !");
+        document.getElementById('form-stock').classList.add('hidden');
+        window.chargerStock();
+    } catch(e) { alert("Erreur : " + e.message); }
+};
+
+window.chargerStock = async function() {
+    const tbody = document.getElementById('stock-table-body');
+    if(!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Chargement...</td></tr>';
+    
+    try {
+        const q = query(collection(db, "stock_articles"), orderBy("nom"));
+        const snap = await getDocs(q);
+        tbody.innerHTML = '';
+        
+        if(snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Aucun article en stock.</td></tr>'; return; }
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const alertClass = (data.qte < 3) ? 'stock-alert' : 'stock-ok';
+            const alertText = (data.qte < 3) ? 'BAS' : 'OK';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${data.nom}</strong><br><small style="color:#64748b;">${data.fournisseur || ''}</small></td>
+                <td>${data.categorie}</td>
+                <td>${data.prix_achat.toFixed(2)} €</td>
+                <td><strong>${data.prix_vente.toFixed(2)} €</strong></td>
+                <td><span class="badge ${alertClass}">${data.qte} (${alertText})</span></td>
+                <td style="text-align:center;">
+                    <button class="btn-icon" onclick="window.supprimerArticle('${docSnap.id}')"><i class="fas fa-trash" style="color:red;"></i></button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    } catch(e) { console.error(e); }
+};
+
+window.supprimerArticle = async function(id) {
+    if(confirm("Supprimer cet article du stock ?")) {
+        try {
+            await deleteDoc(doc(db, "stock_articles", id));
+            window.chargerStock();
+        } catch(e) { alert("Erreur : " + e.message); }
+    }
+};
+
+// ==========================================================================
+// 4. DONNÉES DOSSIERS & FACTURATION
 // ==========================================================================
 let clientsCache = [];
 async function chargerClientsFacturation() {
@@ -206,7 +297,6 @@ async function sauvegarderEnBase() {
                 vehicule: getVal('immatriculation'), presence: document.getElementById('type_presence_select').value,
                 police: { nom: getVal('p_nom_grade'), comm: getVal('p_commissariat') },
                 famille: { temoin: getVal('f_nom_prenom'), lien: getVal('f_lien') },
-                // NOUVEAU TRANSPORT DOUBLE
                 transport_avant: {
                     lieu_dep: getVal('av_lieu_depart'), lieu_arr: getVal('av_lieu_arrivee'),
                     date_dep: getVal('av_date_dep'), heure_dep: getVal('av_heure_dep'),
@@ -217,7 +307,7 @@ async function sauvegarderEnBase() {
                     date_dep: getVal('ap_date_dep'), heure_dep: getVal('ap_heure_dep'),
                     date_arr: getVal('ap_date_arr'), heure_arr: getVal('ap_heure_arr')
                 },
-                faita: getVal('faita'), dateSignature: getVal('dateSignature'), faita_transport: getVal('faita_transport'), dateSignature_transport: getVal('dateSignature_transport')
+                faita: getVal('faita'), dateSignature: getVal('dateSignature')
             },
             details_op: {
                 cimetiere: getVal('cimetiere_nom'), concession: getVal('num_concession'), titulaire: getVal('titulaire_concession'),
@@ -279,7 +369,6 @@ window.chargerDossier = async function(id) {
                 if(data.technique.police) { setVal('p_nom_grade', data.technique.police.nom); setVal('p_commissariat', data.technique.police.comm); }
                 if(data.technique.famille) { setVal('f_nom_prenom', data.technique.famille.temoin); setVal('f_lien', data.technique.famille.lien); }
                 
-                // CHARGEMENT TRANSPORT DOUBLE
                 if(data.technique.transport_avant) {
                     setVal('av_lieu_depart', data.technique.transport_avant.lieu_dep); setVal('av_lieu_arrivee', data.technique.transport_avant.lieu_arr);
                     setVal('av_date_dep', data.technique.transport_avant.date_dep); setVal('av_heure_dep', data.technique.transport_avant.heure_dep);
@@ -291,7 +380,6 @@ window.chargerDossier = async function(id) {
                     setVal('ap_date_arr', data.technique.transport_apres.date_arr); setVal('ap_heure_arr', data.technique.transport_apres.heure_arr);
                 }
                 setVal('faita', data.technique.faita); setVal('dateSignature', data.technique.dateSignature);
-                setVal('faita_transport', data.technique.faita_transport); setVal('dateSignature_transport', data.technique.dateSignature_transport);
             }
             if(data.details_op) {
                 setVal('cimetiere_nom', data.details_op.cimetiere); setVal('num_concession', data.details_op.concession); setVal('titulaire_concession', data.details_op.titulaire);
@@ -366,7 +454,7 @@ window.chargerBaseClients = async function() {
 };
 
 // ==========================================================================
-// 4. MOTEUR PDF (DESIGN COMPLET + FIXES V10.1)
+// 5. MOTEUR PDF (DESIGN COMPLET + FIXES V10.2)
 // ==========================================================================
 let logoBase64 = null;
 function chargerLogoBase64() {
@@ -450,7 +538,7 @@ window.genererDemandeRapatriement = function() {
     pdf.text(`- Départ le : ${getVal("rap_date_dep_route")}`, x+20, y); y+=5;
     pdf.text(`- Trajet : ${getVal("rap_ville_dep")} -> ${getVal("rap_ville_arr")}`, x+20, y); y+=10;
     
-    // SECTION AÉRIENNE (MISE À JOUR)
+    // SECTION AÉRIENNE
     pdf.setFont("helvetica", "bold");
     pdf.rect(x+10, y-3, 3, 3, 'F'); pdf.text("Par voie aérienne :", x+15, y); y+=6;
     pdf.setFont("helvetica", "normal");
@@ -482,8 +570,7 @@ window.genererDemandeRapatriement = function() {
     pdf.save(`Demande_Rapatriement_Prefecture_${getVal("nom")}.pdf`);
 };
 
-// --- 3. DÉCLARATION DÉCÈS (AVEC PROFESSION) ---
-// --- 3. DÉCLARATION DÉCÈS (AVEC MENTION CONJOINT) ---
+// --- 3. DÉCLARATION DÉCÈS (AVEC PROFESSION & MENTION CONJOINT) ---
 window.genererDeclaration = function() {
     const { jsPDF } = window.jspdf; const pdf = new jsPDF(); const fontMain = "times";
     pdf.setFont(fontMain, "bold"); pdf.setFontSize(16);
@@ -495,7 +582,6 @@ window.genererDeclaration = function() {
     
     let y = 60; const margin = 20;
     
-    // Fonction utilitaire pour dessiner les lignes pointillées
     const drawLine = (label, val, yPos) => {
         pdf.setFont(fontMain, "bold"); pdf.text(label, margin, yPos);
         const startDots = margin + pdf.getTextWidth(label) + 2;
@@ -503,7 +589,6 @@ window.genererDeclaration = function() {
         while(curX < 190) { pdf.text(".", curX, yPos); curX += 2; }
         if(val) {
             pdf.setFont(fontMain, "bold"); pdf.setFillColor(255, 255, 255);
-            // On calcule la largeur du texte pour "blanchir" le fond des pointillés
             pdf.rect(startDots, yPos - 4, pdf.getTextWidth(val)+5, 5, 'F');
             pdf.text(val.toUpperCase(), startDots + 2, yPos);
         }
@@ -518,7 +603,6 @@ window.genererDeclaration = function() {
     pdf.setFont(fontMain, "normal"); pdf.text(formatDate(getVal("date_deces")), margin+70, y);
     pdf.setFont(fontMain, "bold"); pdf.text("A", 120, y); pdf.text(getVal("lieu_deces").toUpperCase(), 130, y); y += 18;
     
-    // --- GESTION PROFESSION ---
     pdf.text("PROFESSION : ", margin, y); y+=8;
     const prof = getVal("prof_type");
     pdf.setFont(fontMain, "normal");
@@ -543,27 +627,21 @@ window.genererDeclaration = function() {
     drawLine("FILS OU FILLE de (Père) :", getVal("pere"), y); y+=14;
     drawLine("Et de (Mère) :", getVal("mere"), y); y+=14;
 
-    // --- NOUVELLE LOGIQUE POUR SITUATION MATRIMONIALE + CONJOINT ---
+    // --- LOGIQUE MENTION CONJOINT ---
     let situation = getVal("matrimoniale");
-    const nomConjoint = getVal("conjoint"); // On récupère le nom saisi
-
+    const nomConjoint = getVal("conjoint");
     if (nomConjoint && nomConjoint.trim() !== "") {
-        if (situation.includes("Marié")) {
-            situation = `MARIÉ(E) À ${nomConjoint}`;
-        } else if (situation.includes("Veuf")) {
-            situation = `VEUF(VE) DE ${nomConjoint}`;
-        } else if (situation.includes("Divorcé")) {
-            situation = `DIVORCÉ(E) DE ${nomConjoint}`;
-        }
+        if (situation.includes("Marié")) situation = `MARIÉ(E) À ${nomConjoint}`;
+        else if (situation.includes("Veuf")) situation = `VEUF(VE) DE ${nomConjoint}`;
+        else if (situation.includes("Divorcé")) situation = `DIVORCÉ(E) DE ${nomConjoint}`;
     }
-
     drawLine("Situation Matrimoniale : ", situation, y); y+=14;
-    // ---------------------------------------------------------------
-
+    
     drawLine("NATIONALITE : ", getVal("nationalite"), y); y+=25;
     pdf.setFont(fontMain, "bold"); pdf.text("NOM ET SIGNATURE DES POMPES FUNEBRES", 105, y, { align: "center" });
     pdf.save(`Declaration_Deces_${getVal("nom")}.pdf`);
 };
+
 // --- 4. DEMANDE INHUMATION ---
 window.genererDemandeInhumation = function() {
     if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const pdf = new jsPDF(); headerPF(pdf);
@@ -758,28 +836,10 @@ window.genererTransport = function(type) {
     pdf.setFont("helvetica", "bold");
     pdf.text(`VÉHICULE AGRÉÉ IMMATRICULÉ : ${getVal("immatriculation")}`, 105, y+7, {align:"center"}); y+=30;
     
-    // Pour le transport, on peut vouloir distinguer le lieu de signature spécifique
-    // ou garder le général si celui du transport est vide
-    const faita = getVal("faita_transport") || getVal("faita");
-    const dateSign = getVal("dateSignature_transport") || getVal("dateSignature");
+    const faita = getVal("faita");
+    const dateSign = getVal("dateSignature");
     
     pdf.text(`Fait à ${faita}, le ${formatDate(dateSign)}`, 120, y);
     pdf.text("Cachet de l'entreprise :", 120, y+10);
     pdf.save(`Transport_${type}_${getVal("nom")}.pdf`);
-};
-// ==========================================================================
-// 5. GESTION DES ONGLETS (UI)
-// ==========================================================================
-window.switchAdminTab = function(tabName) {
-    // 1. Masquer tous les contenus
-    document.getElementById('tab-content-identite').classList.add('hidden');
-    document.getElementById('tab-content-technique').classList.add('hidden');
-    
-    // 2. Désactiver tous les boutons
-    document.getElementById('tab-btn-identite').classList.remove('active');
-    document.getElementById('tab-btn-technique').classList.remove('active');
-    
-    // 3. Activer le bon
-    document.getElementById('tab-content-' + tabName).classList.remove('hidden');
-    document.getElementById('tab-btn-' + tabName).classList.add('active');
 };
