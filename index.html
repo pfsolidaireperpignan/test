@@ -162,7 +162,17 @@
                             <div><label>Mère</label><input id="mere"></div>
                             <div><label>Situation</label><select id="matrimoniale"><option>Marié(e)</option><option>Veuf(ve)</option><option>Célibataire</option><option>Divorcé(e)</option></select></div>
                             <div><label>Conjoint(e)</label><input id="conjoint"></div>
-                            <div><label>Profession</label><select id="prof_type"><option>Retraité(e)</option><option>Active</option><option>Sans profession</option></select></div>
+                            <div>
+    <label>Situation & Profession</label>
+    <div style="display:flex; gap:5px;">
+        <select id="prof_type" style="width:40%;">
+            <option value="Sans profession">Sans profession</option>
+            <option value="Retraité(e)">Retraité(e)</option>
+            <option value="Active">Active (Préciser ->)</option>
+        </select>
+        <input id="profession_libelle" placeholder="Ex: Boulanger, Enseignant..." style="width:60%;">
+    </div>
+</div>
                         </div>
                     </div>
 
