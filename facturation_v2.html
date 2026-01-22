@@ -526,12 +526,115 @@
         const prefix = (type === 'DEVIS') ? 'D' : 'F'; return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
     }
 
+    // --- MODELES DE DEVIS PRÉ-REMPLIS (COMPLETS) ---
     const MODELES = {
-        "Inhumation": [ { type: 'section', text: '1. PRÉPARATION' }, { desc: 'Démarches admin', prix: 250 }, { desc: 'Toilette', prix: 150 }, { desc: 'Chambre funéraire (3j)', prix: 250 }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Chêne', prix: 650 }, { desc: 'Capiton', prix: 80 }, { type: 'section', text: '3. CIMETIÈRE' }, { desc: 'Creusement', prix: 650 }, { desc: 'Porteurs (x4)', prix: 600 } ],
-        "Cremation": [ { type: 'section', text: '1. PRÉPARATION' }, { desc: 'Démarches', prix: 250 }, { desc: 'Toilette', prix: 150 }, { desc: 'Taxe Crématorium', prix: 750, cat: 'Avance' }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Pin', prix: 650 }, { desc: 'Urne', prix: 150 }, { type: 'section', text: '3. CÉRÉMONIE' }, { desc: 'Transport corps', prix: 350 }, { desc: 'Porteurs', prix: 600 } ],
-        "Rapatriement": [ { type: 'section', text: '1. ADMIN' }, { desc: 'Démarches Consulat', prix: 400 }, { desc: 'Soins conservation', prix: 350 }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Zinc', prix: 1200 }, { desc: 'Fret Aérien', prix: 1500, cat: 'Avance' }, { type: 'section', text: '3. TRANSPORT' }, { desc: 'Transport Aéroport', prix: 300 } ],
-        "Transport": [ { desc: 'Transport Avant Mise en Bière', prix: 300 }, { desc: 'Housse', prix: 40 } ],
-        "Exhumation": [ { desc: 'Ouverture Fosse', prix: 600 }, { desc: 'Exhumation', prix: 450 }, { desc: 'Reliquaire', prix: 120 } ]
+        "Inhumation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+			{ type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+			{ desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+
+            { type: 'section', text: '5. CIMETIÈRE' },
+            { desc: 'Creusement et comblement de de fosse / Ouverture de caveau', prix: 650, cat: 'Courant' },
+            { desc: 'Redevance inhumation (Taxe Mairie)', prix: 50, cat: 'Avance' }
+			{ desc: 'Acaht de concession', prix: 50, cat: 'Avance' }
+			
+        ],
+
+        "Cremation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+			{ type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+			{ desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },          		
+
+            { type: 'section', text: '4. CRÉMATORIUM' },
+            { desc: 'Frais de Crémation ', prix: 750, cat: 'Avance' },
+            { desc: 'Urne', prix: 60, cat: 'Courant' },
+                    ],
+
+        "Rapatriement": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+			{ type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur Rapatriement (avec quatre poignées en métal cache vis plastique,Filtre épurateur (Norme IATA) et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+			{ desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+         
+            { type: 'section', text: '4. TRANSPORT' },
+            { desc: 'Transport vers Aéroport (France)', prix: 350, cat: 'Courant' },
+            { desc: 'Fret Aérien ', prix: 1800, cat: 'Avance' }
+        ],
+
+        "Transport": [
+            { type: 'section', text: '1. TRANSPORT DE CORPS' },
+            { desc: 'Véhicule Agréé avec Caisson', prix: 300, cat: 'Courant' },
+            { desc: 'Chauffeur / Porteur', prix: 150, cat: 'Courant' },
+            { desc: 'Housse mortuaire impérméable', prix: 45, cat: 'Courant' },
+            { desc: 'Frais kilométriques (Au-delà du forfait)', prix: 0, cat: 'Courant' }
+        ],
+
+        "Exhumation": [
+            { type: 'section', text: '1. TECHNIQUE' },
+            { desc: 'Démarches Mairie & Cimetière', prix: 150, cat: 'Courant' },
+            { desc: 'Ouverture de monument / Fosse', prix: 600, cat: 'Courant' },
+            { desc: 'Exhumation du corps', prix: 450, cat: 'Courant' },
+            { desc: 'Fourniture Reliquaire (Boîte à ossements)', prix: 120, cat: 'Courant' },
+            { desc: 'Réduction de corps', prix: 200, cat: 'Optionnel' },
+            { desc: 'Fermeture de sépulture', prix: 200, cat: 'Courant' },
+            { desc: 'Vacation de Police', prix: 25, cat: 'Avance' }
+        ]
     };
 
     window.loadTemplate = async function(type) {
