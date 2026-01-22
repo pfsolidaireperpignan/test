@@ -185,6 +185,7 @@ window.ajouterArticleStock = async function() {
     } catch(e) { alert("Erreur : " + e.message); }
 };
 
+// --- GESTION DES STOCKS (AMÉLIORÉE V11.5) ---
 window.chargerStock = async function() {
     const tbody = document.getElementById('stock-table-body');
     if(!tbody) return;
@@ -206,17 +207,46 @@ window.chargerStock = async function() {
             tr.innerHTML = `
                 <td><strong>${data.nom}</strong><br><small style="color:#64748b;">${data.fournisseur || ''}</small></td>
                 <td>${data.categorie}</td>
-                <td>${data.prix_achat.toFixed(2)} €</td>
-                <td><strong>${data.prix_vente.toFixed(2)} €</strong></td>
-                <td><span class="badge ${alertClass}">${data.qte} (${alertText})</span></td>
+                <td>${data.prix_achat ? data.prix_achat.toFixed(2) : '0.00'} €</td>
+                <td><strong>${data.prix_vente ? data.prix_vente.toFixed(2) : '0.00'} €</strong></td>
+                
+                <td style="white-space:nowrap;">
+                    <button class="btn-icon" style="background:#fee2e2; color:#ef4444; border-color:#fca5a5; padding:2px 8px; margin-right:5px;" onclick="window.updateStock('${docSnap.id}', -1)" title="Sortie Stock (-1)">-</button>
+                    <span class="badge ${alertClass}" style="font-size:1rem; padding:5px 12px;">${data.qte}</span>
+                    <button class="btn-icon" style="background:#dcfce7; color:#16a34a; border-color:#86efac; padding:2px 8px; margin-left:5px;" onclick="window.updateStock('${docSnap.id}', 1)" title="Entrée Stock (+1)">+</button>
+                </td>
+                
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="window.supprimerArticle('${docSnap.id}')"><i class="fas fa-trash" style="color:red;"></i></button>
+                    <button class="btn-icon" onclick="window.supprimerArticle('${docSnap.id}')" title="Supprimer la référence"><i class="fas fa-trash" style="color:red;"></i></button>
                 </td>`;
             tbody.appendChild(tr);
         });
     } catch(e) { console.error(e); }
 };
+window.updateStock = async function(id, delta) {
+    // delta = +1 (Entrée) ou -1 (Sortie)
+    try {
+        const docRef = doc(db, "stock_articles", id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            const currentQte = docSnap.data().qte || 0;
+            const newQte = currentQte + delta;
 
+            if (newQte < 0) {
+                alert("Impossible : Le stock ne peut pas être négatif.");
+                return;
+            }
+
+            await updateDoc(docRef, { qte: newQte });
+            
+            // Petit effet visuel ou rechargement
+            window.chargerStock(); // On recharge le tableau pour voir le changement
+        }
+    } catch(e) {
+        alert("Erreur mise à jour stock : " + e.message);
+    }
+};
 window.supprimerArticle = async function(id) {
     if(confirm("Supprimer cet article du stock ?")) {
         try {
