@@ -3,37 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V10.3 (Mentions Légales)</title>
+    <title>PF Solidaire - Finance V12 (Compta & Résultat)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* STYLES (Identiques V9.5/V10) */
+        /* STYLES GÉNÉRAUX V12 */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
+        
+        /* BOUTONS */
         .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition: all 0.2s; }
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn:active { transform: translateY(0); }
-        .btn-blue { background: #3b82f6; color: white; } .btn-green { background: #22c55e; color: white; } .btn-orange { background: #f97316; color: white; } .btn-red { background: #fee2e2; color: #ef4444; } .btn-grey { background: #e2e8f0; color: #475569; } .btn-purple { background: #8b5cf6; color: white; }
+        .btn-blue { background: #3b82f6; color: white; } .btn-green { background: #22c55e; color: white; } 
+        .btn-red { background: #fee2e2; color: #ef4444; } .btn-grey { background: #e2e8f0; color: #475569; } 
+        .btn-purple { background: #8b5cf6; color: white; } .btn-orange { background: #f97316; color: white; }
+
+        /* HEADER & NAVIGATION */
         .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
-        .search-container { display: flex; gap: 5px; } .search-box { padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; width: 250px; font-size: 14px; }
+        .nav-tabs { display: flex; gap: 10px; margin-top: 10px; }
+        .tab-btn { padding: 10px 20px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: bold; color: #64748b; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3); }
+        .tab-btn.active-red { background: #ef4444; color: white; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3); }
+
+        /* STATS FINANCIÈRES (V12) */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .stat-label { font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; }
+        .stat-year { font-size: 0.75rem; opacity: 0.6; position: absolute; top: 20px; right: 20px; }
+        
+        .card-ca { color: #15803d; border-bottom: 4px solid #22c55e; } /* Vert */
+        .card-depense { color: #b91c1c; border-bottom: 4px solid #ef4444; } /* Rouge */
+        .card-result { color: #1e40af; border-bottom: 4px solid #3b82f6; background: linear-gradient(to bottom right, #eff6ff, white); } /* Bleu */
+
+        /* TABLES */
         .compta-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse; }
         .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
         .compta-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-        .badge-devis { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; } .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #ccc; }
-        .stat-info h3 { margin: 0; font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
-        .stat-info p { margin: 5px 0 0 0; font-size: 1.5rem; font-weight: bold; color: #1e293b; } .stat-icon { font-size: 2.5rem; opacity: 0.2; } .card-ca { border-color: #22c55e; } .card-ca .stat-icon { color: #22c55e; } .card-fact { border-color: #3b82f6; } .card-fact .stat-icon { color: #3b82f6; } .card-devis { border-color: #f59e0b; } .card-devis .stat-icon { color: #f59e0b; }
-        .editor-container { max-width: 1200px; margin: 0 auto; } .top-bar-editor { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 4px solid #f59e0b; }
-        .grid-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; } .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; } .label-section { color: #3b82f6; font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; display: block; text-transform: uppercase; } .input-clean { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
-        .facture-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } .facture-table th { background: #e2e8f0; padding: 12px; text-align: left; color: #475569; font-size: 0.85rem; text-transform: uppercase; } .facture-table td { border-bottom: 1px solid #f1f5f9; padding: 5px; vertical-align: middle; }
-        .drag-handle { cursor: grab; color: #cbd5e1; text-align: center; } .drag-handle:hover { color: #f59e0b; } .input-cell { border: 1px solid transparent; width: 100%; padding: 8px; margin: 0; background:transparent; } .input-cell:focus { border: 1px solid #3b82f6; background: #eff6ff; outline: none; border-radius:4px; } .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; } .input-section { font-weight: bold; color: #c2410c; text-transform: uppercase; }
-        .payment-box { background: #ecfccb; padding: 15px; border-radius: 8px; border: 1px solid #a3e635; margin-top: 20px; } .payment-list { margin-top: 10px; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd; max-height: 150px; overflow-y: auto; } .payment-item { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 5px 0; font-size: 0.9rem; } .financial-summary { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: right; } .total-line { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 5px; } .final-line { font-size: 1.4rem; font-weight: bold; color: #b91c1c; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; } .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); } .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; } .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
+        .badge-devis { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; } 
+        .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-depense { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
+
+        /* FORMULAIRE DÉPENSE (V12) */
+        .expense-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #ef4444; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 150px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+
+        /* ÉDITEUR FACTURE (Hérité V10) */
+        .editor-container { max-width: 1200px; margin: 0 auto; } 
+        .top-bar-editor { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 4px solid #f59e0b; }
+        .grid-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; } 
+        .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .input-clean { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
+        .facture-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } 
+        .facture-table th { background: #e2e8f0; padding: 12px; text-align: left; color: #475569; font-size: 0.85rem; text-transform: uppercase; } 
+        .facture-table td { border-bottom: 1px solid #f1f5f9; padding: 5px; vertical-align: middle; }
+        .drag-handle { cursor: grab; color: #cbd5e1; text-align: center; } 
+        .input-cell { border: 1px solid transparent; width: 100%; padding: 8px; margin: 0; background:transparent; } 
+        .input-cell:focus { border: 1px solid #3b82f6; background: #eff6ff; outline: none; border-radius:4px; }
+        .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; } 
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; }
+        .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
     </style>
 </head>
 <body>
@@ -41,48 +79,107 @@
 
     <datalist id="clients_suggestions"></datalist>
     <datalist id="defunts_suggestions"></datalist>
+    <datalist id="fournisseurs_list">
+        <option value="Bernier Cercueils"><option value="Total Énergies"><option value="Assurance Allianz"><option value="Fournitures Bureau"><option value="Loyer Local">
+    </datalist>
 
     <div id="modal-choix" class="modal hidden">
         <div class="modal-content">
             <h3 style="color:#1e293b; margin-top:0;">CHOISIR UN MODÈLE</h3>
-            <button class="modal-btn" onclick="window.loadTemplate('Inhumation')"><i class="fas fa-church"></i> INHUMATION (Complet)</button>
-            <button class="modal-btn" onclick="window.loadTemplate('Cremation')"><i class="fas fa-fire"></i> CRÉMATION (Complet)</button>
-            <button class="modal-btn" onclick="window.loadTemplate('Rapatriement')"><i class="fas fa-plane"></i> RAPATRIEMENT (Complet)</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Inhumation')"><i class="fas fa-church"></i> INHUMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Cremation')"><i class="fas fa-fire"></i> CRÉMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Rapatriement')"><i class="fas fa-plane"></i> RAPATRIEMENT</button>
             <button class="modal-btn" onclick="window.loadTemplate('Transport')"><i class="fas fa-ambulance"></i> TRANSPORT</button>
             <button class="modal-btn" onclick="window.loadTemplate('Exhumation')"><i class="fas fa-box-open"></i> EXHUMATION</button>
             <div style="margin-top:10px;"><a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444;">Annuler</a></div>
         </div>
     </div>
 
-    <div id="view-list">
+    <div id="view-dashboard">
         <div class="dashboard-header">
-            <div><h1 style="margin:0;">Gestion Facturation</h1><p style="margin:5px 0 0 0; color:#64748b;">Comptabilité & Devis</p></div>
-            <div style="display:flex; align-items:center; gap:20px;">
-                <div class="search-container">
-                    <input type="text" id="search-input" class="search-box" placeholder="Rechercher (Nom, N°)...">
-                    <button class="btn btn-grey" onclick="document.getElementById('search-input').value=''; window.chargerListeFactures();"><i class="fas fa-times"></i></button>
+            <div>
+                <h1 style="margin:0;">Pilotage Financier</h1>
+                <div class="nav-tabs">
+                    <button class="tab-btn active" onclick="window.switchTab('factures')" id="btn-tab-factures"><i class="fas fa-file-invoice"></i> FACTURES CLIENTS</button>
+                    <button class="tab-btn" onclick="window.switchTab('achats')" id="btn-tab-achats"><i class="fas fa-shopping-cart"></i> REGISTRE ACHATS</button>
                 </div>
-                <a href="index.html" class="btn btn-grey"><i class="fas fa-home"></i> Accueil</a>
-                <button class="btn btn-blue" onclick="document.getElementById('modal-choix').classList.remove('hidden')"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:20px;">
+                <a href="index.html" class="btn btn-grey"><i class="fas fa-home"></i> Retour Accueil</a>
             </div>
         </div>
         
         <div class="stats-grid">
-            <div class="stat-card card-ca"><div class="stat-info"><h3>CA Annuel 2026</h3><p id="stat-ca">0.00 €</p></div><i class="fas fa-chart-line stat-icon"></i></div>
-            <div class="stat-card card-fact"><div class="stat-info"><h3>Factures</h3><p id="stat-factures">0</p></div><i class="fas fa-file-invoice-dollar stat-icon"></i></div>
-            <div class="stat-card card-devis"><div class="stat-info"><h3>Devis (3 mois)</h3><p id="stat-devis">0</p></div><i class="fas fa-file-contract stat-icon"></i></div>
+            <div class="stat-card card-ca">
+                <div class="stat-label">Chiffre d'Affaires (Entrées)</div>
+                <div class="stat-value" id="stat-ca">0.00 €</div>
+                <div class="stat-year" id="year-display-1">2026</div>
+                <i class="fas fa-arrow-up" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
+            </div>
+            <div class="stat-card card-depense">
+                <div class="stat-label">Dépenses (Sorties)</div>
+                <div class="stat-value" id="stat-depenses">0.00 €</div>
+                <div class="stat-year" id="year-display-2">2026</div>
+                <i class="fas fa-arrow-down" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
+            </div>
+            <div class="stat-card card-result">
+                <div class="stat-label">Bénéfice Net (Résultat)</div>
+                <div class="stat-value" id="stat-resultat">0.00 €</div>
+                <div class="stat-year" id="year-display-3">2026</div>
+                <i class="fas fa-piggy-bank" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
+            </div>
         </div>
 
-        <table class="compta-table">
-            <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:right;">Reste à Payer</th><th style="text-align:center;">Actions</th></tr></thead>
-            <tbody id="list-body"><tr><td colspan="8" style="text-align:center; padding:30px;">Chargement...</td></tr></tbody>
-        </table>
+        <div id="tab-factures">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <input type="text" id="search-input" placeholder="Rechercher facture..." style="padding:10px; width:250px; border:1px solid #ccc; border-radius:5px;">
+                <button class="btn btn-blue" onclick="document.getElementById('modal-choix').classList.remove('hidden')"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
+            </div>
+            <table class="compta-table">
+                <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:right;">Reste à Payer</th><th style="text-align:center;">Actions</th></tr></thead>
+                <tbody id="list-body"><tr><td colspan="8" style="text-align:center; padding:30px;">Chargement...</td></tr></tbody>
+            </table>
+        </div>
+
+        <div id="tab-achats" class="hidden">
+            <div class="expense-form">
+                <div class="form-group" style="flex:0 0 130px;">
+                    <label>Date</label>
+                    <input type="date" id="dep_date">
+                </div>
+                <div class="form-group" style="flex:2;">
+                    <label>Fournisseur</label>
+                    <input type="text" id="dep_fourn" list="fournisseurs_list" placeholder="Ex: Bernier, Total...">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Catégorie</label>
+                    <select id="dep_cat">
+                        <option>Achat Marchandises</option>
+                        <option>Carburant / Déplacement</option>
+                        <option>Frais Généraux</option>
+                        <option>Sous-traitance</option>
+                        <option>Impôts & Taxes</option>
+                        <option>Autre</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Montant TTC (€)</label>
+                    <input type="number" id="dep_montant" placeholder="0.00">
+                </div>
+                <button class="btn btn-red" onclick="window.ajouterDepense()" style="height:40px; margin-bottom:1px;"><i class="fas fa-plus"></i> AJOUTER</button>
+            </div>
+
+            <table class="compta-table">
+                <thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th style="text-align:right;">Montant TTC</th><th style="text-align:center;">Actions</th></tr></thead>
+                <tbody id="depenses-body"><tr><td colspan="5" style="text-align:center;">Chargement...</td></tr></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="view-editor" class="hidden editor-container">
         <input type="hidden" id="current_doc_id">
         <div class="top-bar-editor">
-            <button onclick="window.showList()" class="btn btn-grey"><i class="fas fa-arrow-left"></i> RETOUR</button>
+            <button onclick="window.showDashboard()" class="btn btn-grey"><i class="fas fa-arrow-left"></i> RETOUR LISTE</button>
             <div style="display:flex; gap:10px;">
                 <button class="btn btn-purple hidden" id="btn-transform" onclick="window.transformerEnFacture()"><i class="fas fa-magic"></i> CRÉER FACTURE</button>
                 <button class="btn btn-green" id="btn-save"><i class="fas fa-save"></i> ENREGISTRER</button>
@@ -127,24 +224,20 @@
         </table>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="payment-box">
-                <span class="label-section" style="color:#166534;">ENREGISTRER UN PAIEMENT</span>
-                <div style="display:flex; gap:10px; margin-top:5px;">
+            <div class="payment-box" style="background:#ecfccb; padding:15px; border-radius:8px; border:1px solid #a3e635; margin-top:20px;">
+                <span class="label-section" style="color:#166534; display:block; font-weight:bold; margin-bottom:5px;">ENREGISTRER UN PAIEMENT</span>
+                <div style="display:flex; gap:10px;">
                     <input type="date" id="pay_date" class="input-clean" style="margin:0;">
-                    <select id="pay_mode" class="input-clean" style="margin:0;">
-                        <option value="Espèces">Espèces</option>
-                        <option value="Chèque">Chèque</option>
-                        <option value="Virement">Virement</option>
-                    </select>
+                    <select id="pay_mode" class="input-clean" style="margin:0;"><option>Espèces</option><option>Chèque</option><option>Virement</option></select>
                     <input type="number" id="pay_amount" class="input-clean" placeholder="Montant €" style="margin:0;">
                     <button class="btn btn-green" onclick="window.ajouterPaiement()">+</button>
                 </div>
-                <div id="liste_paiements" class="payment-list"><small style="color:#888;">Aucun paiement.</small></div>
+                <div id="liste_paiements" style="margin-top:10px; background:white; padding:10px; border-radius:5px; border:1px solid #ddd; max-height:150px; overflow-y:auto;"><small style="color:#888;">Aucun paiement.</small></div>
             </div>
-            <div class="financial-summary">
-                <div class="total-line"><span>TOTAL TTC :</span> <strong id="total_general">0.00 €</strong></div>
-                <div class="total-line" style="color:#166534;"><span>DÉJÀ RÉGLÉ :</span> <strong id="total_paye">0.00 €</strong></div>
-                <div class="total-line final-line"><span>RESTE À PAYER :</span> <span id="reste_a_payer">0.00 €</span></div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:15px; border-radius:8px; margin-top:20px; text-align:right;">
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem; margin-bottom:5px;"><span>TOTAL TTC :</span> <strong id="total_general">0.00 €</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#166534;"><span>DÉJÀ RÉGLÉ :</span> <strong id="total_paye">0.00 €</strong></div>
+                <div style="display:flex; justify-content:space-between; font-size:1.4rem; font-weight:bold; color:#b91c1c; border-top:2px solid #ddd; padding-top:10px; margin-top:10px;"><span>RESTE À PAYER :</span> <span id="reste_a_payer">0.00 €</span></div>
                 <span id="total_display" class="hidden">0</span>
             </div>
         </div>
@@ -155,7 +248,12 @@
 
     let logoBase64 = null;
     let paiements = [];
-    let dossiersCache = []; 
+    let dossiersCache = [];
+    
+    // VARIABLES FINANCIÈRES V12
+    let global_CA = 0;
+    let global_Depenses = 0;
+    const currentYear = new Date().getFullYear();
 
     // --- INIT ---
     function chargerLogoBase64() {
@@ -166,188 +264,114 @@
         }
     }
     setTimeout(chargerLogoBase64, 1000);
+    
+    // UPDATE DASHBOARD V12
+    function updateFinancialDashboard() {
+        document.getElementById('stat-ca').innerText = global_CA.toFixed(2) + " €";
+        document.getElementById('stat-depenses').innerText = global_Depenses.toFixed(2) + " €";
+        const resultat = global_CA - global_Depenses;
+        const elRes = document.getElementById('stat-resultat');
+        elRes.innerText = resultat.toFixed(2) + " €";
+        elRes.style.color = resultat >= 0 ? '#1e40af' : '#b91c1c'; // Bleu si positif, Rouge si négatif
 
-    // --- CHARGER SUGGESTIONS DEPUIS DOSSIERS ADMIN ---
-    async function chargerSuggestionsClients() {
+        // Mettre à jour l'année affichée
+        document.getElementById('year-display-1').innerText = currentYear;
+        document.getElementById('year-display-2').innerText = currentYear;
+        document.getElementById('year-display-3').innerText = currentYear;
+    }
+
+    // --- NAVIGATION ONGLETS ---
+    window.switchTab = function(tab) {
+        document.getElementById('tab-factures').classList.add('hidden');
+        document.getElementById('tab-achats').classList.add('hidden');
+        document.getElementById('btn-tab-factures').classList.remove('active');
+        document.getElementById('btn-tab-achats').classList.remove('active', 'active-red');
+
+        if(tab === 'factures') {
+            document.getElementById('tab-factures').classList.remove('hidden');
+            document.getElementById('btn-tab-factures').classList.add('active');
+        } else {
+            document.getElementById('tab-achats').classList.remove('hidden');
+            document.getElementById('btn-tab-achats').classList.add('active-red');
+            window.chargerDepenses();
+        }
+    };
+
+    // --- GESTION DÉPENSES (V12) ---
+    window.ajouterDepense = async function() {
+        const date = document.getElementById('dep_date').value;
+        const fourn = document.getElementById('dep_fourn').value;
+        const cat = document.getElementById('dep_cat').value;
+        const mont = parseFloat(document.getElementById('dep_montant').value);
+
+        if(!date || !fourn || isNaN(mont)) return alert("Veuillez remplir Date, Fournisseur et Montant.");
+
         try {
-            const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
-            const snap = await getDocs(q);
-            dossiersCache = [];
-            const dlClients = document.getElementById('clients_suggestions');
-            const dlDefunts = document.getElementById('defunts_suggestions');
-            dlClients.innerHTML = ""; dlDefunts.innerHTML = "";
-
-            snap.forEach(doc => {
-                const data = doc.data();
-                dossiersCache.push(data);
-                if(data.mandant && data.mandant.nom) {
-                    const opt = document.createElement('option'); opt.value = data.mandant.nom; opt.label = "Client enregistré"; dlClients.appendChild(opt);
-                }
-                if(data.defunt && data.defunt.nom) {
-                    const opt = document.createElement('option'); opt.value = data.defunt.nom; opt.label = "Défunt enregistré"; dlDefunts.appendChild(opt);
-                }
+            await addDoc(collection(db, "depenses"), {
+                date: date, fournisseur: fourn, categorie: cat, montant: mont,
+                date_ajout: new Date().toISOString()
             });
-        } catch(e) { console.error("Erreur chargement suggestions :", e); }
-    }
-    chargerSuggestionsClients();
+            // Reset form
+            document.getElementById('dep_fourn').value = "";
+            document.getElementById('dep_montant').value = "";
+            window.chargerDepenses(); // Recharge la liste et recalcul
+        } catch(e) { alert("Erreur : " + e.message); }
+    };
 
-    window.remplirInfosClient = function() {
-        const nomSaisi = document.getElementById('client_nom').value;
-        const dossierTrouve = dossiersCache.find(d => d.mandant && d.mandant.nom === nomSaisi);
-        if(dossierTrouve) {
-            document.getElementById('client_civility').value = dossierTrouve.mandant.civility || "M.";
-            document.getElementById('client_adresse').value = dossierTrouve.mandant.adresse || "";
-            const defuntNomInput = document.getElementById('defunt_nom');
-            if(!defuntNomInput.value && dossierTrouve.defunt) {
-                defuntNomInput.value = dossierTrouve.defunt.nom || "";
-                document.getElementById('defunt_civility').value = dossierTrouve.defunt.civility || "M.";
-            }
+    window.chargerDepenses = async function() {
+        const tbody = document.getElementById('depenses-body');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chargement...</td></tr>';
+        
+        try {
+            const q = query(collection(db, "depenses"), orderBy("date", "desc"));
+            const snap = await getDocs(q);
+            tbody.innerHTML = "";
+            global_Depenses = 0; // Reset pour recalcul
+
+            if(snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">Aucune dépense enregistrée.</td></tr>'; updateFinancialDashboard(); return; }
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const dDate = new Date(data.date);
+                
+                // Calcul Stats (Uniquement année en cours)
+                if(dDate.getFullYear() === currentYear) {
+                    global_Depenses += (data.montant || 0);
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${dDate.toLocaleDateString()}</td>
+                    <td><strong>${data.fournisseur}</strong></td>
+                    <td><span class="badge badge-depense">${data.categorie}</span></td>
+                    <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
+                    <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="window.supprimerDepense('${docSnap.id}')"></i></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            updateFinancialDashboard();
+        } catch(e) { console.error(e); }
+    };
+
+    window.supprimerDepense = async function(id) {
+        if(confirm("Supprimer cette dépense ?")) {
+            await deleteDoc(doc(db, "depenses", id));
+            window.chargerDepenses();
         }
     };
 
-    document.getElementById('search-input').addEventListener('keyup', (e) => {
-        const term = e.target.value.toLowerCase();
-        document.querySelectorAll('#list-body tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none'; });
-    });
-
-    window.ajouterPaiement = function() {
-        const date = document.getElementById('pay_date').value;
-        const mode = document.getElementById('pay_mode').value;
-        const montant = parseFloat(document.getElementById('pay_amount').value);
-        if(!date || isNaN(montant) || montant <= 0) return alert("Montant ou date invalide.");
-        paiements.push({ date, mode, montant });
-        document.getElementById('pay_amount').value = "";
-        window.renderPaiements(); window.calculTotal();
-    };
-
-    window.supprimerPaiement = function(index) {
-        if(confirm("Supprimer ce paiement ?")) { paiements.splice(index, 1); window.renderPaiements(); window.calculTotal(); }
-    };
-
-    window.renderPaiements = function() {
-        const div = document.getElementById('liste_paiements');
-        if(paiements.length === 0) { div.innerHTML = '<small style="color:#888;">Aucun paiement.</small>'; return; }
-        div.innerHTML = '';
-        paiements.forEach((p, index) => {
-            div.innerHTML += `<div class="payment-item"><span>${new Date(p.date).toLocaleDateString()} - ${p.mode}</span><strong>${p.montant.toFixed(2)} € <i class="fas fa-trash" style="color:red; cursor:pointer; margin-left:10px;" onclick="window.supprimerPaiement(${index})"></i></strong></div>`;
-        });
-    };
-
-    async function genererNumero(type) {
-        const q = query(collection(db, "factures_v2"));
-        const snap = await getDocs(q);
-        const count = snap.size + 1;
-        const year = new Date().getFullYear();
-        const prefix = (type === 'DEVIS') ? 'D' : 'F';
-        return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
-    }
-
-    const MODELES = {
-        "Inhumation": [
-            { type: 'section', text: '1. PRÉPARATION / ORGANISATION DES OBSÈQUES' },
-            { desc: 'Démarches et formalités administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Préparation du défunt (toilette rituelle)', cat: 'Courant', prix: 150 },
-            { desc: 'Frais de séjour chambre funéraire (Forfait 3 jours)', cat: 'Courant', prix: 250 },
-            { desc: 'Vacation de police', cat: 'Avance', prix: 25 },
-            { type: 'section', text: '2. TRANSPORT AVANT MISE EN BIÈRE' },
-            { desc: 'Mise à disposition corbillard (Transport corps)', cat: 'Courant', prix: 150 },
-            { desc: 'Housse mortuaire', cat: 'Courant', prix: 35 },
-            { type: 'section', text: '3. CERCUEIL ET ACCESSOIRES' },
-            { desc: 'Cercueil Inhumation Standard (Chêne clair)', cat: 'Courant', prix: 650 },
-            { desc: 'Plaque identité gravée', cat: 'Courant', prix: 15 },
-            { desc: 'Capiton satin blanc', cat: 'Courant', prix: 80 },
-            { desc: 'Emblème religieux', cat: 'Optionnel', prix: 50 },
-            { type: 'section', text: '4. CIMETIÈRE & INHUMATION' },
-            { desc: 'Creusement et comblement de fosse (Terre)', cat: 'Courant', prix: 650 },
-            { desc: 'Ouverture de caveau (Si existant)', cat: 'Optionnel', prix: 0 },
-            { type: 'section', text: '5. CÉRÉMONIE' },
-            { desc: 'Personnel porteur (x4)', cat: 'Courant', prix: 600 },
-            { desc: 'Maître de cérémonie', cat: 'Optionnel', prix: 190 },
-            { desc: 'Frais de culte', cat: 'Avance', prix: 200 }
-        ],
-        "Rapatriement": [
-            { type: 'section', text: '1. PRÉPARATION / ADMINISTRATIF' },
-            { desc: 'Démarches administratives (Préfecture, Consulat, Douane)', cat: 'Courant', prix: 400 },
-            { desc: 'Préparation du défunt (Toilette rituelle complète)', cat: 'Courant', prix: 160 },
-            { desc: 'Séjour chambre funéraire (3j)', cat: 'Courant', prix: 250 },
-            { type: 'section', text: '2. SOINS & CERCUEIL (OBLIGATOIRES)' },
-            { desc: 'Cercueil Hermétique (Zinc + Bois) - Norme IATA', cat: 'Courant', prix: 1200 },
-            { desc: 'Soins de conservation (Thanasopraxie)', cat: 'Courant', prix: 350 },
-            { desc: 'Plaque d\'identité', cat: 'Courant', prix: 15 },
-            { desc: 'Filtre épurateur (Si requis)', cat: 'Courant', prix: 40 },
-            { type: 'section', text: '3. TRANSPORT & FRET AÉRIEN' },
-            { desc: 'Transport vers Aéroport (France)', cat: 'Courant', prix: 300 },
-            { desc: 'Frais de Fret Aérien (Estimation Compagnie)', cat: 'Avance', prix: 1500 },
-            { desc: 'Ambulance arrivée (Vers lieu d\'inhumation)', cat: 'Optionnel', prix: 300 }
-        ],
-        "Cremation": [
-            { type: 'section', text: '1. DÉMARCHES & PRÉPARATION' },
-            { desc: 'Démarches et formalités administratives', cat: 'Courant', prix: 250 },
-            { desc: 'Préparation du défunt', cat: 'Courant', prix: 150 },
-            { desc: 'Frais de crématorium (Taxe)', cat: 'Avance', prix: 750 },
-            { type: 'section', text: '2. CERCUEIL & URNE' },
-            { desc: 'Cercueil Crémation (Pin/Peuplier)', cat: 'Courant', prix: 650 },
-            { desc: 'Plaque identité gravée', cat: 'Courant', prix: 15 },
-            { desc: 'Capiton satin', cat: 'Courant', prix: 80 },
-            { desc: 'Urne Cinéraire (Standard)', cat: 'Courant', prix: 150 },
-            { type: 'section', text: '4. CRÉMATORIUM & CÉRÉMONIE' },
-            { desc: 'Transport après mise en bière (Crématorium)', cat: 'Courant', prix: 350 },
-            { desc: 'Frais de crématorium (Taxe)', cat: 'Avance', prix: 750 },
-            { desc: 'Personnel porteur (x4)', cat: 'Courant', prix: 600 },
-            { desc: 'Maître de cérémonie', cat: 'Optionnel', prix: 190 }
-        ],
-        "Exhumation": [
-            { type: 'section', text: '1. ADMINISTRATIF & TECHNIQUE' },
-            { desc: 'Demande d\'ouverture de sépulture (Mairie)', cat: 'Courant', prix: 150 },
-            { desc: 'Ouverture de fosse / Caveau', cat: 'Courant', prix: 600 },
-            { desc: 'Exhumation et réduction de corps', cat: 'Courant', prix: 450 },
-            { desc: 'Reliquaire (Boîte à ossements)', cat: 'Courant', prix: 120 },
-            { desc: 'Fermeture de sépulture', cat: 'Courant', prix: 200 }
-        ],
-        "Transport": [
-            { type: 'section', text: '1. TRANSPORT DE CORPS' },
-            { desc: 'Transport AVANT mise en bière (Véhicule agréé)', cat: 'Courant', prix: 300 },
-            { desc: 'Housse mortuaire', cat: 'Courant', prix: 40 },
-            { desc: 'Transport APRÈS mise en bière (Longue distance)', cat: 'Courant', prix: 0 }
-        ]
-    };
-
-    window.loadTemplate = async function(type) {
-        document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument();
-        const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num;
-        if (MODELES[type]) {
-            document.getElementById('tbody_lignes').innerHTML = "";
-            MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); });
-        }
-        window.calculTotal();
-    };
-
-    window.transformerEnFacture = async function() {
-        if(confirm("Créer une FACTURE à partir de ce devis ? (Le devis sera archivé)")) {
-            document.getElementById('doc_type').value = "FACTURE"; 
-            document.getElementById('doc_date').valueAsDate = new Date();
-            const num = await genererNumero('FACTURE');
-            document.getElementById('doc_numero').value = num;
-            document.getElementById('current_doc_id').value = ""; // NOUVEAU DOC
-            document.getElementById('btn-save').click();
-        }
-    };
-
-    function updateTransformButton() {
-        const type = document.getElementById('doc_type').value; const btn = document.getElementById('btn-transform');
-        if(type === 'DEVIS') btn.classList.remove('hidden'); else btn.classList.add('hidden');
-    }
-    document.getElementById('doc_type').addEventListener('change', updateTransformButton);
-
+    // --- CHARGEMENT FACTURES (MODIFIÉ V12 POUR STATS) ---
     window.chargerListeFactures = async function() {
-        const tbody = document.getElementById('list-body'); tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+        const tbody = document.getElementById('list-body'); 
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+        
         try {
             const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc")); 
             const querySnapshot = await getDocs(q);
-            let totalCA = 0, countFactures = 0, countDevisRecents = 0; 
-            const currentYear = new Date().getFullYear(); const dateLimite = new Date(); dateLimite.setMonth(dateLimite.getMonth() - 3);
             
+            global_CA = 0; // Reset
             tbody.innerHTML = ""; 
+            
             if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
             
             querySnapshot.forEach((docSnap) => {
@@ -358,8 +382,12 @@
                 const reste = totalDoc - paye;
                 const typeDoc = data.info?.type || 'DEVIS'; 
                 
-                if (typeDoc === "FACTURE") { if (dateDoc.getFullYear() === currentYear) totalCA += totalDoc; countFactures++; } 
-                else if (typeDoc === "DEVIS") { if (dateDoc > dateLimite) countDevisRecents++; }
+                // STATS V12 : CA = Factures de l'année en cours
+                if (typeDoc === "FACTURE") { 
+                    if (dateDoc.getFullYear() === currentYear) {
+                        global_CA += totalDoc;
+                    }
+                } 
                 
                 const typeClass = (typeDoc === "FACTURE") ? "badge-facture" : "badge-devis";
                 const nomClient = (data.client?.civility||"") + " " + (data.client?.nom || '-');
@@ -380,14 +408,96 @@
                     </td>`;
                 tbody.appendChild(tr);
             });
-            document.getElementById('stat-ca').innerText = totalCA.toFixed(2) + " €"; 
-            document.getElementById('stat-factures').innerText = countFactures; 
-            document.getElementById('stat-devis').innerText = countDevisRecents;
+            // On lance aussi le chargement des dépenses pour avoir le total Dashboard complet
+            window.chargerDepenses(); 
+
         } catch(e) { console.error(e); tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Erreur : ${e.message}</td></tr>`; }
     };
 
-    window.showList = function() { document.getElementById('view-editor').classList.add('hidden'); document.getElementById('view-list').classList.remove('hidden'); window.chargerListeFactures(); };
-    
+    // --- FONCTIONS EXISTANTES (FACTURATION V10) ---
+    async function chargerSuggestionsClients() {
+        try {
+            const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
+            const snap = await getDocs(q);
+            dossiersCache = [];
+            const dlClients = document.getElementById('clients_suggestions');
+            const dlDefunts = document.getElementById('defunts_suggestions');
+            dlClients.innerHTML = ""; dlDefunts.innerHTML = "";
+            snap.forEach(doc => {
+                const data = doc.data(); dossiersCache.push(data);
+                if(data.mandant && data.mandant.nom) { const opt = document.createElement('option'); opt.value = data.mandant.nom; dlClients.appendChild(opt); }
+                if(data.defunt && data.defunt.nom) { const opt = document.createElement('option'); opt.value = data.defunt.nom; dlDefunts.appendChild(opt); }
+            });
+        } catch(e) {}
+    }
+    chargerSuggestionsClients();
+
+    window.remplirInfosClient = function() {
+        const nomSaisi = document.getElementById('client_nom').value;
+        const dossierTrouve = dossiersCache.find(d => d.mandant && d.mandant.nom === nomSaisi);
+        if(dossierTrouve) {
+            document.getElementById('client_civility').value = dossierTrouve.mandant.civility || "M.";
+            document.getElementById('client_adresse').value = dossierTrouve.mandant.adresse || "";
+            if(!document.getElementById('defunt_nom').value && dossierTrouve.defunt) {
+                document.getElementById('defunt_nom').value = dossierTrouve.defunt.nom || "";
+                document.getElementById('defunt_civility').value = dossierTrouve.defunt.civility || "M.";
+            }
+        }
+    };
+
+    document.getElementById('search-input').addEventListener('keyup', (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('#list-body tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none'; });
+    });
+
+    window.ajouterPaiement = function() {
+        const date = document.getElementById('pay_date').value; const mode = document.getElementById('pay_mode').value;
+        const montant = parseFloat(document.getElementById('pay_amount').value);
+        if(!date || isNaN(montant) || montant <= 0) return alert("Montant ou date invalide.");
+        paiements.push({ date, mode, montant });
+        document.getElementById('pay_amount').value = ""; window.renderPaiements(); window.calculTotal();
+    };
+    window.supprimerPaiement = function(index) { if(confirm("Supprimer ce paiement ?")) { paiements.splice(index, 1); window.renderPaiements(); window.calculTotal(); } };
+    window.renderPaiements = function() {
+        const div = document.getElementById('liste_paiements');
+        if(paiements.length === 0) { div.innerHTML = '<small style="color:#888;">Aucun paiement.</small>'; return; }
+        div.innerHTML = '';
+        paiements.forEach((p, index) => { div.innerHTML += `<div class="payment-item"><span>${new Date(p.date).toLocaleDateString()} - ${p.mode}</span><strong>${p.montant.toFixed(2)} € <i class="fas fa-trash" style="color:red; cursor:pointer; margin-left:10px;" onclick="window.supprimerPaiement(${index})"></i></strong></div>`; });
+    };
+
+    async function genererNumero(type) {
+        const q = query(collection(db, "factures_v2")); const snap = await getDocs(q);
+        const count = snap.size + 1; const year = new Date().getFullYear();
+        const prefix = (type === 'DEVIS') ? 'D' : 'F'; return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
+    }
+
+    const MODELES = {
+        "Inhumation": [ { type: 'section', text: '1. PRÉPARATION' }, { desc: 'Démarches admin', prix: 250 }, { desc: 'Toilette', prix: 150 }, { desc: 'Chambre funéraire (3j)', prix: 250 }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Chêne', prix: 650 }, { desc: 'Capiton', prix: 80 }, { type: 'section', text: '3. CIMETIÈRE' }, { desc: 'Creusement', prix: 650 }, { desc: 'Porteurs (x4)', prix: 600 } ],
+        "Cremation": [ { type: 'section', text: '1. PRÉPARATION' }, { desc: 'Démarches', prix: 250 }, { desc: 'Toilette', prix: 150 }, { desc: 'Taxe Crématorium', prix: 750, cat: 'Avance' }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Pin', prix: 650 }, { desc: 'Urne', prix: 150 }, { type: 'section', text: '3. CÉRÉMONIE' }, { desc: 'Transport corps', prix: 350 }, { desc: 'Porteurs', prix: 600 } ],
+        "Rapatriement": [ { type: 'section', text: '1. ADMIN' }, { desc: 'Démarches Consulat', prix: 400 }, { desc: 'Soins conservation', prix: 350 }, { type: 'section', text: '2. CERCUEIL' }, { desc: 'Cercueil Zinc', prix: 1200 }, { desc: 'Fret Aérien', prix: 1500, cat: 'Avance' }, { type: 'section', text: '3. TRANSPORT' }, { desc: 'Transport Aéroport', prix: 300 } ],
+        "Transport": [ { desc: 'Transport Avant Mise en Bière', prix: 300 }, { desc: 'Housse', prix: 40 } ],
+        "Exhumation": [ { desc: 'Ouverture Fosse', prix: 600 }, { desc: 'Exhumation', prix: 450 }, { desc: 'Reliquaire', prix: 120 } ]
+    };
+
+    window.loadTemplate = async function(type) {
+        document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument();
+        const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num;
+        if (MODELES[type]) { document.getElementById('tbody_lignes').innerHTML = ""; MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); }); }
+        window.calculTotal();
+    };
+
+    window.transformerEnFacture = async function() {
+        if(confirm("Créer une FACTURE à partir de ce devis ?")) {
+            document.getElementById('doc_type').value = "FACTURE"; document.getElementById('doc_date').valueAsDate = new Date();
+            const num = await genererNumero('FACTURE'); document.getElementById('doc_numero').value = num;
+            document.getElementById('current_doc_id').value = ""; document.getElementById('btn-save').click();
+        }
+    };
+    document.getElementById('doc_type').addEventListener('change', () => { 
+        const t = document.getElementById('doc_type').value; document.getElementById('btn-transform').classList.toggle('hidden', t !== 'DEVIS'); 
+    });
+
+    window.showDashboard = function() { document.getElementById('view-editor').classList.add('hidden'); document.getElementById('view-dashboard').classList.remove('hidden'); window.chargerListeFactures(); };
     window.nouveauDocument = function() {
         document.getElementById('current_doc_id').value = ""; document.getElementById('doc_numero').value = "Auto"; 
         document.getElementById('client_nom').value = ""; document.getElementById('client_adresse').value = ""; 
@@ -395,59 +505,36 @@
         document.getElementById('doc_type').value = "DEVIS"; document.getElementById('tbody_lignes').innerHTML = ""; 
         document.getElementById('pay_date').valueAsDate = new Date(); paiements = []; window.renderPaiements();
         window.calculTotal(); document.getElementById('btn-transform').classList.add('hidden'); 
-        document.getElementById('view-list').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
+        document.getElementById('view-dashboard').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
     };
 
     window.chargerDocument = async function(id) {
         try { 
             const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef); 
             if(docSnap.exists()) { 
-                const data = docSnap.data(); 
-                document.getElementById('current_doc_id').value = id; 
-                document.getElementById('doc_numero').value = data.info.numero || ""; 
-                document.getElementById('client_civility').value = data.client.civility||"M."; 
-                document.getElementById('client_nom').value = data.client.nom; 
-                document.getElementById('client_adresse').value = data.client.adresse; 
-                document.getElementById('defunt_civility').value = data.defunt.civility||"M."; 
-                document.getElementById('defunt_nom').value = data.defunt.nom; 
-                document.getElementById('doc_type').value = data.info.type; 
-                document.getElementById('doc_date').value = data.info.date; 
+                const data = docSnap.data(); document.getElementById('current_doc_id').value = id; 
+                document.getElementById('doc_numero').value = data.info.numero; document.getElementById('client_civility').value = data.client.civility; 
+                document.getElementById('client_nom').value = data.client.nom; document.getElementById('client_adresse').value = data.client.adresse; 
+                document.getElementById('defunt_civility').value = data.defunt.civility; document.getElementById('defunt_nom').value = data.defunt.nom; 
+                document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date; 
                 document.getElementById('tbody_lignes').innerHTML = ""; 
                 if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); } 
                 paiements = data.paiements || []; window.renderPaiements(); window.calculTotal(); 
-                
-                const btnTrans = document.getElementById('btn-transform');
-                if(data.info.type === 'DEVIS') btnTrans.classList.remove('hidden'); else btnTrans.classList.add('hidden');
-                
-                document.getElementById('view-list').classList.add('hidden'); 
-                document.getElementById('view-editor').classList.remove('hidden'); 
-                window.scrollTo(0,0);
+                document.getElementById('btn-transform').classList.toggle('hidden', data.info.type !== 'DEVIS');
+                document.getElementById('view-dashboard').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden'); window.scrollTo(0,0);
             } 
         } catch(e) { alert("Erreur : " + e.message); }
     };
 
     const el = document.getElementById('tbody_lignes'); Sortable.create(el, { handle: '.drag-handle', animation: 150, onEnd: function () { window.calculTotal(); } });
-
-    window.ajouterSection = function(titre="NOUVELLE SECTION") {
-        const tbody = document.getElementById('tbody_lignes'); const tr = document.createElement('tr'); tr.className = "row-section";
-        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-vertical"></i></td><td colspan="4"><input type="text" class="input-cell input-section" value="${titre}" placeholder="Titre Section"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
-        tbody.appendChild(tr);
-    };
-
-    window.ajouterLigne = function(desc="", prix=0, type="Courant") {
-        const tbody = document.getElementById('tbody_lignes'); const tr = document.createElement('tr'); tr.className = "row-item";
-        tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}" placeholder="Description..."></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Optionnel" ${type==='Optionnel'?'selected':''}>Optionnel</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()" placeholder="0.00"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`;
-        tbody.appendChild(tr); window.calculTotal();
-    };
+    window.ajouterSection = function(titre="NOUVELLE SECTION") { const tr = document.createElement('tr'); tr.className = "row-section"; tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-vertical"></i></td><td colspan="4"><input type="text" class="input-cell input-section" value="${titre}"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`; document.getElementById('tbody_lignes').appendChild(tr); };
+    window.ajouterLigne = function(desc="", prix=0, type="Courant") { const tr = document.createElement('tr'); tr.className = "row-item"; tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}"></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Optionnel" ${type==='Optionnel'?'selected':''}>Optionnel</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`; document.getElementById('tbody_lignes').appendChild(tr); window.calculTotal(); };
 
     window.calculTotal = function() { 
         let total = 0; document.querySelectorAll('.val-prix').forEach(input => { total += parseFloat(input.value) || 0; }); 
         document.getElementById('total_general').innerText = total.toFixed(2) + " €";
-        let totalPaye = paiements.reduce((sum, p) => sum + p.montant, 0);
-        document.getElementById('total_paye').innerText = totalPaye.toFixed(2) + " €";
-        let reste = total - totalPaye;
-        document.getElementById('reste_a_payer').innerText = reste.toFixed(2) + " €";
-        document.getElementById('total_display').innerText = total.toFixed(2);
+        let totalPaye = paiements.reduce((sum, p) => sum + p.montant, 0); document.getElementById('total_paye').innerText = totalPaye.toFixed(2) + " €";
+        document.getElementById('reste_a_payer').innerText = (total - totalPaye).toFixed(2) + " €"; document.getElementById('total_display').innerText = total.toFixed(2);
     };
 
     window.supprimerDocument = async function(id) { if(confirm("Supprimer ?")) { await deleteDoc(doc(db, "factures_v2", id)); window.chargerListeFactures(); } };
@@ -455,135 +542,44 @@
     document.getElementById('btn-save').addEventListener('click', async () => {
         const btn = document.getElementById('btn-save'); const id = document.getElementById('current_doc_id').value; btn.innerHTML = '...';
         try {
-            const lignes = [];
-            document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
-                if(tr.classList.contains('row-section')) lignes.push({ type: 'section', text: tr.querySelector('input').value });
-                else lignes.push({ type: 'item', desc: tr.querySelector('.val-desc').value, cat: tr.querySelector('.val-type').value, prix: parseFloat(tr.querySelector('.val-prix').value) || 0 });
-            });
-            const docData = { 
-                client: { civility: document.getElementById('client_civility').value, nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value }, 
-                defunt: { civility: document.getElementById('defunt_civility').value, nom: document.getElementById('defunt_nom').value }, 
-                info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, numero: document.getElementById('doc_numero').value, total: parseFloat(document.getElementById('total_display').innerText) }, 
-                lignes: lignes, paiements: paiements, date_creation: new Date().toISOString() 
-            };
+            const lignes = []; document.querySelectorAll('#tbody_lignes tr').forEach(tr => { if(tr.classList.contains('row-section')) lignes.push({ type: 'section', text: tr.querySelector('input').value }); else lignes.push({ type: 'item', desc: tr.querySelector('.val-desc').value, cat: tr.querySelector('.val-type').value, prix: parseFloat(tr.querySelector('.val-prix').value) || 0 }); });
+            const docData = { client: { civility: document.getElementById('client_civility').value, nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value }, defunt: { civility: document.getElementById('defunt_civility').value, nom: document.getElementById('defunt_nom').value }, info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, numero: document.getElementById('doc_numero').value, total: parseFloat(document.getElementById('total_display').innerText) }, lignes: lignes, paiements: paiements, date_creation: new Date().toISOString() };
             if(id) await updateDoc(doc(db, "factures_v2", id), docData); else await addDoc(collection(db, "factures_v2"), docData);
-            alert("✅ Enregistré !"); window.showList();
+            alert("✅ Enregistré !"); window.showDashboard();
         } catch(e) { alert("Erreur : " + e.message); } btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     });
 
     document.getElementById('btn-pdf').addEventListener('click', () => {
-        if(!logoBase64) chargerLogoBase64();
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        
+        if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const doc = new jsPDF();
         if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 25, 25); } catch(e){} }
-        doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(34, 155, 76);
-        doc.text("POMPES FUNEBRES", 15, 40); doc.text("SOLIDAIRE PERPIGNAN", 15, 45);
-        doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(80);
-        doc.text("32 boulevard Léon Jean Grégory Thuir", 15, 50);
-        doc.text("Tél : 07.55.18.27.77", 15, 54);
-
+        doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(34, 155, 76); doc.text("POMPES FUNEBRES", 15, 40); doc.text("SOLIDAIRE PERPIGNAN", 15, 45);
+        doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(80); doc.text("32 boulevard Léon Jean Grégory Thuir", 15, 50); doc.text("Tél : 07.55.18.27.77", 15, 54);
         doc.setFillColor(245, 245, 245); doc.roundedRect(110, 10, 85, 30, 2, 2, 'F');
-        doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica","bold");
-        doc.text(`${document.getElementById('client_civility').value} ${document.getElementById('client_nom').value}`, 115, 18);
-        doc.setFont("helvetica","normal"); doc.setFontSize(9);
-        doc.text(doc.splitTextToSize(document.getElementById('client_adresse').value, 80), 115, 24);
-
-        let y = 65; 
-        doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(34, 155, 76);
+        doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica","bold"); doc.text(`${document.getElementById('client_civility').value} ${document.getElementById('client_nom').value}`, 115, 18); doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.text(doc.splitTextToSize(document.getElementById('client_adresse').value, 80), 115, 24);
+        let y = 65; doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(34, 155, 76);
         const typeDoc = document.getElementById('doc_type').value; const numDoc = document.getElementById('doc_numero').value;
-        doc.text(`${typeDoc} N° ${numDoc}`, 15, y);
-        doc.setTextColor(0); doc.setFont("helvetica","normal");
-        doc.text(`du ${document.getElementById('doc_date').value.split('-').reverse().join('/')}`, 80, y);
-        doc.setFont("helvetica","bold");
-        doc.text(`DÉFUNT : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 120, y); y += 8;
-
-        const rows = [];
-        document.querySelectorAll('#tbody_lignes tr').forEach(tr => {
-            if(tr.classList.contains('row-section')) {
-                rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 4, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold', fontSize: 8 } }]);
-            } else {
-                const desc = tr.querySelector('.val-desc').value; const type = tr.querySelector('.val-type').value;
-                const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €';
-                let colCourant = "", colOption = "";
-                if(type === 'Optionnel') colOption = prix; else colCourant = prix;
-                rows.push([desc, 'NA', colCourant, colOption]);
-            }
-        });
-
-        doc.autoTable({
-            startY: y, head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']],
-            body: rows, theme: 'grid',
-            headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 8, halign: 'center', valign: 'middle', cellPadding: 1 },
-            styles: { fontSize: 8, cellPadding: 1, valign: 'middle' },
-            columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 10, halign: 'center' }, 2: { cellWidth: 35, halign: 'right' }, 3: { cellWidth: 35, halign: 'right' } }
-        });
-
-        const finalY = doc.lastAutoTable.finalY + 8;
-        const total = parseFloat(document.getElementById('total_display').innerText);
-        const dejaRegle = paiements.reduce((sum, p) => sum + p.montant, 0);
-        const reste = total - dejaRegle;
-
-        let curY = finalY;
-        doc.setFontSize(9); doc.setTextColor(0);
-        doc.text("Total TTC :", 130, curY); doc.text(total.toFixed(2) + " €", 190, curY, {align:'right'}); curY+=5;
-        if(paiements.length > 0) {
-            doc.setFontSize(7); doc.setTextColor(100);
-            paiements.forEach(p => { doc.text(`Reçu (${p.mode}) :`, 130, curY); doc.text(`-${p.montant.toFixed(2)} €`, 190, curY, {align:'right'}); curY+=4; });
-            curY+=2;
-        }
-        doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10);
-        doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76);
-        doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
-// --- BLOC NB : TVA & MENTIONS ---
-        doc.setFontSize(8); 
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38); // Rouge pour "NB :"
-        doc.text("NB :", 15, curY + 5); // Juste sous le tableau à gauche
-
-        doc.setTextColor(0); // Retour au noir
-        doc.setFont("helvetica", "normal");
-        doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5);
-        doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
-        // --- AJOUT DES MENTIONS LÉGALES (CADRE NOIR) ---
-        // --- BLOC NB : TVA (Doit apparaître sur TOUS les documents) ---
-        doc.setFontSize(8); 
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38); 
-        doc.text("NB :", 15, curY + 5); 
-
-        doc.setTextColor(0); 
-        doc.setFont("helvetica", "normal");
-        doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5);
-        doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
-
-        // --- AJOUT CADRE SIGNATURE (UNIQUEMENT POUR LES DEVIS) ---
-        // La correction est ici : on vérifie si c'est un DEVIS
+        doc.text(`${typeDoc} N° ${numDoc}`, 15, y); doc.setTextColor(0); doc.setFont("helvetica","normal"); doc.text(`du ${document.getElementById('doc_date').value.split('-').reverse().join('/')}`, 80, y);
+        doc.setFont("helvetica","bold"); doc.text(`DÉFUNT : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 120, y); y += 8;
+        const rows = []; document.querySelectorAll('#tbody_lignes tr').forEach(tr => { if(tr.classList.contains('row-section')) { rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 4, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold', fontSize: 8 } }]); } else { const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €'; rows.push([tr.querySelector('.val-desc').value, 'NA', tr.querySelector('.val-type').value === 'Optionnel' ? '' : prix, tr.querySelector('.val-type').value === 'Optionnel' ? prix : '']); } });
+        doc.autoTable({ startY: y, head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']], body: rows, theme: 'grid', headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 8, halign: 'center' }, styles: { fontSize: 8 }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } } });
+        const finalY = doc.lastAutoTable.finalY + 8; const total = parseFloat(document.getElementById('total_display').innerText); const dejaRegle = paiements.reduce((sum, p) => sum + p.montant, 0); const reste = total - dejaRegle;
+        let curY = finalY; doc.setFontSize(9); doc.setTextColor(0); doc.text("Total TTC :", 130, curY); doc.text(total.toFixed(2) + " €", 190, curY, {align:'right'}); curY+=5;
+        if(paiements.length > 0) { doc.setFontSize(7); doc.setTextColor(100); paiements.forEach(p => { doc.text(`Reçu (${p.mode}) :`, 130, curY); doc.text(`-${p.montant.toFixed(2)} €`, 190, curY, {align:'right'}); curY+=4; }); curY+=2; }
+        doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76); doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(220, 38, 38); doc.text("NB :", 15, curY + 5); doc.setTextColor(0); doc.setFont("helvetica", "normal"); doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5); doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
         if (typeDoc === 'DEVIS') {
-            let footerY = curY + 30; 
-            if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
-
-            doc.setDrawColor(0); doc.setLineWidth(0.5);
-            doc.rect(15, footerY, 180, 40); 
-
-            doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
-            
-            doc.text("Je soussigné(e),", 20, footerY + 8);
-            doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8);
-            
-            doc.text("Le ........................................", 20, footerY + 16);
-            doc.text("à ........................................", 80, footerY + 16);
-            
-            doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
-            
-            doc.setFont("helvetica", "bold"); doc.setFontSize(8);
-            const disclaimer = "Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.";
-            const splitDisclaimer = doc.splitTextToSize(disclaimer, 170);
-            doc.text(splitDisclaimer, 20, footerY + 32);
+            let footerY = curY + 30; if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
+            doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(15, footerY, 180, 40); doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
+            doc.text("Je soussigné(e),", 20, footerY + 8); doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8); doc.text("Le ........................................", 20, footerY + 16); doc.text("à ........................................", 80, footerY + 16); doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.text(doc.splitTextToSize("Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.", 170), 20, footerY + 32);
         }
         doc.save(`${typeDoc}_${numDoc}.pdf`);
     });
 
-    window.chargerListeFactures(); window.calculTotal = calculTotal;
+    // INIT AU CHARGEMENT
+    window.chargerListeFactures(); 
+    document.getElementById('dep_date').valueAsDate = new Date();
+    window.calculTotal = calculTotal;
 </script>
 </body>
 </html>
