@@ -1,10 +1,13 @@
 /**
  * ====================================================================
- * PF SOLIDAIRE ERP - LOGIC V11 (STOCKS + TOUTES FONCTIONS PRÉCÉDENTES)
+ * PF SOLIDAIRE ERP - LOGIC V15 (STOCKS + GED PLAN B + COMPLET)
  * ====================================================================
  */
 
 import { auth, db, collection, addDoc, getDocs, getDoc, query, orderBy, onAuthStateChanged, signInWithEmailAndPassword, signOut, deleteDoc, updateDoc, doc, sendPasswordResetEmail } from "./config.js";
+
+// Variable Globale pour la GED (Plan B)
+window.current_pieces_jointes = []; 
 
 // ==========================================================================
 // 1. INITIALISATION & NAVIGATION
@@ -74,7 +77,7 @@ window.showSection = function(id) {
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-base').classList.add('hidden');
     document.getElementById('view-admin').classList.add('hidden');
-    document.getElementById('view-stock').classList.add('hidden'); // Nouvelle vue stock
+    document.getElementById('view-stock').classList.add('hidden'); 
     
     // Afficher la bonne vue
     document.getElementById('view-' + id).classList.remove('hidden');
@@ -147,13 +150,19 @@ window.viderFormulaire = function() {
         document.getElementById('rap_immat').value = "DA-081-ZQ";
         if(document.getElementById('check_vol2')) document.getElementById('check_vol2').checked = false;
         if(document.getElementById('copy_mandant')) document.getElementById('copy_mandant').checked = false;
+        
+        // --- VIDER LA GED (NOUVEAU V15) ---
+        window.current_pieces_jointes = [];
+        if(window.afficherPiecesJointes) window.afficherPiecesJointes();
+        // ----------------------------------
+
         window.toggleSections();
         document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
     }
 };
 
 // ==========================================================================
-// 3. GESTION DES STOCKS (NOUVEAU MODULE V11)
+// 3. GESTION DES STOCKS (MODULE V11)
 // ==========================================================================
 window.openAjoutStock = function() {
     document.getElementById('form-stock').classList.remove('hidden');
@@ -185,7 +194,6 @@ window.ajouterArticleStock = async function() {
     } catch(e) { alert("Erreur : " + e.message); }
 };
 
-// --- GESTION DES STOCKS (AMÉLIORÉE V11.5) ---
 window.chargerStock = async function() {
     const tbody = document.getElementById('stock-table-body');
     if(!tbody) return;
@@ -201,21 +209,17 @@ window.chargerStock = async function() {
         snap.forEach(docSnap => {
             const data = docSnap.data();
             const alertClass = (data.qte < 3) ? 'stock-alert' : 'stock-ok';
-            const alertText = (data.qte < 3) ? 'BAS' : 'OK';
-            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${data.nom}</strong><br><small style="color:#64748b;">${data.fournisseur || ''}</small></td>
                 <td>${data.categorie}</td>
                 <td>${data.prix_achat ? data.prix_achat.toFixed(2) : '0.00'} €</td>
                 <td><strong>${data.prix_vente ? data.prix_vente.toFixed(2) : '0.00'} €</strong></td>
-                
                 <td style="white-space:nowrap;">
                     <button class="btn-icon" style="background:#fee2e2; color:#ef4444; border-color:#fca5a5; padding:2px 8px; margin-right:5px;" onclick="window.updateStock('${docSnap.id}', -1)" title="Sortie Stock (-1)">-</button>
                     <span class="badge ${alertClass}" style="font-size:1rem; padding:5px 12px;">${data.qte}</span>
                     <button class="btn-icon" style="background:#dcfce7; color:#16a34a; border-color:#86efac; padding:2px 8px; margin-left:5px;" onclick="window.updateStock('${docSnap.id}', 1)" title="Entrée Stock (+1)">+</button>
                 </td>
-                
                 <td style="text-align:center;">
                     <button class="btn-icon" onclick="window.supprimerArticle('${docSnap.id}')" title="Supprimer la référence"><i class="fas fa-trash" style="color:red;"></i></button>
                 </td>`;
@@ -223,8 +227,8 @@ window.chargerStock = async function() {
         });
     } catch(e) { console.error(e); }
 };
+
 window.updateStock = async function(id, delta) {
-    // delta = +1 (Entrée) ou -1 (Sortie)
     try {
         const docRef = doc(db, "stock_articles", id);
         const docSnap = await getDoc(docRef);
@@ -232,21 +236,13 @@ window.updateStock = async function(id, delta) {
         if (docSnap.exists()) {
             const currentQte = docSnap.data().qte || 0;
             const newQte = currentQte + delta;
-
-            if (newQte < 0) {
-                alert("Impossible : Le stock ne peut pas être négatif.");
-                return;
-            }
-
+            if (newQte < 0) { alert("Impossible : Le stock ne peut pas être négatif."); return; }
             await updateDoc(docRef, { qte: newQte });
-            
-            // Petit effet visuel ou rechargement
-            window.chargerStock(); // On recharge le tableau pour voir le changement
+            window.chargerStock();
         }
-    } catch(e) {
-        alert("Erreur mise à jour stock : " + e.message);
-    }
+    } catch(e) { alert("Erreur mise à jour stock : " + e.message); }
 };
+
 window.supprimerArticle = async function(id) {
     if(confirm("Supprimer cet article du stock ?")) {
         try {
@@ -321,6 +317,11 @@ async function sauvegarderEnBase() {
                 civility: getVal('civilite_mandant'),
                 nom: getVal('soussigne'), lien: getVal('lien'), adresse: getVal('demeurant') 
             },
+            
+            // --- AJOUT V15 : SAUVEGARDE DES PIÈCES JOINTES GED ---
+            pieces_jointes: window.current_pieces_jointes || [],
+            // -----------------------------------------------------
+
             technique: { 
                 type_operation: document.getElementById('prestation').value,
                 mise_biere: getVal('lieu_mise_biere'), date_fermeture: getVal('date_fermeture'),
@@ -376,6 +377,15 @@ window.chargerDossier = async function(id) {
             window.showSection('admin');
             document.getElementById('dossier_id').value = id;
             document.getElementById('btn-save-bdd').innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
+
+            // --- CHARGEMENT GED (NOUVEAU V15) ---
+            if (data.pieces_jointes) {
+                window.current_pieces_jointes = data.pieces_jointes;
+            } else {
+                window.current_pieces_jointes = [];
+            }
+            if(window.afficherPiecesJointes) window.afficherPiecesJointes();
+            // ------------------------------------
 
             if(data.defunt) {
                 if(data.defunt.civility) document.getElementById('civilite_defunt').value = data.defunt.civility;
