@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Finance V12.5 (Trésorerie Réelle)</title>
+    <title>PF Solidaire - Finance V13.5 (Expert)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* STYLES GÉNÉRAUX */
+        /* --- STYLES GÉNÉRAUX --- */
         body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
         .hidden { display: none !important; }
         
@@ -48,14 +48,14 @@
         .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
         .badge-depense { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
 
-        /* NOUVEAUX BADGES V12.5 */
+        /* NOUVEAUX BADGES V13 */
         .badge-regle { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; cursor: default; }
         .badge-attente { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: all 0.2s; }
         .badge-attente:hover { background: #ffedd5; transform: scale(1.05); }
         .badge-mode { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: normal; }
 
-        /* FORMULAIRE DÉPENSE */
-        .expense-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #ef4444; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        /* FORMULAIRE DÉPENSE (PRO) */
+        .expense-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #ef4444; }
         .form-group { flex: 1; min-width: 140px; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
@@ -86,7 +86,7 @@
     <datalist id="clients_suggestions"></datalist>
     <datalist id="defunts_suggestions"></datalist>
     <datalist id="fournisseurs_list">
-        <option value="Bernier Cercueils"><option value="Total Énergies"><option value="Assurance Allianz"><option value="Fournitures Bureau"><option value="Loyer Local">
+        <option value="Bernier Cercueils"><option value="Total Énergies"><option value="Assurance Allianz"><option value="Fournitures Bureau"><option value="Loyer Local"><option value="Urnes Funéraires"><option value="Fleuriste Partenaire">
     </datalist>
 
     <div id="modal-choix" class="modal hidden">
@@ -148,65 +148,123 @@
         </div>
 
         <div id="tab-achats" class="hidden">
+            
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-weight:bold; color:#475569;"><i class="fas fa-search"></i> FILTRER LES DÉPENSES</div>
+                    <div style="background:white; padding:8px 15px; border-radius:6px; border-left:4px solid #c2410c; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                        <span style="font-size:0.85rem; color:#64748b; text-transform:uppercase;">Reste à payer (Sélection) :</span>
+                        <strong id="total-dette-filtre" style="color:#c2410c; font-size:1.3rem; margin-left:10px;">0.00 €</strong>
+                    </div>
+                </div>
+                <input type="text" id="search_depense" 
+                       placeholder="🔍 Tapez le nom d'un fournisseur (ex: Bernier) ou une référence..." 
+                       style="width:100%; padding:12px; border:1px solid #94a3b8; border-radius:6px; font-size:1rem; box-sizing:border-box;"
+                       onkeyup="window.filtrerDepenses()">
+            </div>
+
             <div class="expense-form">
-                <div class="form-group" style="flex:0 0 130px;">
-                    <label>Date</label>
-                    <input type="date" id="dep_date">
-                </div>
-                <div class="form-group" style="flex:2;">
-                    <label>Fournisseur</label>
-                    <input type="text" id="dep_fourn" list="fournisseurs_list" placeholder="Ex: Bernier, Total...">
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Catégorie</label>
-                    <select id="dep_cat">
-                        <option>Achat Marchandises</option>
-                        <option>Carburant / Déplacement</option>
-                        <option>Frais Généraux (Loyer, Elec)</option>
-                        <option>Sous-traitance</option>
-                        <option>Impôts & Taxes</option>
-                        <option>Assurances / Banque</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" style="flex:1;">
-                    <label>Paiement</label>
-                    <select id="dep_mode">
-                        <option value="Virement">Virement</option>
-                        <option value="Prélèvement">Prélèvement</option>
-                        <option value="CB">Carte Bancaire</option>
-                        <option value="Chèque">Chèque</option>
-                        <option value="Espèces">Espèces</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Statut</label>
-                    <select id="dep_statut" style="font-weight:bold;">
-                        <option value="Réglé" style="color:green;">✅ Réglé</option>
-                        <option value="En attente" style="color:orange;">⏳ En attente</option>
-                    </select>
+                <div style="width:100%; display:flex; gap:15px; margin-bottom:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Date Facture</label>
+                        <input type="date" id="dep_date_fac">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Réf. Facture (N° Pièce)</label>
+                        <input type="text" id="dep_ref" placeholder="Ex: FC-2026-045">
+                    </div>
+                    <div class="form-group" style="flex:2;">
+                        <label>Fournisseur</label>
+                        <input type="text" id="dep_fourn" list="fournisseurs_list" placeholder="Qui émet la facture ?">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Date Règlement</label>
+                        <input type="date" id="dep_date_reg">
+                    </div>
                 </div>
 
-                <div class="form-group" style="flex:1;">
-                    <label>Montant TTC (€)</label>
-                    <input type="number" id="dep_montant" placeholder="0.00">
+                <div style="width:100%; display:flex; gap:15px; align-items:flex-end;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Catégorie</label>
+                        <select id="dep_cat">
+                            <option disabled selected>-- Choisir --</option>
+                            <optgroup label="Marchandises">
+                                <option>Achat Cercueils</option>
+                                <option>Achat Urnes</option>
+                                <option>Achat Fleurs / Plaques</option>
+                                <option>Capitons / Accessoires</option>
+                            </optgroup>
+                            <optgroup label="Frais Généraux">
+                                <option>Loyer / Charges Locatives</option>
+                                <option>Électricité / Eau / Gaz</option>
+                                <option>Téléphone / Internet</option>
+                                <option>Fournitures de Bureau</option>
+                                <option>Assurance Pro</option>
+                            </optgroup>
+                            <optgroup label="Véhicules">
+                                <option>Carburant / Péage</option>
+                                <option>Entretien Véhicules</option>
+                                <option>Assurance Véhicules</option>
+                            </optgroup>
+                            <optgroup label="Taxes & Admin">
+                                <option>Taxes Crémation</option>
+                                <option>Vacations Police</option>
+                                <option>Impôts & Taxes</option>
+                                <option>Frais Bancaires</option>
+                            </optgroup>
+                            <optgroup label="Personnel & Divers">
+                                <option>Salaires / Charges</option>
+                                <option>Sous-traitance (Marbrerie...)</option>
+                                <option>Remboursement Client</option>
+                                <option>Autre</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="flex:1;">
+                        <label>Moyen de Paiement</label>
+                        <select id="dep_mode">
+                            <option value="Virement">Virement</option>
+                            <option value="Prélèvement">Prélèvement</option>
+                            <option value="CB">Carte Bancaire</option>
+                            <option value="Chèque">Chèque</option>
+                            <option value="Espèces">Espèces</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="flex:1;">
+                        <label>Statut</label>
+                        <select id="dep_statut" style="font-weight:bold;">
+                            <option value="Réglé" style="color:green;">✅ Réglé</option>
+                            <option value="En attente" style="color:orange;">⏳ En attente</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="flex:1;">
+                        <label>Montant TTC (€)</label>
+                        <input type="number" id="dep_montant" placeholder="0.00">
+                    </div>
+
+                    <button class="btn btn-red" onclick="window.ajouterDepense()" style="height:40px; margin-bottom:1px; min-width:100px;">
+                        <i class="fas fa-plus"></i> ENREGISTRER
+                    </button>
                 </div>
-                <button class="btn btn-red" onclick="window.ajouterDepense()" style="height:40px; margin-bottom:1px;"><i class="fas fa-plus"></i> AJOUTER</button>
             </div>
 
             <table class="compta-table">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th>Dates</th>
+                        <th>Référence</th>
                         <th>Fournisseur</th>
                         <th>Catégorie</th>
                         <th>Paiement</th>
                         <th>Statut</th>
                         <th style="text-align:right;">Montant TTC</th>
-                        <th style="text-align:center;">Actions</th>
+                        <th style="text-align:center;">Action</th>
                     </tr>
                 </thead>
-                <tbody id="depenses-body"><tr><td colspan="7" style="text-align:center;">Chargement...</td></tr></tbody>
+                <tbody id="depenses-body"><tr><td colspan="8" style="text-align:center;">Chargement...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -284,6 +342,7 @@
     let logoBase64 = null;
     let paiements = [];
     let dossiersCache = [];
+    let cacheDepenses = [];
     
     // VARIABLES FINANCIÈRES
     let global_CA = 0;
@@ -300,14 +359,14 @@
     }
     setTimeout(chargerLogoBase64, 1000);
     
-    // UPDATE DASHBOARD V12.5
+    // UPDATE DASHBOARD V13.5
     function updateFinancialDashboard() {
         document.getElementById('stat-ca').innerText = global_CA.toFixed(2) + " €";
         document.getElementById('stat-depenses').innerText = global_Depenses.toFixed(2) + " €";
         const resultat = global_CA - global_Depenses;
         const elRes = document.getElementById('stat-resultat');
         elRes.innerText = resultat.toFixed(2) + " €";
-        elRes.style.color = resultat >= 0 ? '#1e40af' : '#b91c1c'; // Bleu si positif, Rouge si négatif
+        elRes.style.color = resultat >= 0 ? '#1e40af' : '#b91c1c'; 
 
         // Année
         document.getElementById('year-display-1').innerText = currentYear;
@@ -332,23 +391,30 @@
         }
     };
 
-    // --- GESTION DÉPENSES AVANCÉE V12.5 ---
+    // --- GESTION DÉPENSES AVANCÉE V13.5 (RECHERCHE + DETTE + CHAMPS) ---
+    
     window.ajouterDepense = async function() {
-        const date = document.getElementById('dep_date').value;
+        const dateFac = document.getElementById('dep_date_fac').value;
+        const ref = document.getElementById('dep_ref').value || "Non spécifié"; 
         const fourn = document.getElementById('dep_fourn').value;
+        const dateReg = document.getElementById('dep_date_reg').value; 
         const cat = document.getElementById('dep_cat').value;
-        const mode = document.getElementById('dep_mode').value;      // Nouveau
-        const statut = document.getElementById('dep_statut').value;  // Nouveau
+        const mode = document.getElementById('dep_mode').value;
+        const statut = document.getElementById('dep_statut').value;
         const mont = parseFloat(document.getElementById('dep_montant').value);
 
-        if(!date || !fourn || isNaN(mont)) return alert("Veuillez remplir Date, Fournisseur et Montant.");
+        if(!dateFac || !fourn || isNaN(mont) || cat === "-- Choisir --") {
+            return alert("Veuillez remplir : Date Facture, Fournisseur, Catégorie et Montant.");
+        }
 
         try {
             await addDoc(collection(db, "depenses"), {
-                date: date, fournisseur: fourn, categorie: cat, 
-                mode: mode, statut: statut,
+                date: dateFac, date_reglement: dateReg, reference: ref,
+                fournisseur: fourn, categorie: cat, mode: mode, statut: statut,
                 montant: mont, date_ajout: new Date().toISOString()
             });
+            
+            document.getElementById('dep_ref').value = "";
             document.getElementById('dep_fourn').value = "";
             document.getElementById('dep_montant').value = "";
             window.chargerDepenses(); 
@@ -357,53 +423,97 @@
 
     window.chargerDepenses = async function() {
         const tbody = document.getElementById('depenses-body');
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Chargement...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
         
         try {
             const q = query(collection(db, "depenses"), orderBy("date", "desc"));
             const snap = await getDocs(q);
-            tbody.innerHTML = "";
+            
+            cacheDepenses = []; // Cache pour recherche
             global_Depenses = 0; 
 
-            if(snap.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#888;">Aucune dépense enregistrée.</td></tr>'; updateFinancialDashboard(); return; }
+            if(snap.empty) { 
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">Aucune dépense.</td></tr>'; 
+                return; 
+            }
 
             snap.forEach(docSnap => {
                 const data = docSnap.data();
+                data.id = docSnap.id; 
+                cacheDepenses.push(data);
+
+                // Calcul total (Seulement si Réglé et année en cours)
                 const dDate = new Date(data.date);
-                
-                // LOGIQUE FINANCIÈRE : Seul le statut "Réglé" impacte la trésorerie
                 if(dDate.getFullYear() === currentYear && data.statut === 'Réglé') {
                     global_Depenses += (data.montant || 0);
                 }
-
-                // BADGES
-                let badgeStatut = '';
-                if(data.statut === 'Réglé') {
-                    badgeStatut = `<span class="badge badge-regle"><i class="fas fa-check"></i> Réglé</span>`;
-                } else {
-                    badgeStatut = `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${docSnap.id}')" title="Cliquer pour valider le paiement"><i class="fas fa-clock"></i> En attente</span>`;
-                }
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${dDate.toLocaleDateString()}</td>
-                    <td><strong>${data.fournisseur}</strong></td>
-                    <td><span class="badge badge-depense" style="background:#fff; border:none; color:#64748b;">${data.categorie}</span></td>
-                    <td><span class="badge badge-mode">${data.mode || '-'}</span></td>
-                    <td>${badgeStatut}</td>
-                    <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
-                    <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="window.supprimerDepense('${docSnap.id}')"></i></td>
-                `;
-                tbody.appendChild(tr);
             });
+
             updateFinancialDashboard();
+            window.filtrerDepenses(); // Affiche la liste
+
         } catch(e) { console.error(e); }
+    };
+
+    window.filtrerDepenses = function() {
+        const terme = document.getElementById('search_depense').value.toLowerCase();
+        const tbody = document.getElementById('depenses-body');
+        tbody.innerHTML = "";
+
+        let totalDetteFiltre = 0; 
+
+        const resultats = cacheDepenses.filter(item => {
+            const searchString = (item.fournisseur + " " + item.categorie + " " + (item.reference || "")).toLowerCase();
+            return searchString.includes(terme);
+        });
+
+        if(resultats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun résultat trouvé.</td></tr>';
+            document.getElementById('total-dette-filtre').innerText = "0.00 €";
+            return;
+        }
+
+        resultats.forEach(data => {
+            // Calculer la dette (Seulement si "En attente")
+            if (data.statut === 'En attente') {
+                totalDetteFiltre += (data.montant || 0);
+            }
+
+            const dDate = new Date(data.date);
+            let dateDisplay = `<b>Fac:</b> ${dDate.toLocaleDateString()}`;
+            if(data.date_reglement) {
+                const dReg = new Date(data.date_reglement);
+                dateDisplay += `<br><small style="color:#166534;"><b>Rég:</b> ${dReg.toLocaleDateString()}</small>`;
+            }
+
+            let badgeStatut = '';
+            if(data.statut === 'Réglé') {
+                badgeStatut = `<span class="badge badge-regle"><i class="fas fa-check"></i> Réglé</span>`;
+            } else {
+                badgeStatut = `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${data.id}')" title="Valider paiement"><i class="fas fa-clock"></i> En attente</span>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-size:0.85rem;">${dateDisplay}</td>
+                <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 5px; border-radius:4px;">${data.reference || '-'}</span></td>
+                <td><strong>${data.fournisseur}</strong></td>
+                <td><span class="badge badge-depense" style="background:#fff; border:none; color:#64748b; font-weight:normal;">${data.categorie}</span></td>
+                <td><span class="badge badge-mode">${data.mode || '-'}</span></td>
+                <td>${badgeStatut}</td>
+                <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
+                <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="window.supprimerDepense('${data.id}')"></i></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('total-dette-filtre').innerText = totalDetteFiltre.toFixed(2) + " €";
     };
 
     window.marquerCommeRegle = async function(id) {
         if(confirm("Confirmer que cette facture a bien été payée ?")) {
             try {
-                await updateDoc(doc(db, "depenses", id), { statut: "Réglé" });
+                await updateDoc(doc(db, "depenses", id), { statut: "Réglé", date_reglement: new Date().toISOString().split('T')[0] });
                 window.chargerDepenses();
             } catch(e) { alert("Erreur : " + e.message); }
         }
@@ -526,7 +636,7 @@
         const prefix = (type === 'DEVIS') ? 'D' : 'F'; return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
     }
 
-    // --- MODELES DE DEVIS PRÉ-REMPLIS (PERSONNALISÉ V12.5) ---
+    // --- MODELES DE DEVIS PRÉ-REMPLIS (PERSONNALISÉ V13.5) ---
     const MODELES = {
         "Inhumation": [
             { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
@@ -738,7 +848,7 @@
 
     // INIT AU CHARGEMENT
     window.chargerListeFactures(); 
-    document.getElementById('dep_date').valueAsDate = new Date();
+    document.getElementById('dep_date_fac').valueAsDate = new Date();
     window.calculTotal = calculTotal;
 </script>
 </body>
