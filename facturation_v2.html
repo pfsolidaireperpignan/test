@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Finance V13.6 (Edition)</title>
+    <title>PF Solidaire - Finance V14.0 (Tri & Filtres)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -40,7 +40,12 @@
 
         /* TABLES & BADGES */
         .compta-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse; }
-        .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        
+        /* HEADER DU TABLEAU CLIQUABLE (V14) */
+        .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .compta-table th:hover { background: #e2e8f0; color: #1e293b; }
+        .compta-table th i { margin-left: 5px; opacity: 0.5; }
+        
         .compta-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; }
@@ -48,13 +53,12 @@
         .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
         .badge-depense { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
 
-        /* NOUVEAUX BADGES V13 */
         .badge-regle { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; cursor: default; }
         .badge-attente { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: all 0.2s; }
         .badge-attente:hover { background: #ffedd5; transform: scale(1.05); }
         .badge-mode { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: normal; }
 
-        /* FORMULAIRE DÉPENSE (PRO V13.6) */
+        /* FORMULAIRE DÉPENSE */
         .expense-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #ef4444; }
         .form-group { flex: 1; min-width: 140px; }
         .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; }
@@ -151,16 +155,43 @@
             
             <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <div style="font-weight:bold; color:#475569;"><i class="fas fa-search"></i> FILTRER LES DÉPENSES</div>
+                    <div style="font-weight:bold; color:#475569;"><i class="fas fa-filter"></i> RECHERCHE & FILTRES</div>
                     <div style="background:white; padding:8px 15px; border-radius:6px; border-left:4px solid #c2410c; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
                         <span style="font-size:0.85rem; color:#64748b; text-transform:uppercase;">Reste à payer (Sélection) :</span>
                         <strong id="total-dette-filtre" style="color:#c2410c; font-size:1.3rem; margin-left:10px;">0.00 €</strong>
                     </div>
                 </div>
-                <input type="text" id="search_depense" 
-                       placeholder="🔍 Tapez le nom d'un fournisseur (ex: Bernier) ou une référence..." 
-                       style="width:100%; padding:12px; border:1px solid #94a3b8; border-radius:6px; font-size:1rem; box-sizing:border-box;"
-                       onkeyup="window.filtrerDepenses()">
+                
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="search_depense" 
+                           placeholder="🔍 Nom, Référence, Détails..." 
+                           style="flex:2; padding:10px; border:1px solid #94a3b8; border-radius:6px;"
+                           onkeyup="window.filtrerDepenses()">
+                    
+                    <select id="filter_year" onchange="window.filtrerDepenses()" style="flex:1; padding:10px; border:1px solid #94a3b8; border-radius:6px;">
+                        <option value="">Toutes les années</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2027">2027</option>
+                    </select>
+
+                    <select id="filter_month" onchange="window.filtrerDepenses()" style="flex:1; padding:10px; border:1px solid #94a3b8; border-radius:6px;">
+                        <option value="">Tous les mois</option>
+                        <option value="0">Janvier</option>
+                        <option value="1">Février</option>
+                        <option value="2">Mars</option>
+                        <option value="3">Avril</option>
+                        <option value="4">Mai</option>
+                        <option value="5">Juin</option>
+                        <option value="6">Juillet</option>
+                        <option value="7">Août</option>
+                        <option value="8">Septembre</option>
+                        <option value="9">Octobre</option>
+                        <option value="10">Novembre</option>
+                        <option value="11">Décembre</option>
+                    </select>
+                </div>
             </div>
 
             <div class="expense-form" id="form-depense">
@@ -200,7 +231,6 @@
                                 <option>Capitons / Accessoires</option>
                             </optgroup>
                             <optgroup label="Frais Généraux">
-								<option>Frais de fret</option>
                                 <option>Loyer / Charges Locatives</option>
                                 <option>Électricité / Eau / Gaz</option>
                                 <option>Téléphone / Internet</option>
@@ -263,13 +293,13 @@
             <table class="compta-table">
                 <thead>
                     <tr>
-                        <th>Dates</th>
-                        <th>Référence</th>
-                        <th>Fournisseur</th>
-                        <th>Catégorie</th>
-                        <th>Paiement</th>
-                        <th>Statut</th>
-                        <th style="text-align:right;">Montant TTC</th>
+                        <th onclick="window.trierTableau('date')">Dates <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('reference')">Réf <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('fournisseur')">Fournisseur <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('categorie')">Catégorie <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('mode')">Paiement <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('statut')">Statut <i class="fas fa-sort"></i></th>
+                        <th style="text-align:right;" onclick="window.trierTableau('montant')">Montant TTC <i class="fas fa-sort"></i></th>
                         <th style="text-align:center;">Action</th>
                     </tr>
                 </thead>
@@ -358,6 +388,9 @@
     let global_Depenses = 0;
     const currentYear = new Date().getFullYear();
 
+    // VARIABLES TRI V14
+    let currentSort = { col: 'date', order: 'desc' }; // Par défaut : date décroissante
+
     // --- INIT ---
     function chargerLogoBase64() {
         const img = document.getElementById('logo-source');
@@ -400,15 +433,13 @@
         }
     };
 
-    // --- GESTION DÉPENSES V13.6 (MODIFICATION + DÉTAILS) ---
-    
-    // Fonction unique déclenchée par le bouton principal
+    // --- GESTION DÉPENSES ---
     window.gererDepense = async function() {
         const idToEdit = document.getElementById('dep_edit_id').value;
         const dateFac = document.getElementById('dep_date_fac').value;
         const ref = document.getElementById('dep_ref').value || "Non spécifié"; 
         const fourn = document.getElementById('dep_fourn').value;
-        const details = document.getElementById('dep_details').value || ""; // Nouveau champ
+        const details = document.getElementById('dep_details').value || ""; 
         const dateReg = document.getElementById('dep_date_reg').value; 
         const cat = document.getElementById('dep_cat').value;
         const mode = document.getElementById('dep_mode').value;
@@ -428,21 +459,17 @@
 
         try {
             if(idToEdit) {
-                // MODE MODIFICATION
                 await updateDoc(doc(db, "depenses", idToEdit), dataObj);
                 alert("✅ Dépense modifiée !");
             } else {
-                // MODE AJOUT
                 dataObj.date_ajout = new Date().toISOString(); 
                 await addDoc(collection(db, "depenses"), dataObj);
             }
-            
-            window.resetFormDepense(); // On vide tout
-            window.chargerDepenses();  // On recharge la liste
+            window.resetFormDepense(); 
+            window.chargerDepenses();  
         } catch(e) { alert("Erreur : " + e.message); }
     };
 
-    // Fonction pour remplir le formulaire quand on clique sur le crayon
     window.preparerModification = function(id) {
         const data = cacheDepenses.find(d => d.id === id);
         if(!data) return;
@@ -458,18 +485,15 @@
         document.getElementById('dep_statut').value = data.statut;
         document.getElementById('dep_montant').value = data.montant;
 
-        // Changement visuel du bouton
         const btn = document.getElementById('btn-action-depense');
         btn.innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
         btn.classList.remove('btn-red');
         btn.classList.add('btn-blue');
         
         document.getElementById('btn-cancel-depense').classList.remove('hidden');
-
         document.getElementById('form-depense').scrollIntoView({behavior: "smooth"});
     };
 
-    // Fonction pour vider le formulaire
     window.resetFormDepense = function() {
         document.getElementById('dep_edit_id').value = "";
         document.getElementById('dep_ref').value = "";
@@ -478,7 +502,6 @@
         document.getElementById('dep_montant').value = "";
         document.getElementById('dep_date_reg').value = "";
         
-        // Remettre le bouton en mode "AJOUTER"
         const btn = document.getElementById('btn-action-depense');
         btn.innerHTML = '<i class="fas fa-plus"></i> ENREGISTRER';
         btn.classList.add('btn-red');
@@ -508,7 +531,6 @@
                 data.id = docSnap.id; 
                 cacheDepenses.push(data);
 
-                // Calcul total (Seulement si Réglé et année en cours)
                 const dDate = new Date(data.date);
                 if(dDate.getFullYear() === currentYear && data.statut === 'Réglé') {
                     global_Depenses += (data.montant || 0);
@@ -516,23 +538,63 @@
             });
 
             updateFinancialDashboard();
-            window.filtrerDepenses(); // Affiche la liste
+            window.filtrerDepenses(); 
 
         } catch(e) { console.error(e); }
     };
 
+    // --- FONCTION DE TRI (V14) ---
+    window.trierTableau = function(col) {
+        // Inverse l'ordre si on clique sur la même colonne, sinon remet à croissant
+        if (currentSort.col === col) {
+            currentSort.order = (currentSort.order === 'asc') ? 'desc' : 'asc';
+        } else {
+            currentSort.col = col;
+            currentSort.order = 'asc';
+        }
+        window.filtrerDepenses(); // On relance l'affichage avec le nouveau tri
+    };
+
+    // --- FILTRE ET AFFICHAGE AVEC TRI (V14) ---
     window.filtrerDepenses = function() {
         const terme = document.getElementById('search_depense').value.toLowerCase();
+        const yearFilter = document.getElementById('filter_year').value;
+        const monthFilter = document.getElementById('filter_month').value;
         const tbody = document.getElementById('depenses-body');
         tbody.innerHTML = "";
 
         let totalDetteFiltre = 0; 
 
-        const resultats = cacheDepenses.filter(item => {
+        // 1. Filtrage
+        let resultats = cacheDepenses.filter(item => {
+            // Filtre Texte
             const searchString = (item.fournisseur + " " + item.categorie + " " + (item.reference || "") + " " + (item.details || "")).toLowerCase();
-            return searchString.includes(terme);
+            const textMatch = searchString.includes(terme);
+            
+            // Filtre Date (Année / Mois)
+            const d = new Date(item.date);
+            const yearMatch = (yearFilter === "") || (d.getFullYear().toString() === yearFilter);
+            const monthMatch = (monthFilter === "") || (d.getMonth().toString() === monthFilter);
+
+            return textMatch && yearMatch && monthMatch;
         });
 
+        // 2. Tri
+        resultats.sort((a, b) => {
+            let valA = a[currentSort.col];
+            let valB = b[currentSort.col];
+
+            // Cas particuliers pour éviter les bugs de tri
+            if (currentSort.col === 'montant') { valA = parseFloat(valA); valB = parseFloat(valB); }
+            if (!valA) valA = ""; if (!valB) valB = ""; // Gérer les vides
+
+            // Comparaison
+            if (valA < valB) return currentSort.order === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.order === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // 3. Affichage
         if(resultats.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun résultat trouvé.</td></tr>';
             document.getElementById('total-dette-filtre').innerText = "0.00 €";
@@ -540,10 +602,7 @@
         }
 
         resultats.forEach(data => {
-            // Calculer la dette (Seulement si "En attente")
-            if (data.statut === 'En attente') {
-                totalDetteFiltre += (data.montant || 0);
-            }
+            if (data.statut === 'En attente') totalDetteFiltre += (data.montant || 0);
 
             const dDate = new Date(data.date);
             let dateDisplay = `<b>Fac:</b> ${dDate.toLocaleDateString()}`;
@@ -559,7 +618,6 @@
                 badgeStatut = `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${data.id}')" title="Valider paiement"><i class="fas fa-clock"></i> En attente</span>`;
             }
 
-            // Affichage Catégorie + Détails
             let catDisplay = `<span class="badge badge-depense" style="background:#fff; border:none; color:#64748b; font-weight:normal;">${data.categorie}</span>`;
             if(data.details) {
                 catDisplay += `<br><small style="color:#475569; font-style:italic;">${data.details}</small>`;
