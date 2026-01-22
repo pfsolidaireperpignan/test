@@ -145,7 +145,13 @@
 
 .ac-purple .card-icon-bg { background: #f5f3ff; color: #8b5cf6; }
 .ac-purple:hover { border-bottom: 4px solid #8b5cf6; }
+/* Style pour la 4ème carte (Clients) */
+.ac-orange .card-icon-bg { background: #fff7ed; color: #ea580c; }
+.ac-orange:hover { border-bottom: 4px solid #ea580c; }
 
+/* Rendre les mini-stats cliquables */
+.mini-stat { cursor: pointer; transition: transform 0.2s; }
+.mini-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 .card-title { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 5px; }
 .card-desc { font-size: 0.85rem; color: var(--gray); }
 .card-arrow { margin-top: auto; text-align: right; color: var(--gray); font-size: 0.9rem; }
@@ -202,7 +208,7 @@
     </nav>
 
     <main class="main-content">
-        <div id="view-home">
+  <div id="view-home">
     <div class="welcome-banner">
         <div class="welcome-text">
             <h2>Bonjour, Mustapha 👋</h2>
@@ -215,22 +221,22 @@
     </div>
 
     <div class="quick-stats">
-        <div class="mini-stat">
+        <div class="mini-stat" onclick="window.showSection('stock')">
             <div class="mini-icon" style="background:#fff7ed; color:#ea580c;"><i class="fas fa-exclamation-triangle"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">URGENCES</div><div style="font-weight:bold;">À vérifier</div></div>
+            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">URGENCES</div><div style="font-weight:bold;">Voir Stocks</div></div>
         </div>
-        <div class="mini-stat">
+        <div class="mini-stat" onclick="window.showSection('base')">
             <div class="mini-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-folder-open"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">EN COURS</div><div style="font-weight:bold;">Gestion</div></div>
+            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">EN COURS</div><div style="font-weight:bold;">Suivi Dossiers</div></div>
         </div>
-        <div class="mini-stat">
+        <div class="mini-stat" onclick="window.location.reload()">
             <div class="mini-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fas fa-check-circle"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">SYSTÈME</div><div style="font-weight:bold;">V11.5 Connecté</div></div>
+            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">SYSTÈME</div><div style="font-weight:bold;">Actualiser</div></div>
         </div>
     </div>
 
     <h3 style="margin-bottom:20px; font-size:1.1rem; color:var(--dark);">ACCÈS RAPIDE</h3>
-    <div class="dashboard-grid">
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
         
         <div class="action-card ac-blue" onclick="window.showSection('admin')">
             <div class="card-icon-bg"><i class="fas fa-user-plus"></i></div>
@@ -241,11 +247,20 @@
             <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
         </div>
 
+        <div class="action-card ac-orange" onclick="window.showSection('base')">
+            <div class="card-icon-bg"><i class="fas fa-users"></i></div>
+            <div>
+                <div class="card-title">Base Clients</div>
+                <div class="card-desc">Retrouver un ancien dossier ou un client.</div>
+            </div>
+            <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+        </div>
+
         <div class="action-card ac-green" onclick="window.showSection('stock')">
             <div class="card-icon-bg"><i class="fas fa-boxes"></i></div>
             <div>
-                <div class="card-title">Gestion des Stocks</div>
-                <div class="card-desc">Vérifier les disponibilités (Cercueils, Urnes...).</div>
+                <div class="card-title">Gestion Stocks</div>
+                <div class="card-desc">Entrées, sorties et vérification des disponibilités.</div>
             </div>
             <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
         </div>
@@ -254,14 +269,13 @@
             <div class="card-icon-bg"><i class="fas fa-file-invoice-dollar"></i></div>
             <div>
                 <div class="card-title">Comptabilité</div>
-                <div class="card-desc">Accéder aux devis, factures et registre des achats.</div>
+                <div class="card-desc">Devis, Factures et Registre des Achats.</div>
             </div>
             <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
         </div>
 
     </div>
 </div>
-
         <div id="view-stock" class="hidden">
             <div class="page-header">
                 <h1>Gestion des Stocks</h1>
