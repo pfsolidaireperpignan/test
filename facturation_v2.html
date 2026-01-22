@@ -1,13 +1,9 @@
-// --- GESTION DÉPENSES V13.6 (MODIFICATION + DÉTAILS) ---
-    
-    // Fonction unique déclenchée par le bouton principal
-    window.gererDepense = async function() {
-        const idToEdit = document.getElementById('dep_edit_id').value;
+// --- GESTION DÉPENSES V13.1 (REF + DATES MULTIPLES) ---
+    window.ajouterDepense = async function() {
         const dateFac = document.getElementById('dep_date_fac').value;
-        const ref = document.getElementById('dep_ref').value || "Non spécifié"; 
+        const ref = document.getElementById('dep_ref').value || "Non spécifié"; // Nouveau champ
         const fourn = document.getElementById('dep_fourn').value;
-        const details = document.getElementById('dep_details').value || ""; // Nouveau champ
-        const dateReg = document.getElementById('dep_date_reg').value; 
+        const dateReg = document.getElementById('dep_date_reg').value; // Nouveau champ
         const cat = document.getElementById('dep_cat').value;
         const mode = document.getElementById('dep_mode').value;
         const statut = document.getElementById('dep_statut').value;
@@ -17,78 +13,27 @@
             return alert("Veuillez remplir : Date Facture, Fournisseur, Catégorie et Montant.");
         }
 
-        const dataObj = {
-            date: dateFac, date_reglement: dateReg, reference: ref,
-            fournisseur: fourn, details: details, // On sauvegarde les détails
-            categorie: cat, mode: mode, statut: statut,
-            montant: mont
-        };
-
         try {
-            if(idToEdit) {
-                // MODE MODIFICATION
-                await updateDoc(doc(db, "depenses", idToEdit), dataObj);
-                alert("✅ Dépense modifiée !");
-            } else {
-                // MODE AJOUT
-                dataObj.date_ajout = new Date().toISOString(); // On garde la date de création
-                await addDoc(collection(db, "depenses"), dataObj);
-            }
+            await addDoc(collection(db, "depenses"), {
+                date: dateFac,          // On garde 'date' pour le tri principal
+                date_reglement: dateReg,// Nouvelle date
+                reference: ref,         // Nouvelle réf
+                fournisseur: fourn, 
+                categorie: cat, 
+                mode: mode, 
+                statut: statut,
+                montant: mont, 
+                date_ajout: new Date().toISOString()
+            });
             
-            window.resetFormDepense(); // On vide tout
-            window.chargerDepenses();  // On recharge la liste
+            // Reset des champs principaux
+            document.getElementById('dep_ref').value = "";
+            document.getElementById('dep_fourn').value = "";
+            document.getElementById('dep_montant').value = "";
+            window.chargerDepenses(); 
         } catch(e) { alert("Erreur : " + e.message); }
     };
 
-    // Fonction pour remplir le formulaire quand on clique sur le crayon
-    window.preparerModification = function(id) {
-        // On cherche la dépense dans notre mémoire cache
-        const data = cacheDepenses.find(d => d.id === id);
-        if(!data) return;
-
-        // Remplissage des champs
-        document.getElementById('dep_edit_id').value = id;
-        document.getElementById('dep_date_fac').value = data.date;
-        document.getElementById('dep_ref').value = data.reference !== "Non spécifié" ? data.reference : "";
-        document.getElementById('dep_fourn').value = data.fournisseur;
-        document.getElementById('dep_details').value = data.details || ""; // Remplir détails
-        document.getElementById('dep_date_reg').value = data.date_reglement || "";
-        document.getElementById('dep_cat').value = data.categorie;
-        document.getElementById('dep_mode').value = data.mode;
-        document.getElementById('dep_statut').value = data.statut;
-        document.getElementById('dep_montant').value = data.montant;
-
-        // Changement visuel du bouton
-        const btn = document.getElementById('btn-action-depense');
-        btn.innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
-        btn.classList.remove('btn-red');
-        btn.classList.add('btn-blue');
-        
-        document.getElementById('btn-cancel-depense').classList.remove('hidden');
-
-        // Scroll vers le formulaire pour voir ce qu'on fait
-        document.getElementById('form-depense').scrollIntoView({behavior: "smooth"});
-    };
-
-    // Fonction pour vider le formulaire
-    window.resetFormDepense = function() {
-        document.getElementById('dep_edit_id').value = "";
-        document.getElementById('dep_ref').value = "";
-        document.getElementById('dep_fourn').value = "";
-        document.getElementById('dep_details').value = "";
-        document.getElementById('dep_montant').value = "";
-        document.getElementById('dep_date_reg').value = "";
-        
-        // Remettre le bouton en mode "AJOUTER"
-        const btn = document.getElementById('btn-action-depense');
-        btn.innerHTML = '<i class="fas fa-plus"></i> ENREGISTRER';
-        btn.classList.add('btn-red');
-        btn.classList.remove('btn-blue');
-        
-        document.getElementById('btn-cancel-depense').classList.add('hidden');
-    };
-
-    // Fonction d'affichage mise à jour
     window.chargerDepenses = async function() {
         const tbody = document.getElementById('depenses-body');
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
@@ -96,88 +41,48 @@
         try {
             const q = query(collection(db, "depenses"), orderBy("date", "desc"));
             const snap = await getDocs(q);
-            
-            cacheDepenses = []; 
+            tbody.innerHTML = "";
             global_Depenses = 0; 
 
-            if(snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">Aucune dépense.</td></tr>'; return; }
+            if(snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">Aucune dépense.</td></tr>'; updateFinancialDashboard(); return; }
 
             snap.forEach(docSnap => {
                 const data = docSnap.data();
-                data.id = docSnap.id; 
-                cacheDepenses.push(data);
-
                 const dDate = new Date(data.date);
+                
+                // Calcul financier (Seulement si Réglé et année en cours)
                 if(dDate.getFullYear() === currentYear && data.statut === 'Réglé') {
                     global_Depenses += (data.montant || 0);
                 }
+
+                // Gestion des badges
+                let badgeStatut = '';
+                if(data.statut === 'Réglé') {
+                    badgeStatut = `<span class="badge badge-regle"><i class="fas fa-check"></i> Réglé</span>`;
+                } else {
+                    badgeStatut = `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${docSnap.id}')" title="Valider paiement"><i class="fas fa-clock"></i> En attente</span>`;
+                }
+
+                // Affichage des deux dates si disponibles
+                let dateDisplay = `<b>Fac:</b> ${dDate.toLocaleDateString()}`;
+                if(data.date_reglement) {
+                    const dReg = new Date(data.date_reglement);
+                    dateDisplay += `<br><small style="color:#166534;"><b>Rég:</b> ${dReg.toLocaleDateString()}</small>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-size:0.85rem;">${dateDisplay}</td>
+                    <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 5px; border-radius:4px;">${data.reference || '-'}</span></td>
+                    <td><strong>${data.fournisseur}</strong></td>
+                    <td><span class="badge badge-depense" style="background:#fff; border:none; color:#64748b; font-weight:normal;">${data.categorie}</span></td>
+                    <td><span class="badge badge-mode">${data.mode || '-'}</span></td>
+                    <td>${badgeStatut}</td>
+                    <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
+                    <td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="window.supprimerDepense('${docSnap.id}')"></i></td>
+                `;
+                tbody.appendChild(tr);
             });
-
             updateFinancialDashboard();
-            window.filtrerDepenses();
-
         } catch(e) { console.error(e); }
-    };
-
-    // Affichage avec filtre (Mis à jour pour afficher Détails et Bouton Modif)
-    window.filtrerDepenses = function() {
-        const terme = document.getElementById('search_depense').value.toLowerCase();
-        const tbody = document.getElementById('depenses-body');
-        tbody.innerHTML = "";
-
-        let totalDetteFiltre = 0; 
-
-        const resultats = cacheDepenses.filter(item => {
-            const searchString = (item.fournisseur + " " + item.categorie + " " + (item.reference || "") + " " + (item.details || "")).toLowerCase();
-            return searchString.includes(terme);
-        });
-
-        if(resultats.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun résultat trouvé.</td></tr>';
-            document.getElementById('total-dette-filtre').innerText = "0.00 €";
-            return;
-        }
-
-        resultats.forEach(data => {
-            if (data.statut === 'En attente') totalDetteFiltre += (data.montant || 0);
-
-            const dDate = new Date(data.date);
-            let dateDisplay = `<b>Fac:</b> ${dDate.toLocaleDateString()}`;
-            if(data.date_reglement) {
-                const dReg = new Date(data.date_reglement);
-                dateDisplay += `<br><small style="color:#166534;"><b>Rég:</b> ${dReg.toLocaleDateString()}</small>`;
-            }
-
-            let badgeStatut = data.statut === 'Réglé' 
-                ? `<span class="badge badge-regle"><i class="fas fa-check"></i> Réglé</span>` 
-                : `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${data.id}')" title="Valider paiement"><i class="fas fa-clock"></i> En attente</span>`;
-
-            // Affichage Catégorie + Détails en dessous
-            let catDisplay = `<span class="badge badge-depense" style="background:#fff; border:none; color:#64748b; font-weight:normal;">${data.categorie}</span>`;
-            if(data.details) {
-                catDisplay += `<br><small style="color:#475569; font-style:italic;">${data.details}</small>`;
-            }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="font-size:0.85rem;">${dateDisplay}</td>
-                <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 5px; border-radius:4px;">${data.reference || '-'}</span></td>
-                <td><strong>${data.fournisseur}</strong></td>
-                <td>${catDisplay}</td>
-                <td><span class="badge badge-mode">${data.mode || '-'}</span></td>
-                <td>${badgeStatut}</td>
-                <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
-                <td style="text-align:center; white-space:nowrap;">
-                    <button class="btn-icon" style="color:#3b82f6; background:none; border:none; cursor:pointer; font-size:1.1rem; margin-right:8px;" onclick="window.preparerModification('${data.id}')" title="Modifier">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-icon" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:1.1rem;" onclick="window.supprimerDepense('${data.id}')" title="Supprimer">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        document.getElementById('total-dette-filtre').innerText = totalDetteFiltre.toFixed(2) + " €";
     };
