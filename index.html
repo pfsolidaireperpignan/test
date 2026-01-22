@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP V13 (Stocks & Complet)</title>
+    <title>PF Solidaire - ERP V15 (GED & Stocks)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -70,101 +70,39 @@
 
         /* LOGIN */
         #login-screen { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
-		/* --- STYLE TABLEAU DE BORD PRO (V12) --- */
-.welcome-banner {
-    background: linear-gradient(135deg, var(--dark) 0%, #334155 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 16px;
-    margin-bottom: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.2);
-}
-.welcome-text h2 { margin: 0; font-size: 1.8rem; font-weight: 700; color:white; }
-.welcome-text p { margin: 5px 0 0 0; opacity: 0.8; font-size: 0.95rem; }
-.date-badge {
-    background: rgba(255,255,255,0.1);
-    padding: 10px 20px;
-    border-radius: 12px;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255,255,255,0.1);
-    text-align: right;
-}
-.date-badge div:first-child { font-size: 1.2rem; font-weight: bold; }
-.date-badge div:last-child { font-size: 0.8rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* TABLEAU DE BORD */
+        .welcome-banner { background: linear-gradient(135deg, var(--dark) 0%, #334155 100%); color: white; padding: 30px; border-radius: 16px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.2); }
+        .welcome-text h2 { margin: 0; font-size: 1.8rem; font-weight: 700; color:white; }
+        .welcome-text p { margin: 5px 0 0 0; opacity: 0.8; font-size: 0.95rem; }
+        .date-badge { background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 12px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); text-align: right; }
+        .date-badge div:first-child { font-size: 1.2rem; font-weight: bold; }
+        .date-badge div:last-child { font-size: 0.8rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
 
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
-}
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .action-card { background: white; border-radius: 16px; padding: 25px; border: 1px solid var(--border); transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; height: 160px; position: relative; overflow: hidden; }
+        .action-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); border-color: transparent; }
+        .action-card::after { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4)); opacity: 0; transition: 0.5s; }
+        .action-card:hover::after { opacity: 1; right: 100%; }
 
-/* Cartes d'actions améliorées */
-.action-card {
-    background: white;
-    border-radius: 16px;
-    padding: 25px;
-    border: 1px solid var(--border);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 160px;
-    position: relative;
-    overflow: hidden;
-}
-.action-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
-    border-color: transparent;
-}
-.action-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; width: 100px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
-    opacity: 0; transition: 0.5s;
-}
-.action-card:hover::after { opacity: 1; right: 100%; }
+        .card-icon-bg { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; }
+        .ac-blue .card-icon-bg { background: #eff6ff; color: var(--secondary); }
+        .ac-blue:hover { border-bottom: 4px solid var(--secondary); }
+        .ac-green .card-icon-bg { background: #ecfdf5; color: var(--primary); }
+        .ac-green:hover { border-bottom: 4px solid var(--primary); }
+        .ac-purple .card-icon-bg { background: #f5f3ff; color: #8b5cf6; }
+        .ac-purple:hover { border-bottom: 4px solid #8b5cf6; }
+        .ac-orange .card-icon-bg { background: #fff7ed; color: #ea580c; }
+        .ac-orange:hover { border-bottom: 4px solid #ea580c; }
 
-.card-icon-bg {
-    width: 50px; height: 50px;
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-}
-.ac-blue .card-icon-bg { background: #eff6ff; color: var(--secondary); }
-.ac-blue:hover { border-bottom: 4px solid var(--secondary); }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 5px; }
+        .card-desc { font-size: 0.85rem; color: var(--gray); }
+        .card-arrow { margin-top: auto; text-align: right; color: var(--gray); font-size: 0.9rem; }
 
-.ac-green .card-icon-bg { background: #ecfdf5; color: var(--primary); }
-.ac-green:hover { border-bottom: 4px solid var(--primary); }
-
-.ac-purple .card-icon-bg { background: #f5f3ff; color: #8b5cf6; }
-.ac-purple:hover { border-bottom: 4px solid #8b5cf6; }
-/* Style pour la 4ème carte (Clients) */
-.ac-orange .card-icon-bg { background: #fff7ed; color: #ea580c; }
-.ac-orange:hover { border-bottom: 4px solid #ea580c; }
-
-/* Rendre les mini-stats cliquables */
-.mini-stat { cursor: pointer; transition: transform 0.2s; }
-.mini-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-.card-title { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 5px; }
-.card-desc { font-size: 0.85rem; color: var(--gray); }
-.card-arrow { margin-top: auto; text-align: right; color: var(--gray); font-size: 0.9rem; }
-
-/* Section Stats rapides */
-.quick-stats {
-    display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;
-}
-.mini-stat {
-    flex: 1; background: white; padding: 15px 20px; border-radius: 12px;
-    border: 1px solid var(--border); display: flex; align-items: center; gap: 15px;
-}
-.mini-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .quick-stats { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
+        .mini-stat { flex: 1; background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; cursor: pointer; transition: transform 0.2s; }
+        .mini-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .mini-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -196,7 +134,7 @@
     </div>
 
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v11.0</span></div>
+        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v15.0</span></div>
         <ul class="nav-menu">
             <li class="nav-item"><a href="#" onclick="window.showSection('home')" class="nav-link active"><i class="fas fa-home"></i> Accueil</a></li>
             <li class="nav-item"><a href="#" onclick="window.showSection('admin')" class="nav-link"><i class="fas fa-folder-open"></i> Dossier Admin</a></li>
@@ -208,80 +146,75 @@
     </nav>
 
     <main class="main-content">
-  <div id="view-home">
-    <div class="welcome-banner">
-        <div class="welcome-text">
-            <h2>Bonjour, Mustapha 👋</h2>
-            <p>Bienvenue sur votre espace de gestion PF Solidaire.</p>
-        </div>
-        <div class="date-badge">
-            <div id="header-time">--:--</div>
-            <div id="header-date">Chargement...</div>
-        </div>
-    </div>
-
-    <div class="quick-stats">
-        <div class="mini-stat" onclick="window.showSection('stock')">
-            <div class="mini-icon" style="background:#fff7ed; color:#ea580c;"><i class="fas fa-exclamation-triangle"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">URGENCES</div><div style="font-weight:bold;">Voir Stocks</div></div>
-        </div>
-        <div class="mini-stat" onclick="window.showSection('base')">
-            <div class="mini-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-folder-open"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">EN COURS</div><div style="font-weight:bold;">Suivi Dossiers</div></div>
-        </div>
-        <div class="mini-stat" onclick="window.location.reload()">
-            <div class="mini-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fas fa-check-circle"></i></div>
-            <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">SYSTÈME</div><div style="font-weight:bold;">Actualiser</div></div>
-        </div>
-    </div>
-
-    <h3 style="margin-bottom:20px; font-size:1.1rem; color:var(--dark);">ACCÈS RAPIDE</h3>
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-        
-        <div class="action-card ac-blue" onclick="window.showSection('admin')">
-            <div class="card-icon-bg"><i class="fas fa-user-plus"></i></div>
-            <div>
-                <div class="card-title">Nouveau Dossier</div>
-                <div class="card-desc">Créer une inhumation, crémation ou un rapatriement.</div>
+        <div id="view-home">
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h2>Bonjour, Mustapha 👋</h2>
+                    <p>Bienvenue sur votre espace de gestion PF Solidaire.</p>
+                </div>
+                <div class="date-badge">
+                    <div id="header-time">--:--</div>
+                    <div id="header-date">Chargement...</div>
+                </div>
             </div>
-            <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
-        </div>
 
-        <div class="action-card ac-orange" onclick="window.showSection('base')">
-            <div class="card-icon-bg"><i class="fas fa-users"></i></div>
-            <div>
-                <div class="card-title">Base Clients</div>
-                <div class="card-desc">Retrouver un ancien dossier ou un client.</div>
+            <div class="quick-stats">
+                <div class="mini-stat" onclick="window.showSection('stock')">
+                    <div class="mini-icon" style="background:#fff7ed; color:#ea580c;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">URGENCES</div><div style="font-weight:bold;">Voir Stocks</div></div>
+                </div>
+                <div class="mini-stat" onclick="window.showSection('base')">
+                    <div class="mini-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-folder-open"></i></div>
+                    <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">EN COURS</div><div style="font-weight:bold;">Suivi Dossiers</div></div>
+                </div>
+                <div class="mini-stat" onclick="window.location.reload()">
+                    <div class="mini-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+                    <div><div style="font-size:0.8rem; color:#64748b; font-weight:600;">SYSTÈME</div><div style="font-weight:bold;">Actualiser</div></div>
+                </div>
             </div>
-            <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
-        </div>
 
-        <div class="action-card ac-green" onclick="window.showSection('stock')">
-            <div class="card-icon-bg"><i class="fas fa-boxes"></i></div>
-            <div>
-                <div class="card-title">Gestion Stocks</div>
-                <div class="card-desc">Entrées, sorties et vérification des disponibilités.</div>
+            <h3 style="margin-bottom:20px; font-size:1.1rem; color:var(--dark);">ACCÈS RAPIDE</h3>
+            <div class="dashboard-grid">
+                <div class="action-card ac-blue" onclick="window.showSection('admin')">
+                    <div class="card-icon-bg"><i class="fas fa-user-plus"></i></div>
+                    <div>
+                        <div class="card-title">Nouveau Dossier</div>
+                        <div class="card-desc">Créer une inhumation, crémation ou un rapatriement.</div>
+                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
+                <div class="action-card ac-orange" onclick="window.showSection('base')">
+                    <div class="card-icon-bg"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="card-title">Base Clients</div>
+                        <div class="card-desc">Retrouver un ancien dossier ou un client.</div>
+                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
+                <div class="action-card ac-green" onclick="window.showSection('stock')">
+                    <div class="card-icon-bg"><i class="fas fa-boxes"></i></div>
+                    <div>
+                        <div class="card-title">Gestion Stocks</div>
+                        <div class="card-desc">Entrées, sorties et vérification des disponibilités.</div>
+                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
+                <div class="action-card ac-purple" onclick="window.location.href='facturation_v2.html'">
+                    <div class="card-icon-bg"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div>
+                        <div class="card-title">Comptabilité</div>
+                        <div class="card-desc">Devis, Factures et Registre des Achats.</div>
+                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+                </div>
             </div>
-            <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
         </div>
 
-        <div class="action-card ac-purple" onclick="window.location.href='facturation_v2.html'">
-            <div class="card-icon-bg"><i class="fas fa-file-invoice-dollar"></i></div>
-            <div>
-                <div class="card-title">Comptabilité</div>
-                <div class="card-desc">Devis, Factures et Registre des Achats.</div>
-            </div>
-            <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
-        </div>
-
-    </div>
-</div>
         <div id="view-stock" class="hidden">
             <div class="page-header">
                 <h1>Gestion des Stocks</h1>
                 <button class="btn btn-green" onclick="window.openAjoutStock()"><i class="fas fa-plus"></i> AJOUTER ARTICLE</button>
             </div>
-
             <div id="form-stock" class="card hidden" style="border-top: 4px solid var(--primary);">
                 <h3>Nouveau Produit</h3>
                 <div class="form-grid">
@@ -297,7 +230,6 @@
                     <button class="btn btn-red" onclick="document.getElementById('form-stock').classList.add('hidden')">ANNULER</button>
                 </div>
             </div>
-
             <div class="card" style="padding:0; overflow:hidden;">
                 <table class="history-table">
                     <thead><tr><th>Article</th><th>Catégorie</th><th>Prix Achat</th><th>Prix Vente</th><th>En Stock</th><th>Actions</th></tr></thead>
@@ -442,7 +374,7 @@
                                 </div>
                                 <div id="famille_fields" class="span-2 form-grid" style="background:#f0fdf4; padding:15px; border-radius:8px; border:1px solid #bbf7d0;">
                                     <div class="span-2" style="margin-bottom:5px;">
-                                        <input type="checkbox" id="copy_mandant" onchange="window.copierMandant()">
+                                        <input type="checkbox" id="copy_mandant" onchange="window.copierMandant()"> 
                                         <label for="copy_mandant" style="font-weight:600; color:var(--primary-dark); cursor:pointer;">C'est le Mandant (Copie auto)</label>
                                     </div>
                                     <div><label>Nom & Prénom Témoin</label><input id="f_nom_prenom"></div>
@@ -541,130 +473,26 @@
                             </div>
                         </div>
                     </div>
-                </div>
-				<div class="card" style="margin-top:20px; border-top: 4px solid #3b82f6;">
-                    <h3 style="color:#3b82f6;"><i class="fas fa-paperclip"></i> PIÈCES JOINTES (GED)</h3>
-                    <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px dashed #3b82f6;">
-                        
-                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
-                            <input type="file" id="ged_input_file" accept="image/*,application/pdf" style="flex:1;">
-                            <input type="text" id="ged_file_name" placeholder="Nom (ex: CNI...)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
-                            <button class="btn btn-blue" onclick="window.ajouterPieceJointe()" type="button">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <small style="color:#64748b; display:block; margin-bottom:10px;">⚠️ Plan B : Images ou PDF (Max 800 Ko).</small>
+                    
+                    <div class="card" style="margin-top:20px; border-top: 4px solid #3b82f6;">
+                        <h3 style="color:#3b82f6;"><i class="fas fa-paperclip"></i> PIÈCES JOINTES (GED)</h3>
+                        <div style="background:#eff6ff; padding:15px; border-radius:8px; border:1px dashed #3b82f6;">
+                            <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+                                <input type="file" id="ged_input_file" accept="image/*,application/pdf" style="flex:1;">
+                                <input type="text" id="ged_file_name" placeholder="Nom (ex: CNI, Devis...)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <button class="btn btn-blue" onclick="window.ajouterPieceJointe()" type="button">
+                                    <i class="fas fa-plus"></i> AJOUTER
+                                </button>
+                            </div>
+                            <small style="color:#64748b; display:block; margin-bottom:10px;">⚠️ Plan B : Images légères ou PDF (Max 800 Ko).</small>
 
-                        <div id="liste_pieces_jointes" style="display:flex; flex-direction:column; gap:8px;">
-                            <div style="color:#94a3b8; font-style:italic;">Aucun document joint.</div>
+                            <div id="liste_pieces_jointes" style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="color:#94a3b8; font-style:italic;">Aucun document joint.</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                ```
+                    </div>
 
----
-
-### ÉTAPE 2 : Le Moteur (JavaScript)
-
-Allez tout en bas de votre fichier. Cherchez la balise `<script>` qui contient l'heure (juste avant `</body>`).
-
-**Remplacez tout le bloc `<script> ... </script>` de la fin par celui-ci (qui contient l'heure ET la GED) :**
-
-```html
-<script>
-    // --- 1. GESTION DE L'HEURE ---
-    function updateClock() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-        const dateString = now.toLocaleDateString('fr-FR', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
-        
-        const elTime = document.getElementById('header-time');
-        const elDate = document.getElementById('header-date');
-        
-        if(elTime) elTime.innerText = timeString;
-        if(elDate) elDate.innerText = dateString;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // --- 2. GESTION GED (PLAN B - BASE64) ---
-    window.current_pieces_jointes = []; // Stockage temporaire
-
-    window.ajouterPieceJointe = function() {
-        const input = document.getElementById('ged_input_file');
-        const nameInput = document.getElementById('ged_file_name');
-        
-        if (input.files.length === 0) return alert("Choisissez un fichier !");
-        if (!nameInput.value) return alert("Donnez un nom au document !");
-        
-        const file = input.files[0];
-
-        // Sécurité taille (800Ko max)
-        if (file.size > 800 * 1024) {
-            return alert("⚠️ FICHIER TROP LOURD !\nLa version gratuite limite la taille. Essayez une image plus petite.");
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64String = e.target.result; // Fichier transformé en texte
-            
-            // Ajout à la liste
-            window.current_pieces_jointes.push({
-                nom: nameInput.value,
-                type: file.type,
-                data: base64String,
-                date: new Date().toLocaleDateString()
-            });
-
-            // Reset et affichage
-            input.value = "";
-            nameInput.value = "";
-            window.afficherPiecesJointes();
-        };
-        reader.readAsDataURL(file);
-    };
-
-    window.afficherPiecesJointes = function() {
-        const container = document.getElementById('liste_pieces_jointes');
-        container.innerHTML = "";
-
-        if (window.current_pieces_jointes.length === 0) {
-            container.innerHTML = '<div style="color:#94a3b8; font-style:italic;">Aucun document joint.</div>';
-            return;
-        }
-
-        window.current_pieces_jointes.forEach((doc, index) => {
-            const div = document.createElement('div');
-            div.style = "background:white; padding:10px; border-radius:6px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;";
-            
-            let icon = doc.type.includes('pdf') ? '<i class="fas fa-file-pdf" style="color:red;"></i>' : '<i class="fas fa-file-image" style="color:blue;"></i>';
-
-            div.innerHTML = `
-                <div style="display:flex; gap:10px; align-items:center;">
-                    ${icon} <strong>${doc.nom}</strong> <small>(${doc.date})</small>
-                </div>
-                <div>
-                    <button onclick="window.voirDocument(${index})" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; margin-right:5px; cursor:pointer;"><i class="fas fa-eye"></i></button>
-                    <button onclick="window.supprimerDocument(${index})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;"><i class="fas fa-trash"></i></button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    };
-
-    window.voirDocument = function(index) {
-        const doc = window.current_pieces_jointes[index];
-        const win = window.open();
-        win.document.write(`<iframe src="${doc.data}" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
-    };
-
-    window.supprimerDocument = function(index) {
-        if(confirm("Supprimer ce document ?")) {
-            window.current_pieces_jointes.splice(index, 1);
-            window.afficherPiecesJointes();
-        }
-    };
-</script>
                 <div class="card" style="height:fit-content; position:sticky; top:20px; border-top: 4px solid var(--primary);">
                     <h3><i class="fas fa-print"></i> DOCUMENTS PDF</h3>
                     <div style="display:flex; flex-direction:column; gap:12px;">
@@ -685,23 +513,104 @@ Allez tout en bas de votre fichier. Cherchez la balise `<script>` qui contient l
             </div>
         </div>
     </main>
+    
     <script type="module" src="js/script.js"></script>
-	<script>
-    function updateClock() {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-        const dateString = now.toLocaleDateString('fr-FR', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+    
+    <script>
+        // --- 1. GESTION DE L'HEURE ---
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            const dateString = now.toLocaleDateString('fr-FR', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+            
+            const elTime = document.getElementById('header-time');
+            const elDate = document.getElementById('header-date');
+            
+            if(elTime) elTime.innerText = timeString;
+            if(elDate) elDate.innerText = dateString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- 2. GESTION GED (PLAN B - BASE64) ---
+        // Variables globales pour le stockage temporaire
         
-        const elTime = document.getElementById('header-time');
-        const elDate = document.getElementById('header-date');
-        
-        if(elTime) elTime.innerText = timeString;
-        if(elDate) elDate.innerText = dateString;
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-</script>
+        window.ajouterPieceJointe = function() {
+            const input = document.getElementById('ged_input_file');
+            const nameInput = document.getElementById('ged_file_name');
+            
+            if (input.files.length === 0) return alert("Choisissez un fichier !");
+            if (!nameInput.value) return alert("Donnez un nom au document !");
+            
+            const file = input.files[0];
+
+            // Sécurité taille (800Ko max) pour ne pas bloquer Firestore
+            if (file.size > 800 * 1024) {
+                return alert("⚠️ FICHIER TROP LOURD !\nLa version gratuite limite la taille. Essayez une image plus petite ou un PDF léger.");
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result; // Fichier transformé en texte
+                
+                // Ajout à la liste globale (définie dans js/script.js)
+                if (!window.current_pieces_jointes) window.current_pieces_jointes = [];
+                
+                window.current_pieces_jointes.push({
+                    nom: nameInput.value,
+                    type: file.type,
+                    data: base64String,
+                    date: new Date().toLocaleDateString()
+                });
+
+                // Reset et affichage
+                input.value = "";
+                nameInput.value = "";
+                window.afficherPiecesJointes();
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.afficherPiecesJointes = function() {
+            const container = document.getElementById('liste_pieces_jointes');
+            container.innerHTML = "";
+
+            if (!window.current_pieces_jointes || window.current_pieces_jointes.length === 0) {
+                container.innerHTML = '<div style="color:#94a3b8; font-style:italic;">Aucun document joint.</div>';
+                return;
+            }
+
+            window.current_pieces_jointes.forEach((doc, index) => {
+                const div = document.createElement('div');
+                div.style = "background:white; padding:10px; border-radius:6px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;";
+                
+                let icon = doc.type.includes('pdf') ? '<i class="fas fa-file-pdf" style="color:red;"></i>' : '<i class="fas fa-file-image" style="color:blue;"></i>';
+
+                div.innerHTML = `
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        ${icon} <strong>${doc.nom}</strong> <small>(${doc.date})</small>
+                    </div>
+                    <div>
+                        <button onclick="window.voirDocument(${index})" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; margin-right:5px; cursor:pointer;"><i class="fas fa-eye"></i></button>
+                        <button onclick="window.supprimerDocument(${index})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.voirDocument = function(index) {
+            const doc = window.current_pieces_jointes[index];
+            const win = window.open();
+            win.document.write(`<iframe src="${doc.data}" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+        };
+
+        window.supprimerDocument = function(index) {
+            if(confirm("Supprimer ce document ?")) {
+                window.current_pieces_jointes.splice(index, 1);
+                window.afficherPiecesJointes();
+            }
+        };
+    </script>
 </body>
 </html>
-
-
