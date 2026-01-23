@@ -570,7 +570,7 @@
     
     <script type="module" src="js/script.js"></script>
     
-    <script>
+   <script>
         // --- 1. GESTION DE L'HEURE ---
         function updateClock() {
             const now = new Date();
@@ -662,8 +662,8 @@
             }
         };
 
-        // --- 3. GESTION MENU MOBILE (BURGER) & SIDEBAR RÉTRACTABLE (PC) ---
-        window.toggleSidebar = function() {
+        // --- 3. GESTION MENU MOBILE (BURGER) & SIDEBAR RÉTRACTABLE ---
+        window.toggleMobileMenu = function() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('mobile-overlay');
             const btnIcon = document.querySelector('#mobile-menu-btn i');
@@ -688,7 +688,7 @@
 
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
-                if(window.innerWidth < 768) window.toggleSidebar();
+                if(window.innerWidth < 768) window.toggleMobileMenu();
             });
         });
 
@@ -698,18 +698,32 @@
             const recherche = params.get('recherche');
 
             if(recherche) {
-                window.showSection('base'); // Ouvre l'onglet "Base Clients"
+                // 1. Ouvrir l'onglet "Base Clients"
+                window.showSection('base');
                 
+                // 2. Attendre que la liste charge (Firebase) puis filtrer
                 setTimeout(() => {
                     const input = document.getElementById('search-client');
                     if(input) {
                         input.value = recherche;
-                        // Déclenche l'événement "keyup" pour filtrer la liste
-                        input.dispatchEvent(new Event('keyup'));
+                        // Déclencher le filtre visuel
+                        const term = recherche.toLowerCase();
+                        const rows = document.querySelectorAll('#clients-table-body tr');
+                        let found = false;
+                        rows.forEach(row => {
+                            if(row.textContent.toLowerCase().includes(term)) {
+                                row.style.display = '';
+                                found = true;
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                        if(!found) alert("Aucun dossier trouvé pour : " + recherche);
                     }
-                }, 1000); // Petit délai pour laisser Firebase charger
+                }, 1500); // 1.5 secondes pour être sûr que tout est chargé
             }
         });
     </script>
 </body>
 </html>
+
