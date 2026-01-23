@@ -3,323 +3,1061 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation V2</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>PF Solidaire - Finance V16 (Export Excel)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    
     <style>
-        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0; }
-        body { font-family: 'Inter', sans-serif; background: #f1f5f9; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        /* --- STYLES GÉNÉRAUX --- */
+        body { font-family: 'Helvetica', sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+        .hidden { display: none !important; }
         
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
-        .brand { color: var(--primary); font-size: 1.4rem; font-weight: 800; margin-bottom: 30px; display:flex; align-items:center; gap:10px; }
-        .nav-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: var(--gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
-        .nav-link:hover, .nav-link.active { background: #ecfdf5; color: #059669; }
-        
-        .main-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        
-        .header-bar { display: flex; justify-content: space-between; align-items: center; }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; color: white; display:flex; align-items:center; gap:8px; }
-        .btn-green { background: var(--primary); }
-        .btn-blue { background: var(--secondary); }
-        .btn-red { background: #ef4444; }
-        
-        .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        
-        /* FACTURE EDITOR STYLE */
-        .facture-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; box-sizing: border-box; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { text-align: left; color: var(--gray); font-size: 0.85rem; padding: 10px; border-bottom: 2px solid var(--border); }
-        td { padding: 10px; border-bottom: 1px solid var(--border); }
-        
-        .total-zone { background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 15px; }
-        .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
-        .grand-total { font-size: 1.2rem; font-weight: bold; color: var(--dark); border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 5px; }
+        /* BOUTONS */
+        .btn { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition: all 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-blue { background: #3b82f6; color: white; } .btn-green { background: #22c55e; color: white; } 
+        .btn-red { background: #fee2e2; color: #ef4444; } .btn-grey { background: #e2e8f0; color: #475569; } 
+        .btn-purple { background: #8b5cf6; color: white; } .btn-orange { background: #f97316; color: white; }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .facture-grid { grid-template-columns: 1fr; }
-        }
+        /* HEADER & NAVIGATION */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .nav-tabs { display: flex; gap: 10px; margin-top: 10px; }
+        .tab-btn { padding: 10px 20px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: bold; color: #64748b; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3); }
+        .tab-btn.active-red { background: #ef4444; color: white; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3); }
+
+        /* STATS FINANCIÈRES */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+        .stat-label { font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; }
+        .stat-year { font-size: 0.75rem; opacity: 0.6; position: absolute; top: 20px; right: 20px; }
+        .card-ca { color: #15803d; border-bottom: 4px solid #22c55e; } 
+        .card-depense { color: #b91c1c; border-bottom: 4px solid #ef4444; } 
+        .card-result { color: #1e40af; border-bottom: 4px solid #3b82f6; background: linear-gradient(to bottom right, #eff6ff, white); }
+
+        /* TABLES & BADGES */
+        .compta-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-collapse: collapse; }
+        
+        /* HEADER DU TABLEAU CLIQUABLE (V14) */
+        .compta-table th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; cursor: pointer; user-select: none; transition: background 0.2s; }
+        .compta-table th:hover { background: #e2e8f0; color: #1e293b; }
+        .compta-table th i { margin-left: 5px; opacity: 0.5; }
+        
+        .compta-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; }
+        .badge-devis { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; } 
+        .badge-facture { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-depense { background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; }
+
+        .badge-regle { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; cursor: default; }
+        .badge-attente { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: all 0.2s; }
+        .badge-attente:hover { background: #ffedd5; transform: scale(1.05); }
+        .badge-mode { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: normal; }
+
+        /* FORMULAIRE DÉPENSE */
+        .expense-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #ef4444; }
+        .form-group { flex: 1; min-width: 140px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
+
+        /* ÉDITEUR FACTURE */
+        .editor-container { max-width: 1200px; margin: 0 auto; } 
+        .top-bar-editor { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 4px solid #f59e0b; }
+        .grid-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; } 
+        .box { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .input-clean { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
+        .facture-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); } 
+        .facture-table th { background: #e2e8f0; padding: 12px; text-align: left; color: #475569; font-size: 0.85rem; text-transform: uppercase; } 
+        .facture-table td { border-bottom: 1px solid #f1f5f9; padding: 5px; vertical-align: middle; }
+        .drag-handle { cursor: grab; color: #cbd5e1; text-align: center; } 
+        .input-cell { border: 1px solid transparent; width: 100%; padding: 8px; margin: 0; background:transparent; } 
+        .input-cell:focus { border: 1px solid #3b82f6; background: #eff6ff; outline: none; border-radius:4px; }
+        .row-section { background: #fff7ed !important; border-left: 4px solid #f59e0b; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; } 
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-btn { display: block; width: 100%; margin: 10px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s; }
+        .modal-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; transform: translateX(5px); }
     </style>
 </head>
 <body>
     <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
 
-    <nav class="sidebar">
-        <div class="brand"><i class="fas fa-file-invoice"></i> FACTURATION</div>
-        <a href="index.html" class="nav-link"><i class="fas fa-arrow-left"></i> Retour ERP</a>
-        <a href="#" class="nav-link active"><i class="fas fa-edit"></i> Nouvelle Facture</a>
-    </nav>
+    <datalist id="clients_suggestions"></datalist>
+    <datalist id="defunts_suggestions"></datalist>
+    <datalist id="fournisseurs_list">
+        <option value="Bernier Cercueils"><option value="Total Énergies"><option value="Assurance Allianz"><option value="Fournitures Bureau"><option value="Loyer Local"><option value="Urnes Funéraires"><option value="Fleuriste Partenaire">
+    </datalist>
 
-    <main class="main-content">
-        <div class="header-bar">
-            <h1>Éditeur de Facture</h1>
-            <button onclick="window.exporterExcel()" class="btn btn-green" style="background-color:#059669;">
-                <i class="fas fa-file-excel"></i> EXPORT COMPTABLE
-            </button>
+    <div id="modal-choix" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="color:#1e293b; margin-top:0;">CHOISIR UN MODÈLE</h3>
+            <button class="modal-btn" onclick="window.loadTemplate('Inhumation')"><i class="fas fa-church"></i> INHUMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Cremation')"><i class="fas fa-fire"></i> CRÉMATION</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Rapatriement')"><i class="fas fa-plane"></i> RAPATRIEMENT</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Transport')"><i class="fas fa-ambulance"></i> TRANSPORT</button>
+            <button class="modal-btn" onclick="window.loadTemplate('Exhumation')"><i class="fas fa-box-open"></i> EXHUMATION</button>
+            <div style="margin-top:10px;"><a href="#" onclick="document.getElementById('modal-choix').classList.add('hidden')" style="color:#ef4444;">Annuler</a></div>
         </div>
+    </div>
 
-        <div class="facture-grid">
-            <div class="card">
-                <h3><i class="fas fa-list"></i> Prestations & Articles</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
-                    <table id="table-lignes">
-                        <thead>
-                            <tr>
-                                <th style="width:50%">Désignation</th>
-                                <th style="width:10%">Qte</th>
-                                <th style="width:15%">Prix U.</th>
-                                <th style="width:10%">TVA%</th>
-                                <th style="width:10%">Total</th>
-                                <th style="width:5%"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-lignes">
-                            </tbody>
-                    </table>
+    <div id="view-dashboard">
+        <div class="dashboard-header">
+            <div>
+                <h1 style="margin:0;">Pilotage Financier</h1>
+                <div class="nav-tabs">
+                    <button class="tab-btn active" onclick="window.switchTab('factures')" id="btn-tab-factures"><i class="fas fa-file-invoice"></i> FACTURES CLIENTS</button>
+                    <button class="tab-btn" onclick="window.switchTab('achats')" id="btn-tab-achats"><i class="fas fa-shopping-cart"></i> REGISTRE ACHATS</button>
                 </div>
-                <button onclick="window.ajouterLigne()" class="btn btn-blue" style="margin-top:10px; width:100%; justify-content:center;">+ Ajouter une ligne</button>
             </div>
-
-            <div class="card">
-                <h3><i class="fas fa-user"></i> Client & Dossier</h3>
-                <label>Sélectionner un Dossier (Optionnel)</label>
-                <select id="select-dossier" onchange="window.remplirClient()"><option value="">-- Client Libre --</option></select>
-                
-                <label style="margin-top:10px; display:block;">Client (Facturé à)</label>
-                <input id="cli_nom" placeholder="Nom complet ou Société">
-                <input id="cli_adresse" placeholder="Adresse complète">
-                
-                <label style="margin-top:10px; display:block;">Concerne (Défunt)</label>
-                <input id="defunt_nom" placeholder="Nom du défunt (Optionnel)">
-
-                <div class="total-zone">
-                    <div class="total-line"><span>Total HT</span><span id="txt-ht">0.00 €</span></div>
-                    <div class="total-line"><span>Total TVA</span><span id="txt-tva">0.00 €</span></div>
-                    <div class="total-line grand-total"><span>NET À PAYER</span><span id="txt-ttc">0.00 €</span></div>
-                </div>
-
-                <button onclick="window.saveFacture()" class="btn btn-green" style="width:100%; margin-top:20px; justify-content:center;">
-                    <i class="fas fa-save"></i> ENREGISTRER & IMPRIMER
+            <div style="display:flex; align-items:center; gap:20px;">
+                <button onclick="window.exporterExcelSmart()" class="btn btn-green" style="background-color:#10b981;">
+                    <i class="fas fa-file-excel"></i> EXPORT EXCEL
                 </button>
+                <a href="index.html" class="btn btn-grey"><i class="fas fa-home"></i> Retour Accueil</a>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card card-ca">
+                <div class="stat-label">Chiffre d'Affaires (Entrées)</div>
+                <div class="stat-value" id="stat-ca">0.00 €</div>
+                <div class="stat-year" id="year-display-1">2026</div>
+                <i class="fas fa-arrow-up" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
+            </div>
+            <div class="stat-card card-depense">
+                <div class="stat-label">Dépenses (Sorties Réelles)</div>
+                <div class="stat-value" id="stat-depenses">0.00 €</div>
+                <div class="stat-year" id="year-display-2">2026</div>
+                <i class="fas fa-arrow-down" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
+            </div>
+            <div class="stat-card card-result">
+                <div class="stat-label">Bénéfice Net (Résultat)</div>
+                <div class="stat-value" id="stat-resultat">0.00 €</div>
+                <div class="stat-year" id="year-display-3">2026</div>
+                <i class="fas fa-piggy-bank" style="position:absolute; bottom:20px; right:20px; font-size:2rem; opacity:0.1;"></i>
             </div>
         </div>
 
-        <div class="card">
-            <h3><i class="fas fa-history"></i> Historique des Factures</h3>
-            <table>
-                <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Montant TTC</th><th>Actions</th></tr></thead>
-                <tbody id="historique-body"></tbody>
+        <div id="tab-factures">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <input type="text" id="search-input" placeholder="Rechercher facture..." style="padding:10px; width:250px; border:1px solid #ccc; border-radius:5px;">
+                <button class="btn btn-blue" onclick="document.getElementById('modal-choix').classList.remove('hidden')"><i class="fas fa-plus"></i> CRÉER UN DEVIS</button>
+            </div>
+            <table class="compta-table">
+                <thead><tr><th>Numéro</th><th>Date</th><th>Type</th><th>Client</th><th>Défunt</th><th style="text-align:right;">Montant TTC</th><th style="text-align:right;">Reste à Payer</th><th style="text-align:center;">Actions</th></tr></thead>
+                <tbody id="list-body"><tr><td colspan="8" style="text-align:center; padding:30px;">Chargement...</td></tr></tbody>
             </table>
         </div>
-    </main>
 
-    <script type="module">
-        import { db, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, updateDoc } from "./js/config.js";
+        <div id="tab-achats" class="hidden">
+            
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid #cbd5e1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="font-weight:bold; color:#475569;"><i class="fas fa-filter"></i> RECHERCHE & FILTRES</div>
+                    <div style="background:white; padding:8px 15px; border-radius:6px; border-left:4px solid #c2410c; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                        <span style="font-size:0.85rem; color:#64748b; text-transform:uppercase;">Reste à payer (Sélection) :</span>
+                        <strong id="total-dette-filtre" style="color:#c2410c; font-size:1.3rem; margin-left:10px;">0.00 €</strong>
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="search_depense" 
+                           placeholder="🔍 Nom, Référence, Détails..." 
+                           style="flex:2; padding:10px; border:1px solid #94a3b8; border-radius:6px;"
+                           onkeyup="window.filtrerDepenses()">
+                    
+                    <select id="filter_year" onchange="window.filtrerDepenses()" style="flex:1; padding:10px; border:1px solid #94a3b8; border-radius:6px;">
+                        <option value="">Toutes les années</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2027">2027</option>
+                    </select>
 
-        // Variables Globales
-        let lignesFacture = [];
-        let dossiersCache = [];
+                    <select id="filter_month" onchange="window.filtrerDepenses()" style="flex:1; padding:10px; border:1px solid #94a3b8; border-radius:6px;">
+                        <option value="">Tous les mois</option>
+                        <option value="0">Janvier</option>
+                        <option value="1">Février</option>
+                        <option value="2">Mars</option>
+                        <option value="3">Avril</option>
+                        <option value="4">Mai</option>
+                        <option value="5">Juin</option>
+                        <option value="6">Juillet</option>
+                        <option value="7">Août</option>
+                        <option value="8">Septembre</option>
+                        <option value="9">Octobre</option>
+                        <option value="10">Novembre</option>
+                        <option value="11">Décembre</option>
+                    </select>
+                </div>
+            </div>
 
-        // 1. CHARGEMENT INITIAL
-        window.addEventListener('DOMContentLoaded', async () => {
-            await chargerDossiersDropdown();
-            await chargerHistorique();
-            window.ajouterLigne(); // Une ligne vide au début
-        });
+            <div class="expense-form" id="form-depense">
+                <input type="hidden" id="dep_edit_id"> <div style="width:100%; display:flex; gap:15px; margin-bottom:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Date Facture</label>
+                        <input type="date" id="dep_date_fac">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Réf. (N° Pièce)</label>
+                        <input type="text" id="dep_ref" placeholder="Ex: FC-2026-045">
+                    </div>
+                    <div class="form-group" style="flex:2;">
+                        <label>Fournisseur</label>
+                        <input type="text" id="dep_fourn" list="fournisseurs_list" placeholder="Qui émet la facture ?">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Date Règlement</label>
+                        <input type="date" id="dep_date_reg">
+                    </div>
+                </div>
 
-        // 2. LOGIQUE FACTURATION (RESTAURÉE)
-        window.ajouterLigne = function() {
-            const tbody = document.getElementById('tbody-lignes');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="text" class="l-nom" placeholder="Prestation..." oninput="window.calculTotaux()"></td>
-                <td><input type="number" class="l-qte" value="1" oninput="window.calculTotaux()"></td>
-                <td><input type="number" class="l-prix" value="0" oninput="window.calculTotaux()"></td>
-                <td><select class="l-tva" onchange="window.calculTotaux()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></td>
-                <td class="l-total" style="font-weight:bold;">0.00</td>
-                <td><button onclick="this.closest('tr').remove(); window.calculTotaux()" style="color:red; background:none; border:none; cursor:pointer;">X</button></td>
-            `;
-            tbody.appendChild(tr);
+                <div style="width:100%; margin-bottom:10px;">
+                    <label style="font-size:0.8rem; font-weight:bold; color:#64748b; margin-bottom:5px; display:block;">Détails / Note (Optionnel)</label>
+                    <input type="text" id="dep_details" placeholder="Ex: Achat fleurs cérémonie Dupont, Révision Camion..." style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                </div>
+
+                <div style="width:100%; display:flex; gap:15px; align-items:flex-end;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Catégorie</label>
+                        <select id="dep_cat">
+                            <option disabled selected>-- Choisir --</option>
+                            <optgroup label="Marchandises">
+                                <option>Achat Cercueils</option>
+                                <option>Achat Urnes</option>
+                                <option>Achat Fleurs / Plaques</option>
+                                <option>Capitons / Accessoires</option>
+                            </optgroup>
+                            <optgroup label="Frais Généraux">
+                                <option>Loyer / Charges Locatives</option>
+                                <option>Électricité / Eau / Gaz</option>
+                                <option>Téléphone / Internet</option>
+                                <option>Fournitures de Bureau</option>
+                                <option>Assurance Pro</option>
+                            </optgroup>
+                            <optgroup label="Véhicules">
+                                <option>Carburant / Péage</option>
+                                <option>Entretien Véhicules</option>
+                                <option>Assurance Véhicules</option>
+                            </optgroup>
+                            <optgroup label="Taxes & Admin">
+                                <option>Taxes Crémation</option>
+                                <option>Vacations Police</option>
+                                <option>Impôts & Taxes</option>
+                                <option>Frais Bancaires</option>
+                            </optgroup>
+                            <optgroup label="Personnel & Divers">
+                                <option>Salaires / Charges</option>
+                                <option>Sous-traitance</option>
+                                <option>Remboursement Client</option>
+                                <option>Autre</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="flex:1;">
+                        <label>Paiement</label>
+                        <select id="dep_mode">
+                            <option value="Virement">Virement</option>
+                            <option value="Prélèvement">Prélèvement</option>
+                            <option value="CB">Carte Bancaire</option>
+                            <option value="Chèque">Chèque</option>
+                            <option value="Espèces">Espèces</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="flex:1;">
+                        <label>Statut</label>
+                        <select id="dep_statut" style="font-weight:bold;">
+                            <option value="Réglé" style="color:green;">✅ Réglé</option>
+                            <option value="En attente" style="color:orange;">⏳ En attente</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="flex:1;">
+                        <label>Montant TTC (€)</label>
+                        <input type="number" id="dep_montant" placeholder="0.00">
+                    </div>
+
+                    <button id="btn-action-depense" class="btn btn-red" onclick="window.gererDepense()" style="height:40px; margin-bottom:1px; min-width:120px;">
+                        <i class="fas fa-plus"></i> ENREGISTRER
+                    </button>
+                    <button id="btn-cancel-depense" class="btn btn-grey hidden" onclick="window.resetFormDepense()" style="height:40px; margin-bottom:1px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <table class="compta-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.trierTableau('date')">Dates <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('reference')">Réf <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('fournisseur')">Fournisseur <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('categorie')">Catégorie <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('mode')">Paiement <i class="fas fa-sort"></i></th>
+                        <th onclick="window.trierTableau('statut')">Statut <i class="fas fa-sort"></i></th>
+                        <th style="text-align:right;" onclick="window.trierTableau('montant')">Montant TTC <i class="fas fa-sort"></i></th>
+                        <th style="text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="depenses-body"><tr><td colspan="8" style="text-align:center;">Chargement...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-editor" class="hidden editor-container">
+        <input type="hidden" id="current_doc_id">
+        <div class="top-bar-editor">
+            <button onclick="window.showDashboard()" class="btn btn-grey"><i class="fas fa-arrow-left"></i> RETOUR LISTE</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-purple hidden" id="btn-transform" onclick="window.transformerEnFacture()"><i class="fas fa-magic"></i> CRÉER FACTURE</button>
+                <button class="btn btn-green" id="btn-save"><i class="fas fa-save"></i> ENREGISTRER</button>
+                <button class="btn btn-blue" id="btn-pdf"><i class="fas fa-print"></i> PDF</button>
+            </div>
+        </div>
+
+        <div class="grid-identity">
+            <div class="box">
+                <span class="label-section">CLIENT / MANDANT</span>
+                <div style="display:flex; gap:10px;">
+                    <select id="client_civility" class="input-clean" style="width:80px; margin:0;"><option>M.</option><option>Mme</option></select>
+                    <input type="text" class="input-clean" id="client_nom" list="clients_suggestions" onchange="window.remplirInfosClient()" placeholder="Nom Prénom Client..." style="flex:1; margin:0;">
+                </div>
+                <input type="text" class="input-clean" id="client_adresse" placeholder="Adresse complète..." style="margin-top:10px;">
+            </div>
+            <div class="box">
+                <span class="label-section">INFORMATIONS</span>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <select id="doc_type" class="input-clean" style="margin:0;"><option>DEVIS</option><option>FACTURE</option></select>
+                    <input type="text" id="doc_numero" class="input-clean" style="margin:0; font-weight:bold; color:#d97706;" placeholder="N° Auto">
+                    <input type="date" class="input-clean" id="doc_date" style="margin:0;">
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <select id="defunt_civility" class="input-clean" style="width:80px; margin:0;"><option>M.</option><option>Mme</option></select>
+                    <input type="text" class="input-clean" id="defunt_nom" list="defunts_suggestions" placeholder="Concerne le défunt..." style="flex:1; margin:0;">
+                </div>
+            </div>
+        </div>
+
+        <div style="background:white; padding:10px; display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0; border:1px solid #e2e8f0;">
+            <div style="font-weight:bold; color:#64748b;">DÉTAIL (Drag & Drop actif)</div>
+            <div>
+                <button class="btn btn-orange" onclick="window.ajouterSection()"><i class="fas fa-heading"></i> SECTION</button>
+                <button class="btn btn-blue" onclick="window.ajouterLigne()"><i class="fas fa-plus"></i> LIGNE</button>
+            </div>
+        </div>
+
+        <table class="facture-table">
+            <thead><tr><th style="width: 30px;"></th><th style="width: 50%;">DÉSIGNATION</th><th style="width: 15%;">CATÉGORIE</th><th style="width: 10%;">TVA</th><th style="width: 15%; text-align:right;">PRIX TTC</th><th style="width: 5%;"></th></tr></thead>
+            <tbody id="tbody_lignes"></tbody>
+        </table>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="payment-box" style="background:#ecfccb; padding:15px; border-radius:8px; border:1px solid #a3e635; margin-top:20px;">
+                <span class="label-section" style="color:#166534; display:block; font-weight:bold; margin-bottom:5px;">ENREGISTRER UN PAIEMENT</span>
+                <div style="display:flex; gap:10px;">
+                    <input type="date" id="pay_date" class="input-clean" style="margin:0;">
+                    <select id="pay_mode" class="input-clean" style="margin:0;"><option>Espèces</option><option>Chèque</option><option>Virement</option></select>
+                    <input type="number" id="pay_amount" class="input-clean" placeholder="Montant €" style="margin:0;">
+                    <button class="btn btn-green" onclick="window.ajouterPaiement()">+</button>
+                </div>
+                <div id="liste_paiements" style="margin-top:10px; background:white; padding:10px; border-radius:5px; border:1px solid #ddd; max-height:150px; overflow-y:auto;"><small style="color:#888;">Aucun paiement.</small></div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:15px; border-radius:8px; margin-top:20px; text-align:right;">
+                <div style="display:flex; justify-content:space-between; font-size:1.1rem; margin-bottom:5px;"><span>TOTAL TTC :</span> <strong id="total_general">0.00 €</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; color:#166534;"><span>DÉJÀ RÉGLÉ :</span> <strong id="total_paye">0.00 €</strong></div>
+                <div style="display:flex; justify-content:space-between; font-size:1.4rem; font-weight:bold; color:#b91c1c; border-top:2px solid #ddd; padding-top:10px; margin-top:10px;"><span>RESTE À PAYER :</span> <span id="reste_a_payer">0.00 €</span></div>
+                <span id="total_display" class="hidden">0</span>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { db, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, getDoc } from "./js/config.js";
+
+    let logoBase64 = null;
+    let paiements = [];
+    let dossiersCache = [];
+    let cacheDepenses = [];
+    
+    // VARIABLES FINANCIÈRES
+    let global_CA = 0;
+    let global_Depenses = 0;
+    const currentYear = new Date().getFullYear();
+
+    // VARIABLES TRI V14
+    let currentSort = { col: 'date', order: 'desc' }; // Par défaut : date décroissante
+
+    // --- INIT ---
+    function chargerLogoBase64() {
+        const img = document.getElementById('logo-source');
+        if (img && img.naturalWidth > 0) {
+            const c = document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight;
+            c.getContext("2d").drawImage(img,0,0); try{logoBase64=c.toDataURL("image/png");}catch(e){}
+        }
+    }
+    setTimeout(chargerLogoBase64, 1000);
+    
+    // UPDATE DASHBOARD
+    function updateFinancialDashboard() {
+        document.getElementById('stat-ca').innerText = global_CA.toFixed(2) + " €";
+        document.getElementById('stat-depenses').innerText = global_Depenses.toFixed(2) + " €";
+        const resultat = global_CA - global_Depenses;
+        const elRes = document.getElementById('stat-resultat');
+        elRes.innerText = resultat.toFixed(2) + " €";
+        elRes.style.color = resultat >= 0 ? '#1e40af' : '#b91c1c'; 
+
+        // Année
+        document.getElementById('year-display-1').innerText = currentYear;
+        document.getElementById('year-display-2').innerText = currentYear;
+        document.getElementById('year-display-3').innerText = currentYear;
+    }
+
+    // --- NAVIGATION ONGLETS ---
+    window.switchTab = function(tab) {
+        document.getElementById('tab-factures').classList.add('hidden');
+        document.getElementById('tab-achats').classList.add('hidden');
+        document.getElementById('btn-tab-factures').classList.remove('active');
+        document.getElementById('btn-tab-achats').classList.remove('active', 'active-red');
+
+        if(tab === 'factures') {
+            document.getElementById('tab-factures').classList.remove('hidden');
+            document.getElementById('btn-tab-factures').classList.add('active');
+        } else {
+            document.getElementById('tab-achats').classList.remove('hidden');
+            document.getElementById('btn-tab-achats').classList.add('active-red');
+            window.chargerDepenses();
+        }
+    };
+
+    // --- MODULE EXPORT EXCEL INTELLIGENT (V16) ---
+    window.exporterExcelSmart = async function() {
+        // Détecter l'onglet actif
+        const isAchats = document.getElementById('tab-achats').classList.contains('hidden') === false;
+        
+        if (isAchats) {
+            // EXPORT DES DÉPENSES
+            if(!confirm("Exporter le Journal des ACHATS (Excel) ?")) return;
+            
+            let csv = "DATE;REFERENCE;FOURNISSEUR;CATEGORIE;DETAILS;PAIEMENT;STATUT;MONTANT TTC\n";
+            try {
+                // On utilise cacheDepenses qui est déjà chargé
+                cacheDepenses.forEach(d => {
+                    const date = new Date(d.date).toLocaleDateString();
+                    const ref = (d.reference || "").replace(/;/g, ",");
+                    const fourn = (d.fournisseur || "").replace(/;/g, ",");
+                    const cat = (d.categorie || "").replace(/;/g, ",");
+                    const det = (d.details || "").replace(/;/g, ",");
+                    const pay = d.mode || "";
+                    const stat = d.statut || "";
+                    const mt = (d.montant || 0).toFixed(2).replace('.', ',');
+                    
+                    csv += `${date};${ref};${fourn};${cat};${det};${pay};${stat};${mt}\n`;
+                });
+                downloadCSV(csv, "Journal_Achats_PF.csv");
+            } catch(e) { alert("Erreur export : " + e.message); }
+
+        } else {
+            // EXPORT DES VENTES (FACTURES)
+            if(!confirm("Exporter le Journal des VENTES (Factures Clients) ?")) return;
+            
+            let csv = "NUMERO;DATE;TYPE;CLIENT;DEFUNT;TOTAL TTC;RESTE A PAYER\n";
+            try {
+                const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
+                const snap = await getDocs(q);
+                
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    // On ne prend que les FACTURES pour le journal des ventes (pas les devis)
+                    if (d.info?.type === "FACTURE") {
+                        const num = d.info.numero || "";
+                        const date = new Date(d.date_creation).toLocaleDateString();
+                        const type = d.info.type;
+                        const cli = (d.client?.nom || "").replace(/;/g, ",");
+                        const def = (d.defunt?.nom || "").replace(/;/g, ",");
+                        const total = (d.info.total || 0).toFixed(2).replace('.', ',');
+                        
+                        const paye = d.paiements ? d.paiements.reduce((sum, p) => sum + p.montant, 0) : 0;
+                        const reste = (d.info.total - paye).toFixed(2).replace('.', ',');
+
+                        csv += `${num};${date};${type};${cli};${def};${total};${reste}\n`;
+                    }
+                });
+                downloadCSV(csv, "Journal_Ventes_PF.csv");
+            } catch(e) { alert("Erreur export : " + e.message); }
+        }
+    };
+
+    function downloadCSV(content, fileName) {
+        const encodedUri = encodeURI("data:text/csv;charset=utf-8,\uFEFF" + content);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- GESTION DÉPENSES ---
+    window.gererDepense = async function() {
+        const idToEdit = document.getElementById('dep_edit_id').value;
+        const dateFac = document.getElementById('dep_date_fac').value;
+        const ref = document.getElementById('dep_ref').value || "Non spécifié"; 
+        const fourn = document.getElementById('dep_fourn').value;
+        const details = document.getElementById('dep_details').value || ""; 
+        const dateReg = document.getElementById('dep_date_reg').value; 
+        const cat = document.getElementById('dep_cat').value;
+        const mode = document.getElementById('dep_mode').value;
+        const statut = document.getElementById('dep_statut').value;
+        const mont = parseFloat(document.getElementById('dep_montant').value);
+
+        if(!dateFac || !fourn || isNaN(mont) || cat === "-- Choisir --") {
+            return alert("Veuillez remplir : Date Facture, Fournisseur, Catégorie et Montant.");
+        }
+
+        const dataObj = {
+            date: dateFac, date_reglement: dateReg, reference: ref,
+            fournisseur: fourn, details: details, 
+            categorie: cat, mode: mode, statut: statut,
+            montant: mont
         };
 
-        window.calculTotaux = function() {
-            let totalHT = 0;
-            let totalTVA = 0;
-            const rows = document.querySelectorAll('#tbody-lignes tr');
+        try {
+            if(idToEdit) {
+                await updateDoc(doc(db, "depenses", idToEdit), dataObj);
+                alert("✅ Dépense modifiée !");
+            } else {
+                dataObj.date_ajout = new Date().toISOString(); 
+                await addDoc(collection(db, "depenses"), dataObj);
+            }
+            window.resetFormDepense(); 
+            window.chargerDepenses();  
+        } catch(e) { alert("Erreur : " + e.message); }
+    };
+
+    window.preparerModification = function(id) {
+        const data = cacheDepenses.find(d => d.id === id);
+        if(!data) return;
+
+        document.getElementById('dep_edit_id').value = id;
+        document.getElementById('dep_date_fac').value = data.date;
+        document.getElementById('dep_ref').value = data.reference !== "Non spécifié" ? data.reference : "";
+        document.getElementById('dep_fourn').value = data.fournisseur;
+        document.getElementById('dep_details').value = data.details || ""; 
+        document.getElementById('dep_date_reg').value = data.date_reglement || "";
+        document.getElementById('dep_cat').value = data.categorie;
+        document.getElementById('dep_mode').value = data.mode;
+        document.getElementById('dep_statut').value = data.statut;
+        document.getElementById('dep_montant').value = data.montant;
+
+        const btn = document.getElementById('btn-action-depense');
+        btn.innerHTML = '<i class="fas fa-edit"></i> MODIFIER';
+        btn.classList.remove('btn-red');
+        btn.classList.add('btn-blue');
+        
+        document.getElementById('btn-cancel-depense').classList.remove('hidden');
+        document.getElementById('form-depense').scrollIntoView({behavior: "smooth"});
+    };
+
+    window.resetFormDepense = function() {
+        document.getElementById('dep_edit_id').value = "";
+        document.getElementById('dep_ref').value = "";
+        document.getElementById('dep_fourn').value = "";
+        document.getElementById('dep_details').value = "";
+        document.getElementById('dep_montant').value = "";
+        document.getElementById('dep_date_reg').value = "";
+        
+        const btn = document.getElementById('btn-action-depense');
+        btn.innerHTML = '<i class="fas fa-plus"></i> ENREGISTRER';
+        btn.classList.add('btn-red');
+        btn.classList.remove('btn-blue');
+        
+        document.getElementById('btn-cancel-depense').classList.add('hidden');
+    };
+
+    window.chargerDepenses = async function() {
+        const tbody = document.getElementById('depenses-body');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+        
+        try {
+            const q = query(collection(db, "depenses"), orderBy("date", "desc"));
+            const snap = await getDocs(q);
             
-            lignesFacture = []; // Reset du tableau de données
+            cacheDepenses = []; 
+            global_Depenses = 0; 
 
-            rows.forEach(row => {
-                const nom = row.querySelector('.l-nom').value;
-                const qte = parseFloat(row.querySelector('.l-qte').value) || 0;
-                const prix = parseFloat(row.querySelector('.l-prix').value) || 0;
-                const tvaRate = parseFloat(row.querySelector('.l-tva').value) || 0;
-                
-                const rowHT = qte * prix;
-                const rowTVA = rowHT * (tvaRate / 100);
-                
-                row.querySelector('.l-total').innerText = (rowHT + rowTVA).toFixed(2);
-                
-                totalHT += rowHT;
-                totalTVA += rowTVA;
+            if(snap.empty) { 
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">Aucune dépense.</td></tr>'; 
+                return; 
+            }
 
-                if(nom) {
-                    lignesFacture.push({ nom, qte, prix, tva: tvaRate, total: rowHT + rowTVA });
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                data.id = docSnap.id; 
+                cacheDepenses.push(data);
+
+                const dDate = new Date(data.date);
+                if(dDate.getFullYear() === currentYear && data.statut === 'Réglé') {
+                    global_Depenses += (data.montant || 0);
                 }
             });
 
-            document.getElementById('txt-ht').innerText = totalHT.toFixed(2) + " €";
-            document.getElementById('txt-tva').innerText = totalTVA.toFixed(2) + " €";
-            document.getElementById('txt-ttc').innerText = (totalHT + totalTVA).toFixed(2) + " €";
-        };
+            updateFinancialDashboard();
+            window.filtrerDepenses(); 
 
-        // 3. CHARGEMENT DOSSIERS
-        async function chargerDossiersDropdown() {
-            const sel = document.getElementById('select-dossier');
-            try {
-                const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
-                const snap = await getDocs(q);
-                dossiersCache = [];
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    dossiersCache.push(d);
-                    const opt = document.createElement('option');
-                    opt.value = dossiersCache.length - 1; // Index
-                    opt.text = `${d.mandant?.nom || 'Client'} (Déf: ${d.defunt?.nom || '?'})`;
-                    sel.appendChild(opt);
-                });
-            } catch(e) { console.error(e); }
+        } catch(e) { console.error(e); }
+    };
+
+    // --- FONCTION DE TRI (V14) ---
+    window.trierTableau = function(col) {
+        // Inverse l'ordre si on clique sur la même colonne, sinon remet à croissant
+        if (currentSort.col === col) {
+            currentSort.order = (currentSort.order === 'asc') ? 'desc' : 'asc';
+        } else {
+            currentSort.col = col;
+            currentSort.order = 'asc';
+        }
+        window.filtrerDepenses(); // On relance l'affichage avec le nouveau tri
+    };
+
+    // --- FILTRE ET AFFICHAGE AVEC TRI (V14) ---
+    window.filtrerDepenses = function() {
+        const terme = document.getElementById('search_depense').value.toLowerCase();
+        const yearFilter = document.getElementById('filter_year').value;
+        const monthFilter = document.getElementById('filter_month').value;
+        const tbody = document.getElementById('depenses-body');
+        tbody.innerHTML = "";
+
+        let totalDetteFiltre = 0; 
+
+        // 1. Filtrage
+        let resultats = cacheDepenses.filter(item => {
+            // Filtre Texte
+            const searchString = (item.fournisseur + " " + item.categorie + " " + (item.reference || "") + " " + (item.details || "")).toLowerCase();
+            const textMatch = searchString.includes(terme);
+            
+            // Filtre Date (Année / Mois)
+            const d = new Date(item.date);
+            const yearMatch = (yearFilter === "") || (d.getFullYear().toString() === yearFilter);
+            const monthMatch = (monthFilter === "") || (d.getMonth().toString() === monthFilter);
+
+            return textMatch && yearMatch && monthMatch;
+        });
+
+        // 2. Tri
+        resultats.sort((a, b) => {
+            let valA = a[currentSort.col];
+            let valB = b[currentSort.col];
+
+            // Cas particuliers pour éviter les bugs de tri
+            if (currentSort.col === 'montant') { valA = parseFloat(valA); valB = parseFloat(valB); }
+            if (!valA) valA = ""; if (!valB) valB = ""; // Gérer les vides
+
+            // Comparaison
+            if (valA < valB) return currentSort.order === 'asc' ? -1 : 1;
+            if (valA > valB) return currentSort.order === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // 3. Affichage
+        if(resultats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun résultat trouvé.</td></tr>';
+            document.getElementById('total-dette-filtre').innerText = "0.00 €";
+            return;
         }
 
-        window.remplirClient = function() {
-            const idx = document.getElementById('select-dossier').value;
-            if(idx !== "") {
-                const d = dossiersCache[idx];
-                document.getElementById('cli_nom').value = (d.mandant?.civility||"") + " " + (d.mandant?.nom||"");
-                document.getElementById('cli_adresse').value = d.mandant?.adresse || "";
-                document.getElementById('defunt_nom').value = (d.defunt?.nom || "") + " " + (d.defunt?.prenom || "");
+        resultats.forEach(data => {
+            if (data.statut === 'En attente') totalDetteFiltre += (data.montant || 0);
+
+            const dDate = new Date(data.date);
+            let dateDisplay = `<b>Fac:</b> ${dDate.toLocaleDateString()}`;
+            if(data.date_reglement) {
+                const dReg = new Date(data.date_reglement);
+                dateDisplay += `<br><small style="color:#166534;"><b>Rég:</b> ${dReg.toLocaleDateString()}</small>`;
             }
-        }
 
-        // 4. SAUVEGARDE & PDF
-        window.saveFacture = async function() {
-            const client = document.getElementById('cli_nom').value;
-            if(!client || lignesFacture.length === 0) return alert("Veuillez remplir le client et au moins une ligne.");
+            let badgeStatut = '';
+            if(data.statut === 'Réglé') {
+                badgeStatut = `<span class="badge badge-regle"><i class="fas fa-check"></i> Réglé</span>`;
+            } else {
+                badgeStatut = `<span class="badge badge-attente" onclick="window.marquerCommeRegle('${data.id}')" title="Valider paiement"><i class="fas fa-clock"></i> En attente</span>`;
+            }
 
-            if(!confirm("Valider cette facture ?")) return;
+            let catDisplay = `<span class="badge badge-depense" style="background:#fff; border:none; color:#64748b; font-weight:normal;">${data.categorie}</span>`;
+            if(data.details) {
+                catDisplay += `<br><small style="color:#475569; font-style:italic;">${data.details}</small>`;
+            }
 
-            const ht = parseFloat(document.getElementById('txt-ht').innerText);
-            const tva = parseFloat(document.getElementById('txt-tva').innerText);
-            const ttc = parseFloat(document.getElementById('txt-ttc').innerText);
-            
-            const numFacture = "F-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 10000);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-size:0.85rem;">${dateDisplay}</td>
+                <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 5px; border-radius:4px;">${data.reference || '-'}</span></td>
+                <td><strong>${data.fournisseur}</strong></td>
+                <td>${catDisplay}</td>
+                <td><span class="badge badge-mode">${data.mode || '-'}</span></td>
+                <td>${badgeStatut}</td>
+                <td style="text-align:right; font-weight:bold; color:#b91c1c;">- ${parseFloat(data.montant).toFixed(2)} €</td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button class="btn-icon" style="color:#3b82f6; background:none; border:none; cursor:pointer; font-size:1.1rem; margin-right:8px;" onclick="window.preparerModification('${data.id}')" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon" style="color:#ef4444; background:none; border:none; cursor:pointer; font-size:1.1rem;" onclick="window.supprimerDepense('${data.id}')" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-            const factureData = {
-                numero: numFacture,
-                date_creation: new Date().toISOString(),
-                client: { nom: client, adresse: document.getElementById('cli_adresse').value },
-                defunt: { nom: document.getElementById('defunt_nom').value },
-                lignes: lignesFacture,
-                total_ht: ht, total_tva: tva, total_ttc: ttc,
-                statut: "Émise"
-            };
+        document.getElementById('total-dette-filtre').innerText = totalDetteFiltre.toFixed(2) + " €";
+    };
 
+    window.marquerCommeRegle = async function(id) {
+        if(confirm("Confirmer que cette facture a bien été payée ?")) {
             try {
-                await addDoc(collection(db, "factures_v2"), factureData);
-                genererPDF(factureData);
-                alert("✅ Facture enregistrée !");
-                window.location.reload();
+                await updateDoc(doc(db, "depenses", id), { statut: "Réglé", date_reglement: new Date().toISOString().split('T')[0] });
+                window.chargerDepenses();
             } catch(e) { alert("Erreur : " + e.message); }
-        };
-
-        function genererPDF(data) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // En-tête (Simulé)
-            doc.setFontSize(18); doc.text("FACTURE " + data.numero, 150, 20);
-            doc.setFontSize(12); doc.text("PF SOLIDAIRE", 20, 20);
-            doc.setFontSize(10); doc.text("32 Bd Léon Jean Grégory, Thuir", 20, 25);
-            
-            // Client
-            doc.text("CLIENT :", 120, 50);
-            doc.setFont("helvetica", "bold");
-            doc.text(data.client.nom, 120, 55);
-            doc.setFont("helvetica", "normal");
-            doc.text(data.client.adresse || "", 120, 60);
-
-            // Tableau
-            const rows = data.lignes.map(l => [l.nom, l.qte, l.prix.toFixed(2), l.tva+"%", l.total.toFixed(2)]);
-            doc.autoTable({
-                startY: 80,
-                head: [['Désignation', 'Qte', 'PU', 'TVA', 'Total TTC']],
-                body: rows,
-            });
-
-            // Totaux
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.text(`Total HT : ${data.total_ht.toFixed(2)} €`, 150, finalY);
-            doc.text(`Total TVA : ${data.total_tva.toFixed(2)} €`, 150, finalY + 7);
-            doc.setFontSize(14); doc.setFont("helvetica", "bold");
-            doc.text(`NET À PAYER : ${data.total_ttc.toFixed(2)} €`, 130, finalY + 15);
-
-            doc.save(`Facture_${data.numero}.pdf`);
         }
+    };
 
-        // 5. HISTORIQUE
-        async function chargerHistorique() {
-            const tbody = document.getElementById('historique-body');
-            const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
-            const snap = await getDocs(q);
+    window.supprimerDepense = async function(id) {
+        if(confirm("Supprimer cette dépense ?")) {
+            await deleteDoc(doc(db, "depenses", id));
+            window.chargerDepenses();
+        }
+    };
+
+    // --- CHARGEMENT FACTURES ---
+    window.chargerListeFactures = async function() {
+        const tbody = document.getElementById('list-body'); 
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">Chargement...</td></tr>';
+        
+        try {
+            const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc")); 
+            const querySnapshot = await getDocs(q);
             
-            snap.forEach(docSnap => {
-                const d = docSnap.data();
+            global_CA = 0; 
+            tbody.innerHTML = ""; 
+            
+            if(querySnapshot.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Aucun document.</td></tr>'; return; }
+            
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data(); 
+                const dateDoc = new Date(data.date_creation); 
+                const totalDoc = data.info?.total || 0; 
+                const paye = data.paiements ? data.paiements.reduce((sum, p) => sum + p.montant, 0) : 0;
+                const reste = totalDoc - paye;
+                const typeDoc = data.info?.type || 'DEVIS'; 
+                
+                // CA = Factures de l'année en cours
+                if (typeDoc === "FACTURE") { 
+                    if (dateDoc.getFullYear() === currentYear) {
+                        global_CA += totalDoc;
+                    }
+                } 
+                
+                const typeClass = (typeDoc === "FACTURE") ? "badge-facture" : "badge-devis";
+                const nomClient = (data.client?.civility||"") + " " + (data.client?.nom || '-');
+                const numDoc = data.info?.numero || '-';
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${d.numero}</td>
-                    <td>${new Date(d.date_creation).toLocaleDateString()}</td>
-                    <td>${d.client.nom}</td>
-                    <td><strong>${d.total_ttc.toFixed(2)} €</strong></td>
-                    <td>
-                        <button class="btn-icon" onclick="alert('Réimpression bientôt dispo')"><i class="fas fa-print"></i></button>
-                    </td>
-                `;
+                    <td><strong>${numDoc}</strong></td>
+                    <td>${dateDoc.toLocaleDateString()}</td>
+                    <td><span class="badge ${typeClass}">${typeDoc}</span></td>
+                    <td><strong>${nomClient}</strong></td>
+                    <td>${data.defunt?.nom || '-'}</td>
+                    <td style="text-align:right; font-weight:bold;">${totalDoc.toFixed(2)} €</td>
+                    <td style="text-align:right; font-weight:bold; color:${reste > 0 ? '#b91c1c' : '#15803d'};">${reste.toFixed(2)} €</td>
+                    <td style="text-align:center;">
+                        <button class="btn-icon" style="color:#3b82f6; border:none; background:none; cursor:pointer; font-size:1.1rem;" onclick="window.chargerDocument('${docSnap.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" style="color:#ef4444; border:none; background:none; cursor:pointer; font-size:1.1rem; margin-left:10px;" onclick="window.supprimerDocument('${docSnap.id}')"><i class="fas fa-trash"></i></button>
+                    </td>`;
                 tbody.appendChild(tr);
             });
+            window.chargerDepenses(); 
+
+        } catch(e) { console.error(e); tbody.innerHTML = `<tr><td colspan="8" style="color:red;">Erreur : ${e.message}</td></tr>`; }
+    };
+
+    // --- FONCTIONS EXISTANTES (FACTURATION V10) ---
+    async function chargerSuggestionsClients() {
+        try {
+            const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
+            const snap = await getDocs(q);
+            dossiersCache = [];
+            const dlClients = document.getElementById('clients_suggestions');
+            const dlDefunts = document.getElementById('defunts_suggestions');
+            dlClients.innerHTML = ""; dlDefunts.innerHTML = "";
+            snap.forEach(doc => {
+                const data = doc.data(); dossiersCache.push(data);
+                if(data.mandant && data.mandant.nom) { const opt = document.createElement('option'); opt.value = data.mandant.nom; dlClients.appendChild(opt); }
+                if(data.defunt && data.defunt.nom) { const opt = document.createElement('option'); opt.value = data.defunt.nom; dlDefunts.appendChild(opt); }
+            });
+        } catch(e) {}
+    }
+    chargerSuggestionsClients();
+
+    window.remplirInfosClient = function() {
+        const nomSaisi = document.getElementById('client_nom').value;
+        const dossierTrouve = dossiersCache.find(d => d.mandant && d.mandant.nom === nomSaisi);
+        if(dossierTrouve) {
+            document.getElementById('client_civility').value = dossierTrouve.mandant.civility || "M.";
+            document.getElementById('client_adresse').value = dossierTrouve.mandant.adresse || "";
+            if(!document.getElementById('defunt_nom').value && dossierTrouve.defunt) {
+                document.getElementById('defunt_nom').value = dossierTrouve.defunt.nom || "";
+                document.getElementById('defunt_civility').value = dossierTrouve.defunt.civility || "M.";
+            }
         }
+    };
 
-        // 6. MODULE EXPORT EXCEL (LE NOUVEAU)
-        window.exporterExcel = async function() {
-            if(!confirm("Télécharger le journal des ventes (Excel) ?")) return;
+    document.getElementById('search-input').addEventListener('keyup', (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('#list-body tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none'; });
+    });
 
-            let csv = "N° FACTURE;DATE;CLIENT;DEFUNT;TOTAL HT;TVA;TOTAL TTC;STATUT\n";
+    window.ajouterPaiement = function() {
+        const date = document.getElementById('pay_date').value; const mode = document.getElementById('pay_mode').value;
+        const montant = parseFloat(document.getElementById('pay_amount').value);
+        if(!date || isNaN(montant) || montant <= 0) return alert("Montant ou date invalide.");
+        paiements.push({ date, mode, montant });
+        document.getElementById('pay_amount').value = ""; window.renderPaiements(); window.calculTotal();
+    };
+    window.supprimerPaiement = function(index) { if(confirm("Supprimer ce paiement ?")) { paiements.splice(index, 1); window.renderPaiements(); window.calculTotal(); } };
+    window.renderPaiements = function() {
+        const div = document.getElementById('liste_paiements');
+        if(paiements.length === 0) { div.innerHTML = '<small style="color:#888;">Aucun paiement.</small>'; return; }
+        div.innerHTML = '';
+        paiements.forEach((p, index) => { div.innerHTML += `<div class="payment-item"><span>${new Date(p.date).toLocaleDateString()} - ${p.mode}</span><strong>${p.montant.toFixed(2)} € <i class="fas fa-trash" style="color:red; cursor:pointer; margin-left:10px;" onclick="window.supprimerPaiement(${index})"></i></strong></div>`; });
+    };
 
-            try {
-                const q = query(collection(db, "factures_v2"), orderBy("numero", "desc"));
-                const snap = await getDocs(q);
+    async function genererNumero(type) {
+        const q = query(collection(db, "factures_v2")); const snap = await getDocs(q);
+        const count = snap.size + 1; const year = new Date().getFullYear();
+        const prefix = (type === 'DEVIS') ? 'D' : 'F'; return `${prefix}-${year}-${String(count).padStart(3, '0')}`;
+    }
 
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    const date = new Date(d.date_creation).toLocaleDateString();
-                    const ht = (d.total_ht || 0).toFixed(2).replace('.', ',');
-                    const tva = (d.total_tva || 0).toFixed(2).replace('.', ',');
-                    const ttc = (d.total_ttc || 0).toFixed(2).replace('.', ',');
-                    
-                    csv += `${d.numero};${date};${d.client.nom};${d.defunt?.nom||''};${ht};${tva};${ttc};${d.statut||'Emise'}\n`;
-                });
+    // --- MODELES DE DEVIS PRÉ-REMPLIS (PERSONNALISÉ V13.5) ---
+    const MODELES = {
+        "Inhumation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
 
-                const link = document.createElement("a");
-                link.href = 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURI(csv);
-                link.download = "Journal_Ventes.csv";
-                link.click();
-            } catch(e) { alert("Erreur export : " + e.message); }
-        };
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
 
-    </script>
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+
+            { type: 'section', text: '5. CIMETIÈRE' },
+            { desc: 'Creusement et comblement de fosse / Ouverture de caveau', prix: 650, cat: 'Courant' },
+            { desc: 'Redevance inhumation (Taxe Mairie)', prix: 50, cat: 'Avance' },
+            { desc: 'Achat de concession', prix: 50, cat: 'Avance' }
+        ],
+
+        "Cremation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CRÉMATORIUM' },
+            { desc: 'Frais de Crémation ', prix: 750, cat: 'Avance' },
+            { desc: 'Urne', prix: 60, cat: 'Courant' }
+        ],
+
+        "Rapatriement": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur Rapatriement (avec quatre poignées en métal cache vis plastique,Filtre épurateur (Norme IATA) et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+          
+            { type: 'section', text: '4. TRANSPORT' },
+            { desc: 'Transport vers Aéroport (France)', prix: 350, cat: 'Courant' },
+            { desc: 'Fret Aérien ', prix: 1800, cat: 'Avance' }
+        ],
+
+        "Transport": [
+            { type: 'section', text: '1. TRANSPORT DE CORPS' },
+            { desc: 'Véhicule Agréé avec Caisson', prix: 300, cat: 'Courant' },
+            { desc: 'Chauffeur / Porteur', prix: 150, cat: 'Courant' },
+            { desc: 'Housse mortuaire impérméable', prix: 45, cat: 'Courant' },
+            { desc: 'Frais kilométriques (Au-delà du forfait)', prix: 0, cat: 'Courant' }
+        ],
+
+        "Exhumation": [
+            { type: 'section', text: '1. TECHNIQUE' },
+            { desc: 'Démarches Mairie & Cimetière', prix: 150, cat: 'Courant' },
+            { desc: 'Ouverture de monument / Fosse', prix: 600, cat: 'Courant' },
+            { desc: 'Exhumation du corps', prix: 450, cat: 'Courant' },
+            { desc: 'Fourniture Reliquaire (Boîte à ossements)', prix: 120, cat: 'Courant' },
+            { desc: 'Réduction de corps', prix: 200, cat: 'Optionnel' },
+            { desc: 'Fermeture de sépulture', prix: 200, cat: 'Courant' },
+            { desc: 'Vacation de Police', prix: 25, cat: 'Avance' }
+        ]
+    };
+
+    window.loadTemplate = async function(type) {
+        document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument();
+        const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num;
+        if (MODELES[type]) { document.getElementById('tbody_lignes').innerHTML = ""; MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); }); }
+        window.calculTotal();
+    };
+
+    window.transformerEnFacture = async function() {
+        if(confirm("Créer une FACTURE à partir de ce devis ?")) {
+            document.getElementById('doc_type').value = "FACTURE"; document.getElementById('doc_date').valueAsDate = new Date();
+            const num = await genererNumero('FACTURE'); document.getElementById('doc_numero').value = num;
+            document.getElementById('current_doc_id').value = ""; document.getElementById('btn-save').click();
+        }
+    };
+    document.getElementById('doc_type').addEventListener('change', () => { 
+        const t = document.getElementById('doc_type').value; document.getElementById('btn-transform').classList.toggle('hidden', t !== 'DEVIS'); 
+    });
+
+    window.showDashboard = function() { document.getElementById('view-editor').classList.add('hidden'); document.getElementById('view-dashboard').classList.remove('hidden'); window.chargerListeFactures(); };
+    window.nouveauDocument = function() {
+        document.getElementById('current_doc_id').value = ""; document.getElementById('doc_numero').value = "Auto"; 
+        document.getElementById('client_nom').value = ""; document.getElementById('client_adresse').value = ""; 
+        document.getElementById('defunt_nom').value = ""; document.getElementById('doc_date').valueAsDate = new Date(); 
+        document.getElementById('doc_type').value = "DEVIS"; document.getElementById('tbody_lignes').innerHTML = ""; 
+        document.getElementById('pay_date').valueAsDate = new Date(); paiements = []; window.renderPaiements();
+        window.calculTotal(); document.getElementById('btn-transform').classList.add('hidden'); 
+        document.getElementById('view-dashboard').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden');
+    };
+
+    window.chargerDocument = async function(id) {
+        try { 
+            const docRef = doc(db, "factures_v2", id); const docSnap = await getDoc(docRef); 
+            if(docSnap.exists()) { 
+                const data = docSnap.data(); document.getElementById('current_doc_id').value = id; 
+                document.getElementById('doc_numero').value = data.info.numero; document.getElementById('client_civility').value = data.client.civility; 
+                document.getElementById('client_nom').value = data.client.nom; document.getElementById('client_adresse').value = data.client.adresse; 
+                document.getElementById('defunt_civility').value = data.defunt.civility; document.getElementById('defunt_nom').value = data.defunt.nom; 
+                document.getElementById('doc_type').value = data.info.type; document.getElementById('doc_date').value = data.info.date; 
+                document.getElementById('tbody_lignes').innerHTML = ""; 
+                if(data.lignes) { data.lignes.forEach(l => { if(l.type === 'section') window.ajouterSection(l.text); else window.ajouterLigne(l.desc, l.prix, l.cat); }); } 
+                paiements = data.paiements || []; window.renderPaiements(); window.calculTotal(); 
+                document.getElementById('btn-transform').classList.toggle('hidden', data.info.type !== 'DEVIS');
+                document.getElementById('view-dashboard').classList.add('hidden'); document.getElementById('view-editor').classList.remove('hidden'); window.scrollTo(0,0);
+            } 
+        } catch(e) { alert("Erreur : " + e.message); }
+    };
+
+    const el = document.getElementById('tbody_lignes'); Sortable.create(el, { handle: '.drag-handle', animation: 150, onEnd: function () { window.calculTotal(); } });
+    window.ajouterSection = function(titre="NOUVELLE SECTION") { const tr = document.createElement('tr'); tr.className = "row-section"; tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-vertical"></i></td><td colspan="4"><input type="text" class="input-cell input-section" value="${titre}"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`; document.getElementById('tbody_lignes').appendChild(tr); };
+    window.ajouterLigne = function(desc="", prix=0, type="Courant") { const tr = document.createElement('tr'); tr.className = "row-item"; tr.innerHTML = `<td class="drag-handle"><i class="fas fa-grip-lines"></i></td><td><input type="text" class="input-cell val-desc" value="${desc}"></td><td><select class="input-cell val-type" style="border:none;"><option value="Courant" ${type==='Courant'?'selected':''}>Courant</option><option value="Optionnel" ${type==='Optionnel'?'selected':''}>Optionnel</option><option value="Avance" ${type==='Avance'?'selected':''}>Avance</option></select></td><td>NA</td><td><input type="number" class="input-cell price-cell val-prix" value="${prix}" oninput="calculTotal()"></td><td style="text-align:center;"><i class="fas fa-trash" style="color:#ef4444; cursor:pointer;" onclick="this.closest('tr').remove(); calculTotal();"></i></td>`; document.getElementById('tbody_lignes').appendChild(tr); window.calculTotal(); };
+
+    window.calculTotal = function() { 
+        let total = 0; document.querySelectorAll('.val-prix').forEach(input => { total += parseFloat(input.value) || 0; }); 
+        document.getElementById('total_general').innerText = total.toFixed(2) + " €";
+        let totalPaye = paiements.reduce((sum, p) => sum + p.montant, 0); document.getElementById('total_paye').innerText = totalPaye.toFixed(2) + " €";
+        document.getElementById('reste_a_payer').innerText = (total - totalPaye).toFixed(2) + " €"; document.getElementById('total_display').innerText = total.toFixed(2);
+    };
+
+    window.supprimerDocument = async function(id) { if(confirm("Supprimer ?")) { await deleteDoc(doc(db, "factures_v2", id)); window.chargerListeFactures(); } };
+
+    document.getElementById('btn-save').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-save'); const id = document.getElementById('current_doc_id').value; btn.innerHTML = '...';
+        try {
+            const lignes = []; document.querySelectorAll('#tbody_lignes tr').forEach(tr => { if(tr.classList.contains('row-section')) lignes.push({ type: 'section', text: tr.querySelector('input').value }); else lignes.push({ type: 'item', desc: tr.querySelector('.val-desc').value, cat: tr.querySelector('.val-type').value, prix: parseFloat(tr.querySelector('.val-prix').value) || 0 }); });
+            const docData = { client: { civility: document.getElementById('client_civility').value, nom: document.getElementById('client_nom').value, adresse: document.getElementById('client_adresse').value }, defunt: { civility: document.getElementById('defunt_civility').value, nom: document.getElementById('defunt_nom').value }, info: { type: document.getElementById('doc_type').value, date: document.getElementById('doc_date').value, numero: document.getElementById('doc_numero').value, total: parseFloat(document.getElementById('total_display').innerText) }, lignes: lignes, paiements: paiements, date_creation: new Date().toISOString() };
+            if(id) await updateDoc(doc(db, "factures_v2", id), docData); else await addDoc(collection(db, "factures_v2"), docData);
+            alert("✅ Enregistré !"); window.showDashboard();
+        } catch(e) { alert("Erreur : " + e.message); } btn.innerHTML = '<i class="fas fa-save"></i> ENREGISTRER';
+    });
+
+    document.getElementById('btn-pdf').addEventListener('click', () => {
+        if(!logoBase64) chargerLogoBase64(); const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 25, 25); } catch(e){} }
+        doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(34, 155, 76); doc.text("POMPES FUNEBRES", 15, 40); doc.text("SOLIDAIRE PERPIGNAN", 15, 45);
+        doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(80); doc.text("32 boulevard Léon Jean Grégory Thuir", 15, 50); doc.text("Tél : 07.55.18.27.77", 15, 54);
+        doc.setFillColor(245, 245, 245); doc.roundedRect(110, 10, 85, 30, 2, 2, 'F');
+        doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica","bold"); doc.text(`${document.getElementById('client_civility').value} ${document.getElementById('client_nom').value}`, 115, 18); doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.text(doc.splitTextToSize(document.getElementById('client_adresse').value, 80), 115, 24);
+        let y = 65; doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(34, 155, 76);
+        const typeDoc = document.getElementById('doc_type').value; const numDoc = document.getElementById('doc_numero').value;
+        doc.text(`${typeDoc} N° ${numDoc}`, 15, y); doc.setTextColor(0); doc.setFont("helvetica","normal"); doc.text(`du ${document.getElementById('doc_date').value.split('-').reverse().join('/')}`, 80, y);
+        doc.setFont("helvetica","bold"); doc.text(`DÉFUNT : ${document.getElementById('defunt_civility').value} ${document.getElementById('defunt_nom').value}`, 120, y); y += 8;
+        const rows = []; document.querySelectorAll('#tbody_lignes tr').forEach(tr => { if(tr.classList.contains('row-section')) { rows.push([{ content: tr.querySelector('input').value.toUpperCase(), colSpan: 4, styles: { fillColor: [255, 228, 196], textColor: [0,0,0], fontStyle: 'bold', fontSize: 8 } }]); } else { const prix = parseFloat(tr.querySelector('.val-prix').value).toFixed(2) + ' €'; rows.push([tr.querySelector('.val-desc').value, 'NA', tr.querySelector('.val-type').value === 'Optionnel' ? '' : prix, tr.querySelector('.val-type').value === 'Optionnel' ? prix : '']); } });
+        doc.autoTable({ startY: y, head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']], body: rows, theme: 'grid', headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], fontSize: 8, halign: 'center' }, styles: { fontSize: 8 }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } } });
+        const finalY = doc.lastAutoTable.finalY + 8; const total = parseFloat(document.getElementById('total_display').innerText); const dejaRegle = paiements.reduce((sum, p) => sum + p.montant, 0); const reste = total - dejaRegle;
+        let curY = finalY; doc.setFontSize(9); doc.setTextColor(0); doc.text("Total TTC :", 130, curY); doc.text(total.toFixed(2) + " €", 190, curY, {align:'right'}); curY+=5;
+        if(paiements.length > 0) { doc.setFontSize(7); doc.setTextColor(100); paiements.forEach(p => { doc.text(`Reçu (${p.mode}) :`, 130, curY); doc.text(`-${p.montant.toFixed(2)} €`, 190, curY, {align:'right'}); curY+=4; }); curY+=2; }
+        doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10); doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76); doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
+        doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(220, 38, 38); doc.text("NB :", 15, curY + 5); doc.setTextColor(0); doc.setFont("helvetica", "normal"); doc.text("- (NA) TVA non applicable, art 293 B du CGI", 25, curY + 5); doc.text("- (*) Prestations et fournitures obligatoires", 25, curY + 9);
+        if (typeDoc === 'DEVIS') {
+            let footerY = curY + 30; if (footerY + 50 > 280) { doc.addPage(); footerY = 20; }
+            doc.setDrawColor(0); doc.setLineWidth(0.5); doc.rect(15, footerY, 180, 40); doc.setFontSize(9); doc.setTextColor(0); doc.setFont("helvetica", "normal");
+            doc.text("Je soussigné(e),", 20, footerY + 8); doc.text("accepte le présent devis prévisionnel.", 130, footerY + 8); doc.text("Le ........................................", 20, footerY + 16); doc.text("à ........................................", 80, footerY + 16); doc.text("Signature précédée de la mention \"Lu et approuvé, bon pour acceptation\"", 20, footerY + 24);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.text(doc.splitTextToSize("Conformément à l'article 5 de l'arrêté du 11 janvier 1999, lorsque le devis est accepté, un bon de commande est alors établi et signé par le client.", 170), 20, footerY + 32);
+        }
+        doc.save(`${typeDoc}_${numDoc}.pdf`);
+    });
+
+    // INIT AU CHARGEMENT
+    window.chargerListeFactures(); 
+    document.getElementById('dep_date_fac').valueAsDate = new Date();
+    window.calculTotal = calculTotal;
+</script>
 </body>
 </html>
