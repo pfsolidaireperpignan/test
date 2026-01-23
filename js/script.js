@@ -874,8 +874,7 @@ window.genererTransport = function(type) {
     pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_arr`))} à ${getVal(`${prefix}_heure_arr`)}`, x+95, y+42); y+=60;
     pdf.setFillColor(230); pdf.rect(x, y, 170, 10, 'F');
     pdf.setFont("helvetica", "bold");
-    pdf.text(`VÉHICULE AGRÉÉ IMMATRICULÉ : ${getVal("immatriculation")}`, 105, y+7, {align:"center"}); y+=30;
-    
+       
     const faita = getVal("faita");
     const dateSign = getVal("dateSignature");
     
@@ -883,3 +882,4 @@ window.genererTransport = function(type) {
     pdf.text("Cachet de l'entreprise :", 120, y+10);
     pdf.save(`Transport_${type}_${getVal("nom")}.pdf`);
 };
+
