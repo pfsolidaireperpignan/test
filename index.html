@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP V15 Mobile</title>
+    <title>PF Solidaire - ERP V17 (Menu Rétractable)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,25 +13,50 @@
         :root { --primary: #10b981; --primary-dark: #059669; --secondary: #3b82f6; --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0; }
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; margin: 0; display: flex; height: 100vh; color: var(--dark); overflow: hidden; }
         
-        /* SIDEBAR (MENU GAUCHE) */
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.02); z-index: 10; transition: transform 0.3s ease; }
-        .brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
+        /* --- SIDEBAR (MENU GAUCHE) --- */
+        .sidebar { 
+            width: 260px; 
+            background: white; 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02); 
+            z-index: 10; 
+            transition: all 0.3s ease; /* Animation fluide */
+        }
+
+        /* --- MODE RÉDUIT (COLLAPSED) --- */
+        .sidebar.collapsed { width: 80px; padding: 20px 10px; }
+        .sidebar.collapsed .brand-text { display: none; }
+        .sidebar.collapsed .nav-text { display: none; }
+        .sidebar.collapsed .brand { justify-content: center; }
+        .sidebar.collapsed .nav-link { justify-content: center; padding: 15px; }
+        .sidebar.collapsed .nav-link i { margin: 0; font-size: 1.4rem; }
+        .sidebar.collapsed #btn-toggle-menu { margin-left: 0; }
+
+        /* BRAND */
+        .brand { 
+            font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 40px; 
+            display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden;
+        }
+        
+        /* NAVIGATION */
         .nav-menu { list-style: none; padding: 0; margin: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: var(--gray); font-weight: 500; transition: all 0.2s ease; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: var(--gray); font-weight: 500; transition: all 0.2s ease; white-space: nowrap; overflow: hidden; }
         .nav-link:hover, .nav-link.active { background: #ecfdf5; color: var(--primary-dark); transform: translateX(3px); }
-        .nav-link i { width: 20px; text-align: center; }
+        .sidebar.collapsed .nav-link:hover { transform: none; background: #ecfdf5; } /* Pas de décalage en mode réduit */
+        .nav-link i { width: 25px; text-align: center; }
 
         /* MAIN CONTENT */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; background: #f1f5f9; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; background: #f1f5f9; transition: all 0.3s ease; }
         .hidden { display: none !important; }
         
         /* COMPOSANTS */
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         h1 { font-size: 1.8rem; font-weight: 700; color: var(--dark); margin: 0; letter-spacing: -0.5px; }
-        
         .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid var(--border); transition: transform 0.2s; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        
         h3 { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; color: var(--gray); margin-bottom: 15px; letter-spacing: 0.5px; border-bottom: 2px solid var(--light); padding-bottom: 8px; }
 
         /* FORMULAIRES */
@@ -86,14 +111,10 @@
         .action-card:hover::after { opacity: 1; right: 100%; }
 
         .card-icon-bg { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; }
-        .ac-blue .card-icon-bg { background: #eff6ff; color: var(--secondary); }
-        .ac-blue:hover { border-bottom: 4px solid var(--secondary); }
-        .ac-green .card-icon-bg { background: #ecfdf5; color: var(--primary); }
-        .ac-green:hover { border-bottom: 4px solid var(--primary); }
-        .ac-purple .card-icon-bg { background: #f5f3ff; color: #8b5cf6; }
-        .ac-purple:hover { border-bottom: 4px solid #8b5cf6; }
-        .ac-orange .card-icon-bg { background: #fff7ed; color: #ea580c; }
-        .ac-orange:hover { border-bottom: 4px solid #ea580c; }
+        .ac-blue .card-icon-bg { background: #eff6ff; color: var(--secondary); } .ac-blue:hover { border-bottom: 4px solid var(--secondary); }
+        .ac-green .card-icon-bg { background: #ecfdf5; color: var(--primary); } .ac-green:hover { border-bottom: 4px solid var(--primary); }
+        .ac-purple .card-icon-bg { background: #f5f3ff; color: #8b5cf6; } .ac-purple:hover { border-bottom: 4px solid #8b5cf6; }
+        .ac-orange .card-icon-bg { background: #fff7ed; color: #ea580c; } .ac-orange:hover { border-bottom: 4px solid #ea580c; }
 
         .card-title { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 5px; }
         .card-desc { font-size: 0.85rem; color: var(--gray); }
@@ -105,43 +126,21 @@
         .mini-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
 
         /* --- STYLE MOBILE (UNIQUEMENT SUR TÉLÉPHONE) --- */
-        #mobile-menu-btn { display: none; } /* Caché sur PC */
+        #mobile-menu-btn { display: none; } /* Caché sur PC par défaut (on utilise celui dans la sidebar) */
 
         @media (max-width: 768px) {
-            /* 1. La barre latérale devient un tiroir caché */
-            .sidebar {
-                position: fixed; top: 0; left: 0; height: 100vh;
-                transform: translateX(-100%); /* On le cache à gauche */
-                z-index: 5000; /* Tout en haut */
-            }
-            .sidebar.mobile-open { transform: translateX(0); } /* Classe pour l'ouvrir */
-
-            /* 2. Le bouton Burger apparaît */
-            #mobile-menu-btn {
-                display: flex !important;
-                align-items: center; justify-content: center;
-                position: fixed; bottom: 20px; right: 20px; /* Flottant en bas à droite */
-                width: 55px; height: 55px;
-                background: var(--primary); color: white;
-                border-radius: 50%; border: none;
-                font-size: 1.5rem;
-                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-                z-index: 6000; cursor: pointer;
-            }
-
-            /* 3. Ajustements du contenu */
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 5000; width: 85%; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            /* Cacher le bouton "Réduire" sur mobile car inutile */
+            #btn-toggle-menu { display: none !important; }
+            
+            #mobile-menu-btn { display: flex !important; align-items: center; justify-content: center; position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: white; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); z-index: 6000; cursor: pointer; }
             .main-content { padding: 15px; width: 100%; box-sizing: border-box; }
             .welcome-banner { flex-direction: column; text-align: center; gap: 15px; }
             .date-badge { width: 100%; text-align: center; }
-            
-            /* 4. Tout mettre en une seule colonne */
             .form-grid, .form-grid-layout, .dashboard-grid { grid-template-columns: 1fr !important; gap: 10px; }
             .span-2 { grid-column: span 1 !important; }
-            
-            /* 5. Tableaux scrollables */
-            .card { overflow-x: auto; } /* Permet de glisser le tableau */
-            
-            /* 6. Ajustements boutons */
+            .card { overflow-x: auto; }
             .page-header { flex-direction: column; gap: 10px; align-items: flex-start; }
             .page-header div { width: 100%; display: flex; flex-wrap: wrap; }
             .page-header button { flex: 1; }
@@ -177,14 +176,21 @@
     </div>
 
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); font-weight:400; margin-left:auto;">v15.0</span></div>
+        <div class="brand">
+            <i class="fas fa-dove"></i> 
+            <span class="brand-text">PF ERP</span> 
+            <span style="font-size:0.5em; color:var(--gray); font-weight:400; margin-left:5px;" class="brand-text">v17</span>
+            <button id="btn-toggle-menu" onclick="toggleSidebar()" style="margin-left:auto; border:none; background:transparent; cursor:pointer; color:var(--gray);">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
         <ul class="nav-menu">
-            <li class="nav-item"><a href="#" onclick="window.showSection('home')" class="nav-link active"><i class="fas fa-home"></i> Accueil</a></li>
-            <li class="nav-item"><a href="#" onclick="window.showSection('admin')" class="nav-link"><i class="fas fa-folder-open"></i> Dossier Admin</a></li>
-            <li class="nav-item"><a href="#" onclick="window.showSection('base')" class="nav-link"><i class="fas fa-users"></i> Base Clients</a></li>
-            <li class="nav-item"><a href="#" onclick="window.showSection('stock')" class="nav-link"><i class="fas fa-boxes"></i> Gestion Stock</a></li>
-            <li class="nav-item"><a href="facturation_v2.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Facturation</a></li>
-            <li class="nav-item" style="margin-top:auto;"><a href="#" id="btn-logout" class="nav-link" style="color:#ef4444;"><i class="fas fa-power-off"></i> Déconnexion</a></li>
+            <li class="nav-item"><a href="#" onclick="window.showSection('home')" class="nav-link active"><i class="fas fa-home"></i> <span class="nav-text">Accueil</span></a></li>
+            <li class="nav-item"><a href="#" onclick="window.showSection('admin')" class="nav-link"><i class="fas fa-folder-open"></i> <span class="nav-text">Dossier Admin</span></a></li>
+            <li class="nav-item"><a href="#" onclick="window.showSection('base')" class="nav-link"><i class="fas fa-users"></i> <span class="nav-text">Base Clients</span></a></li>
+            <li class="nav-item"><a href="#" onclick="window.showSection('stock')" class="nav-link"><i class="fas fa-boxes"></i> <span class="nav-text">Gestion Stock</span></a></li>
+            <li class="nav-item"><a href="facturation_v2.html" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Facturation</span></a></li>
+            <li class="nav-item" style="margin-top:auto;"><a href="#" id="btn-logout" class="nav-link" style="color:#ef4444;"><i class="fas fa-power-off"></i> <span class="nav-text">Déconnexion</span></a></li>
         </ul>
     </nav>
 
@@ -564,7 +570,7 @@
     
     <script type="module" src="js/script.js"></script>
     
-   <script>
+    <script>
         // --- 1. GESTION DE L'HEURE ---
         function updateClock() {
             const now = new Date();
@@ -656,28 +662,33 @@
             }
         };
 
-        // --- 3. GESTION MENU MOBILE (BURGER) ---
-        window.toggleMobileMenu = function() {
+        // --- 3. GESTION MENU MOBILE (BURGER) & SIDEBAR RÉTRACTABLE (PC) ---
+        window.toggleSidebar = function() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('mobile-overlay');
             const btnIcon = document.querySelector('#mobile-menu-btn i');
             
-            sidebar.classList.toggle('mobile-open');
-            
-            if (sidebar.classList.contains('mobile-open')) {
-                overlay.style.display = 'block';
-                btnIcon.classList.remove('fa-bars');
-                btnIcon.classList.add('fa-times');
+            // Si on est sur mobile
+            if (window.innerWidth < 768) {
+                sidebar.classList.toggle('mobile-open');
+                if (sidebar.classList.contains('mobile-open')) {
+                    overlay.style.display = 'block';
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-times');
+                } else {
+                    overlay.style.display = 'none';
+                    btnIcon.classList.remove('fa-times');
+                    btnIcon.classList.add('fa-bars');
+                }
             } else {
-                overlay.style.display = 'none';
-                btnIcon.classList.remove('fa-times');
-                btnIcon.classList.add('fa-bars');
+                // Si on est sur PC : mode réduit
+                sidebar.classList.toggle('collapsed');
             }
         };
 
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
-                if(window.innerWidth < 768) window.toggleMobileMenu();
+                if(window.innerWidth < 768) window.toggleSidebar();
             });
         });
 
@@ -687,29 +698,16 @@
             const recherche = params.get('recherche');
 
             if(recherche) {
-                // 1. Ouvrir l'onglet "Base Clients"
-                window.showSection('base');
+                window.showSection('base'); // Ouvre l'onglet "Base Clients"
                 
-                // 2. Attendre que la liste charge (Firebase) puis filtrer
                 setTimeout(() => {
                     const input = document.getElementById('search-client');
                     if(input) {
                         input.value = recherche;
-                        // Déclencher le filtre visuel
-                        const term = recherche.toLowerCase();
-                        const rows = document.querySelectorAll('#clients-table-body tr');
-                        let found = false;
-                        rows.forEach(row => {
-                            if(row.textContent.toLowerCase().includes(term)) {
-                                row.style.display = '';
-                                found = true;
-                            } else {
-                                row.style.display = 'none';
-                            }
-                        });
-                        if(!found) alert("Aucun dossier trouvé pour : " + recherche);
+                        // Déclenche l'événement "keyup" pour filtrer la liste
+                        input.dispatchEvent(new Event('keyup'));
                     }
-                }, 1500); // 1.5 secondes pour être sûr que tout est chargé
+                }, 1000); // Petit délai pour laisser Firebase charger
             }
         });
     </script>
