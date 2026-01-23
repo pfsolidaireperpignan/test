@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - ERP V15 (GED & Stocks)</title>
+    <title>PF Solidaire - ERP V15 Mobile</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,8 +13,8 @@
         :root { --primary: #10b981; --primary-dark: #059669; --secondary: #3b82f6; --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0; }
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; margin: 0; display: flex; height: 100vh; color: var(--dark); overflow: hidden; }
         
-        /* SIDEBAR */
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.02); z-index: 10; }
+        /* SIDEBAR (MENU GAUCHE) */
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.02); z-index: 10; transition: transform 0.3s ease; }
         .brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; }
         .nav-menu { list-style: none; padding: 0; margin: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: var(--gray); font-weight: 500; transition: all 0.2s ease; }
@@ -103,7 +103,8 @@
         .mini-stat { flex: 1; background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; cursor: pointer; transition: transform 0.2s; }
         .mini-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .mini-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-    /* --- STYLE MOBILE (UNIQUEMENT SUR TÉLÉPHONE) --- */
+
+        /* --- STYLE MOBILE (UNIQUEMENT SUR TÉLÉPHONE) --- */
         #mobile-menu-btn { display: none; } /* Caché sur PC */
 
         @media (max-width: 768px) {
@@ -111,7 +112,6 @@
             .sidebar {
                 position: fixed; top: 0; left: 0; height: 100vh;
                 transform: translateX(-100%); /* On le cache à gauche */
-                transition: transform 0.3s ease;
                 z-index: 5000; /* Tout en haut */
             }
             .sidebar.mobile-open { transform: translateX(0); } /* Classe pour l'ouvrir */
@@ -120,7 +120,7 @@
             #mobile-menu-btn {
                 display: flex !important;
                 align-items: center; justify-content: center;
-                position: fixed; bottom: 20px; right: 20px; /* Flottant en bas à droite (facile pour le pouce) */
+                position: fixed; bottom: 20px; right: 20px; /* Flottant en bas à droite */
                 width: 55px; height: 55px;
                 background: var(--primary); color: white;
                 border-radius: 50%; border: none;
@@ -146,8 +146,7 @@
             .page-header div { width: 100%; display: flex; flex-wrap: wrap; }
             .page-header button { flex: 1; }
         }
-        /* ----------------------------------------------- */
-	</style>
+    </style>
 </head>
 <body>
     <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
@@ -557,10 +556,12 @@
             </div>
         </div>
     </main>
+    
     <button id="mobile-menu-btn" onclick="toggleMobileMenu()">
         <i class="fas fa-bars"></i>
     </button>
     <div id="mobile-overlay" onclick="toggleMobileMenu()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:4000;"></div>
+    
     <script type="module" src="js/script.js"></script>
     
     <script>
@@ -585,31 +586,7 @@
         window.ajouterPieceJointe = function() {
             const input = document.getElementById('ged_input_file');
             const nameInput = document.getElementById('ged_file_name');
-            // --- GESTION MENU MOBILE ---
-    function toggleMobileMenu() {
-        const sidebar = document.querySelector('.sidebar');
-        const overlay = document.getElementById('mobile-overlay');
-        const btnIcon = document.querySelector('#mobile-menu-btn i');
-        
-        sidebar.classList.toggle('mobile-open');
-        
-        if (sidebar.classList.contains('mobile-open')) {
-            overlay.style.display = 'block';
-            btnIcon.classList.remove('fa-bars');
-            btnIcon.classList.add('fa-times'); // La croix pour fermer
-        } else {
-            overlay.style.display = 'none';
-            btnIcon.classList.remove('fa-times');
-            btnIcon.classList.add('fa-bars');
-        }
-    }
-
-    // Fermer le menu automatiquement quand on clique sur un lien
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            if(window.innerWidth < 768) toggleMobileMenu();
-        });
-    });
+            
             if (input.files.length === 0) return alert("Choisissez un fichier !");
             if (!nameInput.value) return alert("Donnez un nom au document !");
             
@@ -682,7 +659,32 @@
                 window.afficherPiecesJointes();
             }
         };
+
+        // --- 3. GESTION MENU MOBILE (BURGER) ---
+        window.toggleMobileMenu = function() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const btnIcon = document.querySelector('#mobile-menu-btn i');
+            
+            sidebar.classList.toggle('mobile-open');
+            
+            if (sidebar.classList.contains('mobile-open')) {
+                overlay.style.display = 'block';
+                btnIcon.classList.remove('fa-bars');
+                btnIcon.classList.add('fa-times'); // La croix
+            } else {
+                overlay.style.display = 'none';
+                btnIcon.classList.remove('fa-times');
+                btnIcon.classList.add('fa-bars'); // Les barres
+            }
+        };
+
+        // Fermeture automatique quand on clique sur un lien du menu
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if(window.innerWidth < 768) window.toggleMobileMenu();
+            });
+        });
     </script>
-	
 </body>
 </html>
