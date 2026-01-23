@@ -3,257 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF Solidaire - Facturation & Compta</title>
+    <title>PF Solidaire - Facturation V2</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        :root { --primary: #10b981; --primary-dark: #059669; --secondary: #3b82f6; --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0; }
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; margin: 0; display: flex; height: 100vh; color: var(--dark); overflow: hidden; }
+        :root { --primary: #10b981; --secondary: #3b82f6; --dark: #1e293b; --light: #f8fafc; --gray: #64748b; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* SIDEBAR */
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.02); z-index: 10; transition: transform 0.3s ease; }
-        .brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-        .nav-menu { list-style: none; padding: 0; margin: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 8px; text-decoration: none; color: var(--gray); font-weight: 500; transition: all 0.2s ease; }
-        .nav-link:hover, .nav-link.active { background: #ecfdf5; color: var(--primary-dark); transform: translateX(3px); }
-        .nav-link i { width: 20px; text-align: center; }
-
-        /* MAIN CONTENT */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; background: #f1f5f9; }
-        .hidden { display: none !important; }
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
+        .brand { color: var(--primary); font-size: 1.4rem; font-weight: 800; margin-bottom: 30px; display:flex; align-items:center; gap:10px; }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: var(--gray); text-decoration: none; border-radius: 8px; margin-bottom: 5px; }
+        .nav-link:hover, .nav-link.active { background: #ecfdf5; color: #059669; }
         
-        /* HEADER & CARDS */
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
-        h1 { font-size: 1.8rem; font-weight: 700; color: var(--dark); margin: 0; }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
         
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid var(--border); }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; color: white; display:flex; align-items:center; gap:8px; }
+        .btn-green { background: var(--primary); }
+        .btn-blue { background: var(--secondary); }
+        .btn-red { background: #ef4444; }
+        
+        .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* FACTURE EDITOR STYLE */
+        .facture-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; box-sizing: border-box; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: var(--gray); font-size: 0.85rem; padding: 10px; border-bottom: 2px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid var(--border); }
+        
+        .total-zone { background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
+        .grand-total { font-size: 1.2rem; font-weight: bold; color: var(--dark); border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 5px; }
 
-        /* TABLEAU */
-        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .history-table th { text-align: left; padding: 15px; color: var(--gray); font-size: 0.8rem; text-transform: uppercase; font-weight: 700; border-bottom: 2px solid var(--border); background: #f8fafc; }
-        .history-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-        .history-table tr:hover td { background: #f8fafc; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-        .badge-paye { background: #dcfce7; color: #16a34a; }
-        .badge-attente { background: #fff7ed; color: #ea580c; }
-
-        /* BOUTONS */
-        .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .btn:hover { filter: brightness(105%); transform: translateY(-1px); }
-        .btn-green { background: #10b981; color: white; }
-        .btn-blue { background: #3b82f6; color: white; }
-        .btn-icon { background: white; border: 1px solid var(--border); padding: 8px; border-radius: 6px; cursor: pointer; color: var(--gray); }
-        .btn-icon:hover { background: var(--light); color: var(--primary); border-color: var(--primary); }
-
-        /* --- MOBILE RESPONSIVE --- */
-        #mobile-menu-btn { display: none; }
         @media (max-width: 768px) {
-            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); z-index: 5000; }
-            .sidebar.mobile-open { transform: translateX(0); }
-            #mobile-menu-btn { display: flex !important; position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: white; border-radius: 50%; border: none; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); z-index: 6000; }
-            .main-content { padding: 15px; }
-            .page-header { flex-direction: column; align-items: flex-start; }
-            .card { overflow-x: auto; }
+            .sidebar { display: none; }
+            .facture-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-
     <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
 
     <nav class="sidebar">
-        <div class="brand"><i class="fas fa-dove"></i> PF ERP <span style="font-size:0.7em; color:var(--gray); margin-left:auto;">Compta</span></div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="index.html" class="nav-link"><i class="fas fa-arrow-left"></i> Retour ERP</a></li>
-            <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-file-invoice-dollar"></i> Factures</a></li>
-        </ul>
+        <div class="brand"><i class="fas fa-file-invoice"></i> FACTURATION</div>
+        <a href="index.html" class="nav-link"><i class="fas fa-arrow-left"></i> Retour ERP</a>
+        <a href="#" class="nav-link active"><i class="fas fa-edit"></i> Nouvelle Facture</a>
     </nav>
 
     <main class="main-content">
-        <div class="page-header">
-            <div>
-                <h1>Comptabilité</h1>
-                <p style="color:var(--gray); margin:0;">Suivi des factures et exports</p>
+        <div class="header-bar">
+            <h1>Éditeur de Facture</h1>
+            <button onclick="window.exporterExcel()" class="btn btn-green" style="background-color:#059669;">
+                <i class="fas fa-file-excel"></i> EXPORT COMPTABLE
+            </button>
+        </div>
+
+        <div class="facture-grid">
+            <div class="card">
+                <h3><i class="fas fa-list"></i> Prestations & Articles</h3>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table id="table-lignes">
+                        <thead>
+                            <tr>
+                                <th style="width:50%">Désignation</th>
+                                <th style="width:10%">Qte</th>
+                                <th style="width:15%">Prix U.</th>
+                                <th style="width:10%">TVA%</th>
+                                <th style="width:10%">Total</th>
+                                <th style="width:5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-lignes">
+                            </tbody>
+                    </table>
+                </div>
+                <button onclick="window.ajouterLigne()" class="btn btn-blue" style="margin-top:10px; width:100%; justify-content:center;">+ Ajouter une ligne</button>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button onclick="window.exporterExcel()" class="btn btn-green" style="background-color: #059669;">
-                    <i class="fas fa-file-excel"></i> EXPORT EXCEL
-                </button>
-                <button onclick="window.location.reload()" class="btn btn-blue">
-                    <i class="fas fa-sync"></i> Actualiser
+
+            <div class="card">
+                <h3><i class="fas fa-user"></i> Client & Dossier</h3>
+                <label>Sélectionner un Dossier (Optionnel)</label>
+                <select id="select-dossier" onchange="window.remplirClient()"><option value="">-- Client Libre --</option></select>
+                
+                <label style="margin-top:10px; display:block;">Client (Facturé à)</label>
+                <input id="cli_nom" placeholder="Nom complet ou Société">
+                <input id="cli_adresse" placeholder="Adresse complète">
+                
+                <label style="margin-top:10px; display:block;">Concerne (Défunt)</label>
+                <input id="defunt_nom" placeholder="Nom du défunt (Optionnel)">
+
+                <div class="total-zone">
+                    <div class="total-line"><span>Total HT</span><span id="txt-ht">0.00 €</span></div>
+                    <div class="total-line"><span>Total TVA</span><span id="txt-tva">0.00 €</span></div>
+                    <div class="total-line grand-total"><span>NET À PAYER</span><span id="txt-ttc">0.00 €</span></div>
+                </div>
+
+                <button onclick="window.saveFacture()" class="btn btn-green" style="width:100%; margin-top:20px; justify-content:center;">
+                    <i class="fas fa-save"></i> ENREGISTRER & IMPRIMER
                 </button>
             </div>
         </div>
 
-        <div class="card" style="padding:15px; display:flex; gap:10px;">
-            <input type="text" id="search-facture" placeholder="Rechercher (Client, N° Facture...)" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px;">
-        </div>
-
-        <div class="card" style="padding:0; overflow:hidden;">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>N° Facture</th>
-                        <th>Client / Défunt</th>
-                        <th>Total TTC</th>
-                        <th>Statut</th>
-                        <th style="text-align:center;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="factures-table-body">
-                    <tr><td colspan="6" style="text-align:center; padding:20px;">Chargement des données...</td></tr>
-                </tbody>
+        <div class="card">
+            <h3><i class="fas fa-history"></i> Historique des Factures</h3>
+            <table>
+                <thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Montant TTC</th><th>Actions</th></tr></thead>
+                <tbody id="historique-body"></tbody>
             </table>
         </div>
     </main>
 
-    <button id="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
-    <div id="mobile-overlay" onclick="toggleMobileMenu()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:4000;"></div>
-
     <script type="module">
-        import { db, collection, getDocs, query, orderBy, doc, deleteDoc } from "./js/config.js";
+        import { db, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, updateDoc } from "./js/config.js";
 
-        // Rendre les fonctions accessibles globalement
-        window.db = db;
-        window.collection = collection;
-        window.getDocs = getDocs;
-        window.query = query;
-        window.orderBy = orderBy;
-        window.doc = doc;
-        window.deleteDoc = deleteDoc;
+        // Variables Globales
+        let lignesFacture = [];
+        let dossiersCache = [];
 
-        // --- 1. CHARGEMENT DES FACTURES ---
-        window.chargerFactures = async function() {
-            const tbody = document.getElementById('factures-table-body');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Chargement...</td></tr>';
+        // 1. CHARGEMENT INITIAL
+        window.addEventListener('DOMContentLoaded', async () => {
+            await chargerDossiersDropdown();
+            await chargerHistorique();
+            window.ajouterLigne(); // Une ligne vide au début
+        });
 
-            try {
-                // On récupère toutes les factures triées par numéro
-                const q = query(collection(db, "factures_v2"), orderBy("numero", "desc"));
-                const snap = await getDocs(q);
-                
-                tbody.innerHTML = '';
-                if(snap.empty) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Aucune facture trouvée.</td></tr>';
-                    return;
-                }
-
-                snap.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const dateF = new Date(data.date_creation).toLocaleDateString();
-                    const clientNom = data.client?.nom || "Inconnu";
-                    const defuntNom = data.defunt?.nom ? `(Déf: ${data.defunt.nom})` : "";
-                    const ttc = (data.total_ttc || 0).toFixed(2) + " €";
-                    const statut = data.statut || "Émise";
-                    const badgeClass = statut === "Payée" ? "badge-paye" : "badge-attente";
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${dateF}</td>
-                        <td><strong>${data.numero}</strong></td>
-                        <td>${clientNom} <small style="color:#64748b;">${defuntNom}</small></td>
-                        <td style="font-weight:bold;">${ttc}</td>
-                        <td><span class="badge ${badgeClass}">${statut}</span></td>
-                        <td style="text-align:center;">
-                            <button class="btn-icon" onclick="alert('Module édition en cours...')" title="Voir/Modifier"><i class="fas fa-eye"></i></button>
-                            <button class="btn-icon" style="color:red;" onclick="window.supprimerFacture('${docSnap.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-            } catch(e) {
-                console.error(e);
-                tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">Erreur : ${e.message}</td></tr>`;
-            }
+        // 2. LOGIQUE FACTURATION (RESTAURÉE)
+        window.ajouterLigne = function() {
+            const tbody = document.getElementById('tbody-lignes');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" class="l-nom" placeholder="Prestation..." oninput="window.calculTotaux()"></td>
+                <td><input type="number" class="l-qte" value="1" oninput="window.calculTotaux()"></td>
+                <td><input type="number" class="l-prix" value="0" oninput="window.calculTotaux()"></td>
+                <td><select class="l-tva" onchange="window.calculTotaux()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></td>
+                <td class="l-total" style="font-weight:bold;">0.00</td>
+                <td><button onclick="this.closest('tr').remove(); window.calculTotaux()" style="color:red; background:none; border:none; cursor:pointer;">X</button></td>
+            `;
+            tbody.appendChild(tr);
         };
 
-        // --- 2. FONCTION EXPORT EXCEL (NOUVEAU V16) ---
-        window.exporterExcel = async function() {
-            if(!confirm("Voulez-vous télécharger le journal des ventes (Excel/CSV) ?")) return;
+        window.calculTotaux = function() {
+            let totalHT = 0;
+            let totalTVA = 0;
+            const rows = document.querySelectorAll('#tbody-lignes tr');
+            
+            lignesFacture = []; // Reset du tableau de données
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "\uFEFF"; // BOM pour les accents
-            // En-têtes des colonnes
-            csvContent += "NUMERO;DATE;CLIENT;DEFUNT;TOTAL HT;TOTAL TVA;TOTAL TTC;STATUT\n";
+            rows.forEach(row => {
+                const nom = row.querySelector('.l-nom').value;
+                const qte = parseFloat(row.querySelector('.l-qte').value) || 0;
+                const prix = parseFloat(row.querySelector('.l-prix').value) || 0;
+                const tvaRate = parseFloat(row.querySelector('.l-tva').value) || 0;
+                
+                const rowHT = qte * prix;
+                const rowTVA = rowHT * (tvaRate / 100);
+                
+                row.querySelector('.l-total').innerText = (rowHT + rowTVA).toFixed(2);
+                
+                totalHT += rowHT;
+                totalTVA += rowTVA;
+
+                if(nom) {
+                    lignesFacture.push({ nom, qte, prix, tva: tvaRate, total: rowHT + rowTVA });
+                }
+            });
+
+            document.getElementById('txt-ht').innerText = totalHT.toFixed(2) + " €";
+            document.getElementById('txt-tva').innerText = totalTVA.toFixed(2) + " €";
+            document.getElementById('txt-ttc').innerText = (totalHT + totalTVA).toFixed(2) + " €";
+        };
+
+        // 3. CHARGEMENT DOSSIERS
+        async function chargerDossiersDropdown() {
+            const sel = document.getElementById('select-dossier');
+            try {
+                const q = query(collection(db, "dossiers_admin"), orderBy("date_creation", "desc"));
+                const snap = await getDocs(q);
+                dossiersCache = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    dossiersCache.push(d);
+                    const opt = document.createElement('option');
+                    opt.value = dossiersCache.length - 1; // Index
+                    opt.text = `${d.mandant?.nom || 'Client'} (Déf: ${d.defunt?.nom || '?'})`;
+                    sel.appendChild(opt);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        window.remplirClient = function() {
+            const idx = document.getElementById('select-dossier').value;
+            if(idx !== "") {
+                const d = dossiersCache[idx];
+                document.getElementById('cli_nom').value = (d.mandant?.civility||"") + " " + (d.mandant?.nom||"");
+                document.getElementById('cli_adresse').value = d.mandant?.adresse || "";
+                document.getElementById('defunt_nom').value = (d.defunt?.nom || "") + " " + (d.defunt?.prenom || "");
+            }
+        }
+
+        // 4. SAUVEGARDE & PDF
+        window.saveFacture = async function() {
+            const client = document.getElementById('cli_nom').value;
+            if(!client || lignesFacture.length === 0) return alert("Veuillez remplir le client et au moins une ligne.");
+
+            if(!confirm("Valider cette facture ?")) return;
+
+            const ht = parseFloat(document.getElementById('txt-ht').innerText);
+            const tva = parseFloat(document.getElementById('txt-tva').innerText);
+            const ttc = parseFloat(document.getElementById('txt-ttc').innerText);
+            
+            const numFacture = "F-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 10000);
+
+            const factureData = {
+                numero: numFacture,
+                date_creation: new Date().toISOString(),
+                client: { nom: client, adresse: document.getElementById('cli_adresse').value },
+                defunt: { nom: document.getElementById('defunt_nom').value },
+                lignes: lignesFacture,
+                total_ht: ht, total_tva: tva, total_ttc: ttc,
+                statut: "Émise"
+            };
 
             try {
-                // On réinterroge la base pour avoir les données fraîches
+                await addDoc(collection(db, "factures_v2"), factureData);
+                genererPDF(factureData);
+                alert("✅ Facture enregistrée !");
+                window.location.reload();
+            } catch(e) { alert("Erreur : " + e.message); }
+        };
+
+        function genererPDF(data) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // En-tête (Simulé)
+            doc.setFontSize(18); doc.text("FACTURE " + data.numero, 150, 20);
+            doc.setFontSize(12); doc.text("PF SOLIDAIRE", 20, 20);
+            doc.setFontSize(10); doc.text("32 Bd Léon Jean Grégory, Thuir", 20, 25);
+            
+            // Client
+            doc.text("CLIENT :", 120, 50);
+            doc.setFont("helvetica", "bold");
+            doc.text(data.client.nom, 120, 55);
+            doc.setFont("helvetica", "normal");
+            doc.text(data.client.adresse || "", 120, 60);
+
+            // Tableau
+            const rows = data.lignes.map(l => [l.nom, l.qte, l.prix.toFixed(2), l.tva+"%", l.total.toFixed(2)]);
+            doc.autoTable({
+                startY: 80,
+                head: [['Désignation', 'Qte', 'PU', 'TVA', 'Total TTC']],
+                body: rows,
+            });
+
+            // Totaux
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.text(`Total HT : ${data.total_ht.toFixed(2)} €`, 150, finalY);
+            doc.text(`Total TVA : ${data.total_tva.toFixed(2)} €`, 150, finalY + 7);
+            doc.setFontSize(14); doc.setFont("helvetica", "bold");
+            doc.text(`NET À PAYER : ${data.total_ttc.toFixed(2)} €`, 130, finalY + 15);
+
+            doc.save(`Facture_${data.numero}.pdf`);
+        }
+
+        // 5. HISTORIQUE
+        async function chargerHistorique() {
+            const tbody = document.getElementById('historique-body');
+            const q = query(collection(db, "factures_v2"), orderBy("date_creation", "desc"));
+            const snap = await getDocs(q);
+            
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${d.numero}</td>
+                    <td>${new Date(d.date_creation).toLocaleDateString()}</td>
+                    <td>${d.client.nom}</td>
+                    <td><strong>${d.total_ttc.toFixed(2)} €</strong></td>
+                    <td>
+                        <button class="btn-icon" onclick="alert('Réimpression bientôt dispo')"><i class="fas fa-print"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 6. MODULE EXPORT EXCEL (LE NOUVEAU)
+        window.exporterExcel = async function() {
+            if(!confirm("Télécharger le journal des ventes (Excel) ?")) return;
+
+            let csv = "N° FACTURE;DATE;CLIENT;DEFUNT;TOTAL HT;TVA;TOTAL TTC;STATUT\n";
+
+            try {
                 const q = query(collection(db, "factures_v2"), orderBy("numero", "desc"));
                 const snap = await getDocs(q);
 
                 snap.forEach(doc => {
                     const d = doc.data();
-                    
-                    // Préparation des données (on remplace les ; par , pour ne pas casser le CSV)
-                    const num = d.numero || "";
                     const date = new Date(d.date_creation).toLocaleDateString();
-                    const cli = (d.client?.nom || "").replace(/;/g, ",");
-                    const def = (d.defunt?.nom || "").replace(/;/g, ",");
+                    const ht = (d.total_ht || 0).toFixed(2).replace('.', ',');
+                    const tva = (d.total_tva || 0).toFixed(2).replace('.', ',');
+                    const ttc = (d.total_ttc || 0).toFixed(2).replace('.', ',');
                     
-                    // Formatage des chiffres (1234.50 -> 1234,50) pour Excel France
-                    const ht = (d.total_ht || 0).toFixed(2).replace(".", ",");
-                    const tva = (d.total_tva || 0).toFixed(2).replace(".", ",");
-                    const ttc = (d.total_ttc || 0).toFixed(2).replace(".", ",");
-                    const stat = d.statut || "Émise";
-
-                    // Ajout de la ligne
-                    csvContent += `${num};${date};${cli};${def};${ht};${tva};${ttc};${stat}\n`;
+                    csv += `${d.numero};${date};${d.client.nom};${d.defunt?.nom||''};${ht};${tva};${ttc};${d.statut||'Emise'}\n`;
                 });
 
-                // Téléchargement
-                const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                // Nom du fichier avec la date du jour
-                const dateJour = new Date().toLocaleDateString().replace(/\//g, "-");
-                link.setAttribute("download", `Journal_Ventes_PF_${dateJour}.csv`);
-                document.body.appendChild(link);
+                link.href = 'data:text/csv;charset=utf-8,%EF%BB%BF' + encodeURI(csv);
+                link.download = "Journal_Ventes.csv";
                 link.click();
-                document.body.removeChild(link);
-
-            } catch (e) {
-                alert("Erreur lors de l'export : " + e.message);
-            }
+            } catch(e) { alert("Erreur export : " + e.message); }
         };
 
-        // --- 3. SUPPRESSION FACTURE ---
-        window.supprimerFacture = async function(id) {
-            if(confirm("⚠️ Attention : Supprimer cette facture définitivement ?")) {
-                try {
-                    await deleteDoc(doc(db, "factures_v2", id));
-                    window.chargerFactures(); // Recharger le tableau
-                } catch(e) {
-                    alert("Erreur : " + e.message);
-                }
-            }
-        };
-
-        // --- 4. NAVIGATION MOBILE ---
-        window.toggleMobileMenu = function() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            sidebar.classList.toggle('mobile-open');
-            overlay.style.display = sidebar.classList.contains('mobile-open') ? 'block' : 'none';
-        };
-
-        // --- 5. INITIALISATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Charger les factures au démarrage
-            window.chargerFactures();
-            
-            // Filtre de recherche
-            document.getElementById('search-facture').addEventListener('keyup', (e) => {
-                const term = e.target.value.toLowerCase();
-                document.querySelectorAll('#factures-table-body tr').forEach(row => {
-                    row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-                });
-            });
-        });
     </script>
 </body>
 </html>
