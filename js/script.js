@@ -841,45 +841,75 @@ window.genererFermeture = function() {
     pdf.save(`PV_Mise_En_Biere_Fermeture_${getVal("nom")}.pdf`);
 };
 
-// --- 9. TRANSPORT (AVANT ET APRÈS) ---
+// --- 9. TRANSPORT (AVANT ET APRÈS) - MODIFIÉ ---
 window.genererTransport = function(type) {
     if(!logoBase64) chargerLogoBase64(); 
     const { jsPDF } = window.jspdf; const pdf = new jsPDF();
     const prefix = type === 'avant' ? 'av' : 'ap';
     const labelT = type === 'avant' ? "AVANT MISE EN BIÈRE" : "APRÈS MISE EN BIÈRE";
 
+    // Cadre global et En-tête
     pdf.setLineWidth(1); pdf.rect(10, 10, 190, 277); headerPF(pdf);
+    
+    // Titre
     pdf.setFillColor(200); pdf.rect(10, 35, 190, 15, 'F');
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
     pdf.text(`DÉCLARATION DE TRANSPORT DE CORPS`, 105, 42, { align: "center" });
     pdf.setFontSize(12); pdf.text(labelT, 105, 47, { align: "center" });
+    
     let y = 70; const x = 20;
+    
+    // Transporteur
     pdf.setFontSize(10); pdf.setFont("helvetica", "bold");
     pdf.text("TRANSPORTEUR :", x, y); y+=5;
     pdf.setFont("helvetica", "normal");
     pdf.text("PF SOLIDAIRE PERPIGNAN - 32 Bd Léon J. Grégory, Thuir", x, y); y+=15;
-    pdf.setDrawColor(0); pdf.rect(x, y, 170, 25);
+    
+    // --- BLOC DÉFUNT (MODIFIÉ) ---
+    pdf.setDrawColor(0); pdf.rect(x, y, 170, 30); // Cadre un peu plus grand
     pdf.setFont("helvetica", "bold"); pdf.text("DÉFUNT(E)", x+5, y+6);
-    pdf.setFontSize(14); pdf.text(`${getVal("civilite_defunt")} ${getVal("nom")} ${getVal("prenom")}`, 105, y+15, {align:"center"});
-    pdf.setFontSize(10); pdf.setFont("helvetica", "normal");
-    pdf.text(`Né(e) le ${formatDate(getVal("date_naiss"))}`, 105, y+21, {align:"center"}); y+=35;
-    pdf.setLineWidth(0.5); pdf.rect(x, y, 80, 50); pdf.rect(x+90, y, 80, 50);
-    pdf.setFont("helvetica", "bold"); pdf.text("LIEU DE DÉPART", x+5, y+6);
+    
+    // Nom Prénom
+    pdf.setFontSize(14); 
+    pdf.text(`${getVal("civilite_defunt")} ${getVal("nom")} ${getVal("prenom")}`, 105, y+15, {align:"center"});
+    
+    // Naissance ET Décès sur la même ligne (ou juste en dessous si trop long)
+    pdf.setFontSize(9); pdf.setFont("helvetica", "normal");
+    const phraseEtatCivil = `Né(e) le ${formatDate(getVal("date_naiss"))} à ${getVal("lieu_naiss")}   —   Décédé(e) le ${formatDate(getVal("date_deces"))} à ${getVal("lieu_deces")}`;
+    pdf.text(phraseEtatCivil, 105, y+22, {align:"center"}); 
+    
+    y+=40; // On descend après le cadre défunt
+
+    // --- BLOC LIEUX ---
+    pdf.setLineWidth(0.5); 
+    // Cadre Départ
+    pdf.rect(x, y, 80, 50); 
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(10); pdf.text("LIEU DE DÉPART", x+5, y+6);
     pdf.setFont("helvetica", "normal"); pdf.text(getVal(`${prefix}_lieu_depart`), x+5, y+15);
     pdf.setFont("helvetica", "bold"); pdf.text("Date & Heure :", x+5, y+35);
     pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_dep`))} à ${getVal(`${prefix}_heure_dep`)}`, x+5, y+42);
+
+    // Cadre Arrivée
+    pdf.rect(x+90, y, 80, 50);
     pdf.setFont("helvetica", "bold"); pdf.text("LIEU D'ARRIVÉE", x+95, y+6);
     pdf.setFont("helvetica", "normal"); pdf.text(getVal(`${prefix}_lieu_arrivee`), x+95, y+15);
     pdf.setFont("helvetica", "bold"); pdf.text("Date & Heure :", x+95, y+35);
-    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_arr`))} à ${getVal(`${prefix}_heure_arr`)}`, x+95, y+42); y+=60;
-    pdf.setFillColor(230); pdf.rect(x, y, 170, 10, 'F');
-    pdf.setFont("helvetica", "bold");
-       
+    pdf.setFont("helvetica", "normal"); pdf.text(`${formatDate(getVal(`${prefix}_date_arr`))} à ${getVal(`${prefix}_heure_arr`)}`, x+95, y+42);
+    
+    y+=60;
+
+    // (La partie Véhicule a été supprimée ici)
+
+    // --- SIGNATURE ---
     const faita = getVal("faita");
     const dateSign = getVal("dateSignature");
     
+    y += 20; // Marge avant signature
+    pdf.setFont("helvetica", "normal");
     pdf.text(`Fait à ${faita}, le ${formatDate(dateSign)}`, 120, y);
+    pdf.setFont("helvetica", "bold");
     pdf.text("Cachet de l'entreprise :", 120, y+10);
+    
     pdf.save(`Transport_${type}_${getVal("nom")}.pdf`);
 };
 
