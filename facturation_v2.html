@@ -427,39 +427,45 @@
     };
 
     // --- VISUALISATION PDF SANS TÉLÉCHARGEMENT ---
+  // --- VISUALISATION PDF SANS TÉLÉCHARGEMENT (CORRIGÉE) ---
     window.visualiserPDF = async function(id) {
         try {
+            // Ici "doc" fait référence à Firebase (c'est correct)
             const docRef = doc(db, "factures_v2", id);
             const docSnap = await getDoc(docRef);
+            
             if(!docSnap.exists()) return alert("Document introuvable");
             const data = docSnap.data();
             
-            // Génération PDF (Même logique que le bouton save, mais pour l'affichage)
+            // Génération PDF
             if(!logoBase64) chargerLogoBase64();
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            if (logoBase64) { try { doc.addImage(logoBase64,'PNG', 15, 10, 25, 25); } catch(e){} }
             
-            doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(34, 155, 76);
-            doc.text("POMPES FUNEBRES", 15, 40); doc.text("SOLIDAIRE PERPIGNAN", 15, 45);
-            doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(80);
-            doc.text("32 boulevard Léon Jean Grégory Thuir", 15, 50); doc.text("Tél : 07.55.18.27.77", 15, 54);
+            // ON RENOMME "doc" EN "pdf" POUR ÉVITER LE CONFLIT
+            const pdf = new jsPDF();
             
-            doc.setFillColor(245, 245, 245); doc.roundedRect(110, 10, 85, 30, 2, 2, 'F');
-            doc.setFontSize(10); doc.setTextColor(0); doc.setFont("helvetica","bold");
-            doc.text(`${data.client.civility} ${data.client.nom}`, 115, 18);
-            doc.setFont("helvetica","normal"); doc.setFontSize(9);
-            doc.text(doc.splitTextToSize(data.client.adresse || "", 80), 115, 24);
+            if (logoBase64) { try { pdf.addImage(logoBase64,'PNG', 15, 10, 25, 25); } catch(e){} }
             
-            let y = 65; doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(34, 155, 76);
+            pdf.setFont("helvetica","bold"); pdf.setFontSize(11); pdf.setTextColor(34, 155, 76);
+            pdf.text("POMPES FUNEBRES", 15, 40); pdf.text("SOLIDAIRE PERPIGNAN", 15, 45);
+            pdf.setFontSize(8); pdf.setFont("helvetica","normal"); pdf.setTextColor(80);
+            pdf.text("32 boulevard Léon Jean Grégory Thuir", 15, 50); pdf.text("Tél : 07.55.18.27.77", 15, 54);
+            
+            pdf.setFillColor(245, 245, 245); pdf.roundedRect(110, 10, 85, 30, 2, 2, 'F');
+            pdf.setFontSize(10); pdf.setTextColor(0); pdf.setFont("helvetica","bold");
+            pdf.text(`${data.client.civility} ${data.client.nom}`, 115, 18);
+            pdf.setFont("helvetica","normal"); pdf.setFontSize(9);
+            pdf.text(pdf.splitTextToSize(data.client.adresse || "", 80), 115, 24);
+            
+            let y = 65; pdf.setFontSize(11); pdf.setFont("helvetica","bold"); pdf.setTextColor(34, 155, 76);
             const typeDoc = data.info.type; const numDoc = data.info.numero;
-            doc.text(`${typeDoc} N° ${numDoc}`, 15, y);
-            doc.setTextColor(0); doc.setFont("helvetica","normal");
+            pdf.text(`${typeDoc} N° ${numDoc}`, 15, y);
+            pdf.setTextColor(0); pdf.setFont("helvetica","normal");
             const dateStr = data.info.date ? data.info.date.split('-').reverse().join('/') : "";
-            doc.text(`du ${dateStr}`, 80, y);
+            pdf.text(`du ${dateStr}`, 80, y);
             
-            doc.setFont("helvetica","bold");
-            doc.text(`DÉFUNT : ${data.defunt.civility} ${data.defunt.nom}`, 120, y); y += 8;
+            pdf.setFont("helvetica","bold");
+            pdf.text(`DÉFUNT : ${data.defunt.civility} ${data.defunt.nom}`, 120, y); y += 8;
             
             const rows = [];
             if(data.lignes) {
@@ -473,7 +479,7 @@
                 });
             }
             
-            doc.autoTable({
+            pdf.autoTable({
                 startY: y,
                 head: [['DÉSIGNATION', 'TVA', 'PRESTATIONS\nCOURANTES', 'PRESTATIONS\nOPTIONNELLES']],
                 body: rows,
@@ -483,30 +489,30 @@
                 columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
             });
             
-            const finalY = doc.lastAutoTable.finalY + 8;
+            const finalY = pdf.lastAutoTable.finalY + 8;
             const total = parseFloat(data.info.total);
             const paye = data.paiements ? data.paiements.reduce((sum, p) => sum + p.montant, 0) : 0;
             const reste = total - paye;
             
             let curY = finalY;
-            doc.setFontSize(9); doc.setTextColor(0);
-            doc.text("Total TTC :", 130, curY); doc.text(total.toFixed(2) + " €", 190, curY, {align:'right'}); curY+=5;
+            pdf.setFontSize(9); pdf.setTextColor(0);
+            pdf.text("Total TTC :", 130, curY); pdf.text(total.toFixed(2) + " €", 190, curY, {align:'right'}); curY+=5;
             
             if(data.paiements && data.paiements.length > 0) {
-                doc.setFontSize(7); doc.setTextColor(100);
+                pdf.setFontSize(7); pdf.setTextColor(100);
                 data.paiements.forEach(p => {
-                    doc.text(`Reçu (${p.mode}) :`, 130, curY);
-                    doc.text(`-${p.montant.toFixed(2)} €`, 190, curY, {align:'right'}); curY+=4;
+                    pdf.text(`Reçu (${p.mode}) :`, 130, curY);
+                    pdf.text(`-${p.montant.toFixed(2)} €`, 190, curY, {align:'right'}); curY+=4;
                 });
                 curY+=2;
             }
             
-            doc.setDrawColor(34, 155, 76); doc.setLineWidth(0.5); doc.rect(125, curY-4, 70, 10);
-            doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(34, 155, 76);
-            doc.text("RESTE À PAYER :", 128, curY+3); doc.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
+            pdf.setDrawColor(34, 155, 76); pdf.setLineWidth(0.5); pdf.rect(125, curY-4, 70, 10);
+            pdf.setFontSize(11); pdf.setFont("helvetica", "bold"); pdf.setTextColor(34, 155, 76);
+            pdf.text("RESTE À PAYER :", 128, curY+3); pdf.text(reste.toFixed(2) + " €", 192, curY+3, {align:'right'});
             
             // Ouvrir dans un nouvel onglet
-            window.open(doc.output('bloburl'), '_blank');
+            window.open(pdf.output('bloburl'), '_blank');
             
         } catch(e) {
             console.error(e);
