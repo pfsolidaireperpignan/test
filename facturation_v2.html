@@ -422,8 +422,119 @@
     async function genererNumero(type) { const q = query(collection(db, "factures_v2")); const snap = await getDocs(q); const count = snap.size + 1; const year = new Date().getFullYear(); const prefix = (type === 'DEVIS') ? 'D' : 'F'; return `${prefix}-${year}-${String(count).padStart(3, '0')}`; }
 
     // MODELES 
-    const MODELES = { "Inhumation": [ { type: 'section', text: 'PREPARATION' }, { desc: 'Démarches', prix: 250, cat: 'Courant' }, { desc: 'Vacation', prix: 25, cat: 'Avance' } ], "Cremation": [], "Rapatriement": [], "Transport": [], "Exhumation": [] }; 
-    window.loadTemplate = async function(type) { document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument(); const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num; if (MODELES[type]) { document.getElementById('tbody_lignes').innerHTML = ""; MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); }); } window.calculTotal(); };
+ const MODELES = {
+        "Inhumation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+
+            { type: 'section', text: '5. CIMETIÈRE' },
+            { desc: 'Creusement et comblement de fosse / Ouverture de caveau', prix: 650, cat: 'Courant' },
+            { desc: 'Redevance inhumation (Taxe Mairie)', prix: 50, cat: 'Avance' },
+            { desc: 'Frais de concession', prix: 50, cat: 'Avance' }
+        ],
+
+        "Cremation": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur inhumation (avec quatre poignées en métal cache vis plastique, et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CRÉMATORIUM' },
+            { desc: 'Frais de Crémation ', prix: 750, cat: 'Avance' },
+            { desc: 'Urne', prix: 60, cat: 'Courant' }
+        ],
+
+        "Rapatriement": [
+            { type: 'section', text: 'PREPARATION/ORGANISATION DES OBSEQUES' },
+            { desc: 'Démarches administratives', prix: 250, cat: 'Courant' },
+            { desc: 'Vacation de Police (Pose de scellés)', prix: 25, cat: 'Avance' },
+            
+            { type: 'section', text: 'PRÉPARATION DU DÉFUNT' },
+            { desc: 'Toilette et habillage défunt (e)', prix: 150, cat: 'Courant' },
+            { desc: 'Séjour en chambre funéraire (Forfait 3 jours)', prix: 350, cat: 'Optionnel' },
+            
+            { type: 'section', text: 'TRANSPORT AVANT MISE EN BIERE' },
+            { desc: 'Transport avant mise en bière', prix: 250, cat: 'Courant' },
+
+            { type: 'section', text: '3. CERCUEIL & ACCESSOIRES' },
+            { desc: 'Cercueil Azur Rapatriement (avec quatre poignées en métal cache vis plastique,Filtre épurateur (Norme IATA) et cuvette biodégradable)', prix: 850, cat: 'Courant' },
+            { desc: 'Capiton (Tissu intérieur)', prix: 80, cat: 'Courant' },
+            { desc: 'Plaque d\'identité gravée (Obligatoire)', prix: 25, cat: 'Courant' },
+            { desc: 'Emblème religieux / Civil', prix: 40, cat: 'Optionnel' },
+
+            { type: 'section', text: '4. CÉRÉMONIE & CONVOI' },
+            { desc: 'Corbillard de cérémonie avec chauffeur', prix: 400, cat: 'Courant' },
+            { desc: 'Porteurs (Equipe de 4 personnes)', prix: 600, cat: 'Courant' },
+            { desc: 'Maître de cérémonie (Organisation & Gestion)', prix: 200, cat: 'Optionnel' },
+            { desc: 'Frais de culte', prix: 220, cat: 'Optionnel' },
+            { desc: 'Registre de condoléances', prix: 35, cat: 'Optionnel' },
+         
+            { type: 'section', text: '4. TRANSPORT' },
+            { desc: 'Transport vers Aéroport (France)', prix: 350, cat: 'Courant' },
+            { desc: 'Fret Aérien ', prix: 1800, cat: 'Avance' }
+        ],
+
+        "Transport": [
+            { type: 'section', text: '1. TRANSPORT DE CORPS' },
+            { desc: 'Véhicule Agréé avec Caisson', prix: 300, cat: 'Courant' },
+            { desc: 'Chauffeur / Porteur', prix: 150, cat: 'Courant' },
+            { desc: 'Housse mortuaire impérméable', prix: 45, cat: 'Courant' },
+            { desc: 'Frais kilométriques (Au-delà du forfait)', prix: 0, cat: 'Courant' }
+        ],
+
+        "Exhumation": [
+            { type: 'section', text: '1. TECHNIQUE' },
+            { desc: 'Démarches Mairie & Cimetière', prix: 150, cat: 'Courant' },
+            { desc: 'Ouverture de monument / Fosse', prix: 600, cat: 'Courant' },
+            { desc: 'Exhumation du corps', prix: 450, cat: 'Courant' },
+            { desc: 'Fourniture Reliquaire (Boîte à ossements)', prix: 120, cat: 'Courant' },
+            { desc: 'Réduction de corps', prix: 200, cat: 'Optionnel' },
+            { desc: 'Fermeture de sépulture', prix: 200, cat: 'Courant' },
+            { desc: 'Vacation de Police', prix: 25, cat: 'Avance' }
+        ]
+    };
+    
+	window.loadTemplate = async function(type) { document.getElementById('modal-choix').classList.add('hidden'); window.nouveauDocument(); const num = await genererNumero('DEVIS'); document.getElementById('doc_numero').value = num; if (MODELES[type]) { document.getElementById('tbody_lignes').innerHTML = ""; MODELES[type].forEach(item => { if(item.type === 'section') window.ajouterSection(item.text); else window.ajouterLigne(item.desc, item.prix, item.cat); }); } window.calculTotal(); };
 
     window.transformerEnFacture = async function() { if(confirm("Transformer en FACTURE ?")) { document.getElementById('doc_type').value = "FACTURE"; document.getElementById('doc_date').valueAsDate = new Date(); const num = await genererNumero('FACTURE'); document.getElementById('doc_numero').value = num; document.getElementById('current_doc_id').value = ""; document.getElementById('btn-save').click(); } };
     document.getElementById('doc_type').addEventListener('change', () => { const t = document.getElementById('doc_type').value; document.getElementById('btn-transform').classList.toggle('hidden', t !== 'DEVIS'); });
