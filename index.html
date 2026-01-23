@@ -103,7 +103,51 @@
         .mini-stat { flex: 1; background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; cursor: pointer; transition: transform 0.2s; }
         .mini-stat:hover { transform: translateY(-3px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         .mini-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-    </style>
+    /* --- STYLE MOBILE (UNIQUEMENT SUR TÉLÉPHONE) --- */
+        #mobile-menu-btn { display: none; } /* Caché sur PC */
+
+        @media (max-width: 768px) {
+            /* 1. La barre latérale devient un tiroir caché */
+            .sidebar {
+                position: fixed; top: 0; left: 0; height: 100vh;
+                transform: translateX(-100%); /* On le cache à gauche */
+                transition: transform 0.3s ease;
+                z-index: 5000; /* Tout en haut */
+            }
+            .sidebar.mobile-open { transform: translateX(0); } /* Classe pour l'ouvrir */
+
+            /* 2. Le bouton Burger apparaît */
+            #mobile-menu-btn {
+                display: flex !important;
+                align-items: center; justify-content: center;
+                position: fixed; bottom: 20px; right: 20px; /* Flottant en bas à droite (facile pour le pouce) */
+                width: 55px; height: 55px;
+                background: var(--primary); color: white;
+                border-radius: 50%; border: none;
+                font-size: 1.5rem;
+                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+                z-index: 6000; cursor: pointer;
+            }
+
+            /* 3. Ajustements du contenu */
+            .main-content { padding: 15px; width: 100%; box-sizing: border-box; }
+            .welcome-banner { flex-direction: column; text-align: center; gap: 15px; }
+            .date-badge { width: 100%; text-align: center; }
+            
+            /* 4. Tout mettre en une seule colonne */
+            .form-grid, .form-grid-layout, .dashboard-grid { grid-template-columns: 1fr !important; gap: 10px; }
+            .span-2 { grid-column: span 1 !important; }
+            
+            /* 5. Tableaux scrollables */
+            .card { overflow-x: auto; } /* Permet de glisser le tableau */
+            
+            /* 6. Ajustements boutons */
+            .page-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .page-header div { width: 100%; display: flex; flex-wrap: wrap; }
+            .page-header button { flex: 1; }
+        }
+        /* ----------------------------------------------- */
+	</style>
 </head>
 <body>
     <img id="logo-source" src="Logo.png" style="display: none;" crossorigin="anonymous">
@@ -513,7 +557,10 @@
             </div>
         </div>
     </main>
-    
+    <button id="mobile-menu-btn" onclick="toggleMobileMenu()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div id="mobile-overlay" onclick="toggleMobileMenu()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:4000;"></div>
     <script type="module" src="js/script.js"></script>
     
     <script>
@@ -538,7 +585,31 @@
         window.ajouterPieceJointe = function() {
             const input = document.getElementById('ged_input_file');
             const nameInput = document.getElementById('ged_file_name');
-            
+            // --- GESTION MENU MOBILE ---
+    function toggleMobileMenu() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        const btnIcon = document.querySelector('#mobile-menu-btn i');
+        
+        sidebar.classList.toggle('mobile-open');
+        
+        if (sidebar.classList.contains('mobile-open')) {
+            overlay.style.display = 'block';
+            btnIcon.classList.remove('fa-bars');
+            btnIcon.classList.add('fa-times'); // La croix pour fermer
+        } else {
+            overlay.style.display = 'none';
+            btnIcon.classList.remove('fa-times');
+            btnIcon.classList.add('fa-bars');
+        }
+    }
+
+    // Fermer le menu automatiquement quand on clique sur un lien
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if(window.innerWidth < 768) toggleMobileMenu();
+        });
+    });
             if (input.files.length === 0) return alert("Choisissez un fichier !");
             if (!nameInput.value) return alert("Donnez un nom au document !");
             
@@ -612,5 +683,6 @@
             }
         };
     </script>
+	
 </body>
 </html>
